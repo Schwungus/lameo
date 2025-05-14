@@ -1,7 +1,5 @@
 #pragma once
 
-// #include "log.h"
-
 void* _lame_alloc(size_t, const char*, int);
 void _lame_free(void**, const char*, int);
 void* _lame_copy(void*, const void*, size_t, const char*, int);
@@ -24,12 +22,30 @@ void _lame_realloc(void**, size_t, const char*, int);
         varname = 0;                                                                                                   \
     }
 
-// A database for storing handles (numeric IDs -> pointer or NULL).
+/*
+   This is a handle system I made on a whim. It's called "bumbling smartass".
+
+   Fixtures are databases containing local Handles to pointers.
+   Handles reduce dangling pointer problems and make it easy to tell when
+   something allegedly exists -> everyone is happy.
+
+   By default, HandlerIDs are 32-bit integers; first 16 bits is index, the rest
+   is generation. So even though Fixture capacity grows dynamically, the hard
+   limit to Handler amount per fixture is around 65535.
+
+   The smallest invalid Handler index always gets recycled. That's why Handles
+   have incrementing generations on create; that way you still get NULL on
+   stale HandleIDs. Generations always start at 1, then wrap after ~65535.
+   So unless you create and destroy a godless amount of Handles (around 65k to
+   4.2b), there's no chance of a stale Handle working again.
+
+   If a generation wraparound does happen though, you'll at least get a warning
+   in the log.
+*/
 struct Fixture {
     struct Handle* handles;
     size_t size, capacity; // Size = live handles, capacity = array size.
     size_t next;           // Next invalid handle in the array.
-    size_t first, last;    // First and last valid handles in the array.
 };
 
 struct Handle {
@@ -37,8 +53,12 @@ struct Handle {
     uint16_t generation;
 };
 
-typedef uint32_t HandleID;
-#define HANDLE_LIMIT 0xFFFF
+#define HID_TYPE uint32_t
+#define HID_HALF uint16_t
+#define HID_BITS 16
+#define HID_LIMIT 0xFFFF
+
+typedef HID_TYPE HandleID;
 
 struct Fixture* create_fixture();
 void destroy_fixture(struct Fixture*);

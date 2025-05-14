@@ -43,8 +43,6 @@ struct Fixture* create_fixture() {
     fixture->size = 0;
     fixture->capacity = 1;
     fixture->next = 0;
-    fixture->first = HANDLE_LIMIT;
-    fixture->last = 0;
 
     // Handles array
     fixture->handles = lame_alloc(fixture->capacity * sizeof(struct Handle));
@@ -61,14 +59,14 @@ void destroy_fixture(struct Fixture* fixture) {
 HandleID create_handle(struct Fixture* fixture, void* ptr) {
     if (ptr == NULL)
         FATAL("Creating a handle for a null pointer?");
-    if (fixture->size >= HANDLE_LIMIT)
-        FATAL("Out of handles (%u >= %u)", fixture->size, HANDLE_LIMIT);
+    if (fixture->size >= HID_LIMIT)
+        FATAL("Out of handles (%u >= %u)", fixture->size, HID_LIMIT);
 
     // Expand handles array on demand
     size_t old_capacity = fixture->capacity;
     if (fixture->next >= old_capacity) {
-        if (old_capacity >= HANDLE_LIMIT)
-            FATAL("Out of handle capacity (%u >= %u)", old_capacity, HANDLE_LIMIT);
+        if (old_capacity >= HID_LIMIT)
+            FATAL("Out of handle capacity (%u >= %u)", old_capacity, HID_LIMIT);
 
         size_t new_capacity = fixture->capacity * 2;
         lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle));
@@ -84,14 +82,11 @@ HandleID create_handle(struct Fixture* fixture, void* ptr) {
     size_t index = fixture->next;
     struct Handle* handle = &fixture->handles[index];
     handle->ptr = ptr;
-    if (++handle->generation <= 0)
+    if (++handle->generation <= 0) {
+        WARN("%u handle index %u generation wrapped, expect undefined behavior from stale handle IDs", fixture, index);
         handle->generation = 1;
+    }
     ++fixture->size;
-
-    if (fixture->first > index)
-        fixture->first = index;
-    if (fixture->last < index)
-        fixture->last = index;
 
     // Find next invalid handle
     while (1) {
@@ -101,14 +96,14 @@ HandleID create_handle(struct Fixture* fixture, void* ptr) {
     }
 
     // Generate handle ID
-    HandleID hid = ((uint16_t)index << 16) | handle->generation;
+    HandleID hid = ((HID_HALF)index << HID_BITS) | (HID_HALF)handle->generation;
     INFO("%u created %u (%u/%u) for %u", fixture, hid, index, handle->generation, ptr);
     return hid;
 }
 
 void destroy_handle(struct Fixture* fixture, HandleID hid) {
-    size_t index = (size_t)(hid >> 16);
-    uint16_t generation = (uint16_t)(hid & 0xFFFF);
+    size_t index = (size_t)(hid >> HID_BITS);
+    HID_HALF generation = (HID_HALF)(hid & HID_LIMIT);
 
     struct Handle* handle = &fixture->handles[index];
     if (handle->ptr == NULL || handle->generation != generation)
@@ -117,18 +112,17 @@ void destroy_handle(struct Fixture* fixture, HandleID hid) {
     handle->ptr = NULL;
     if (index < fixture->next)
         fixture->next = index;
-    // No easy way to adjust fixture->first and fixture->last here.
-    // They'll only update on handle creation.
     --fixture->size;
+
     INFO("%u destroyed %u (%u/%u)", fixture, hid, index, generation);
 }
 
 struct Handle* hid_to_handle(struct Fixture* fixture, HandleID hid) {
-    size_t index = (size_t)(hid >> 16);
-    uint16_t generation = (uint16_t)(hid & 0xFFFF);
+    size_t index = (size_t)(hid >> HID_BITS);
+    HID_HALF generation = (HID_HALF)(hid & HID_LIMIT);
 
     // Sanity check
-    if (index < fixture->first || index > fixture->last)
+    if (index >= fixture->capacity)
         return NULL;
 
     struct Handle* handle = &fixture->handles[index];
@@ -136,11 +130,11 @@ struct Handle* hid_to_handle(struct Fixture* fixture, HandleID hid) {
 }
 
 void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
-    size_t index = (size_t)(hid >> 16);
-    uint16_t generation = (uint16_t)(hid & 0xFFFF);
+    size_t index = (size_t)(hid >> HID_BITS);
+    HID_HALF generation = (HID_HALF)(hid & HID_LIMIT);
 
     // Sanity check
-    if (index < fixture->first || index > fixture->last)
+    if (index >= fixture->capacity)
         return NULL;
 
     struct Handle* handle = &fixture->handles[index];
