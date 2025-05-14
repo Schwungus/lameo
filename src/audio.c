@@ -4,7 +4,6 @@
 #include "asset.h"
 #include "audio.h"
 #include "log.h"
-#include "mem.h"
 
 #define MAX_CHANNELS 256
 
@@ -46,10 +45,10 @@ void audio_init() {
 }
 
 static int dummy = 0, dummy2 = 0, dummy3 = 0;
-static HandleID dummy4 = 0;
+static TrackID dummy4 = 0;
 void audio_update() {
     if (!dummy) {
-        const HandleID hid = fetch_track_hid("sample");
+        const TrackID hid = fetch_track_hid("sample");
         const struct Track* track = hid_to_track(hid);
         if (track != NULL)
             FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);

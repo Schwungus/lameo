@@ -66,7 +66,7 @@ void load_track(const char* name) {
     struct Track* track = lame_alloc(sizeof(struct Track));
 
     // General
-    track->hid = create_handle(track_handles, track);
+    track->hid = (TrackID)create_handle(track_handles, track);
     SDL_strlcpy(track->name, name, sizeof(track->name));
     track->transient = 0;
     if (music != NULL)
@@ -86,7 +86,7 @@ struct Track* fetch_track(const char* name) {
     return get_track(name);
 }
 
-HandleID fetch_track_hid(const char* name) {
+TrackID fetch_track_hid(const char* name) {
     load_track(name);
     return get_track_hid(name);
 }
@@ -100,7 +100,7 @@ struct Track* get_track(const char* name) {
     return NULL;
 }
 
-HandleID get_track_hid(const char* name) {
+TrackID get_track_hid(const char* name) {
     for (struct Track* track = music; track != NULL; track = track->previous) {
         if (SDL_strcmp(track->name, name) == 0)
             return track->hid;
@@ -109,8 +109,8 @@ HandleID get_track_hid(const char* name) {
     return 0;
 }
 
-struct Track* hid_to_track(HandleID hid) {
-    return (struct Track*)hid_to_pointer(track_handles, hid);
+struct Track* hid_to_track(TrackID hid) {
+    return (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
 }
 
 void destroy_track(struct Track* track) {
@@ -127,8 +127,8 @@ void destroy_track(struct Track* track) {
     lame_free(&track);
 }
 
-void destroy_track_hid(HandleID hid) {
-    struct Track* track = (struct Track*)hid_to_pointer(track_handles, hid);
+void destroy_track_hid(TrackID hid) {
+    struct Track* track = (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
     if (track != NULL)
         destroy_track(track);
 }

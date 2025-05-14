@@ -6,36 +6,43 @@
 
 #define ASSET_NAME_MAX 128
 
+typedef HandleID SpriteID;
+typedef HandleID MaterialID;
+typedef HandleID ModelID;
+typedef HandleID FontID;
+typedef HandleID SoundID;
+typedef HandleID TrackID;
+
 struct Sprite {
-    HandleID hid;
+    SpriteID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Sprite *previous, *next;
 };
 
 struct Material {
-    HandleID hid;
+    MaterialID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Material *previous, *next;
 };
 
 struct Model {
-    HandleID hid;
+    ModelID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Model *previous, *next;
 };
 
 struct Font {
-    HandleID hid;
+    FontID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Font *previous, *next;
 };
 
 struct Sound {
-    HandleID hid;
+    SoundID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Sound *previous, *next;
@@ -47,7 +54,7 @@ struct Sound {
 };
 
 struct Track {
-    HandleID hid;
+    TrackID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Track *previous, *next;
@@ -60,10 +67,10 @@ void asset_teardown();
 
 void load_track(const char*);
 struct Track* fetch_track(const char*);
-HandleID fetch_track_hid(const char*);
+TrackID fetch_track_hid(const char*);
 struct Track* get_track(const char*);
-HandleID get_track_hid(const char*);
-struct Track* hid_to_track(HandleID);
+TrackID get_track_hid(const char*);
+struct Track* hid_to_track(TrackID);
 void destroy_track(struct Track*);
-void destroy_track_hid(HandleID);
+void destroy_track_hid(TrackID);
 void clear_music(int);
