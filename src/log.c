@@ -1,13 +1,13 @@
 #include <stdio.h>
 
-#include <SDL3/SDL_stdinc.h>
-#include <SDL3/SDL_platform.h>
-#include <SDL3/SDL_time.h>
-#include <SDL3/SDL_messagebox.h>
 #include <SDL3/SDL_iostream.h>
+#include <SDL3/SDL_messagebox.h>
+#include <SDL3/SDL_platform.h>
+#include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_time.h>
 
-#include "log.h"
 #include "internal.h"
+#include "log.h"
 
 #define LOG_FILENAME "lameo.log"
 
@@ -34,7 +34,10 @@ void log_init() {
         SDL_GetCurrentTime(&ticks);
         SDL_DateTime dt;
         SDL_TimeToDateTime(ticks, &dt, false);
-        SDL_IOprintf(log_file, "Date: %02d/%02d/%04d %02d.%02d.%02d\n\n", dt.day, dt.month, dt.year, dt.hour, dt.minute, dt.second);
+        SDL_IOprintf(
+            log_file, "Date: %02d/%02d/%04d %02d.%02d.%02d\n\n", dt.day, dt.month, dt.year, dt.hour, dt.minute,
+            dt.second
+        );
     }
 
     INFO("Opened");

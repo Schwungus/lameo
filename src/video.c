@@ -1,9 +1,9 @@
-#include <SDL3/SDL_video.h>
 #include <SDL3/SDL_opengles2.h>
+#include <SDL3/SDL_video.h>
 
-#include "video.h"
 #include "log.h"
 #include "mem.h"
+#include "video.h"
 
 static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
@@ -18,7 +18,7 @@ void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
     gpu = SDL_GL_CreateContext(window);
-    if (gpu == NULL || !SDL_GL_MakeCurrent(window, gpu))
+    if (gpu == NULL)
         FATAL("GPU fail: %s", SDL_GetError());
     SDL_GL_SetSwapInterval(0);
 
@@ -30,13 +30,12 @@ void video_init() {
 }
 
 static float white = 0;
-
 void video_update() {
     white += 0.01;
     if (white > 1)
         white = 0;
     glClearColor(white, white, white, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
     SDL_GL_SwapWindow(window);
 }
 

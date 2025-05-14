@@ -8,37 +8,30 @@ void* _lame_alloc(size_t size, const char* filename, int line) {
         log_fatal(src_basename(filename), line, "Allocating 0 bytes?");
 
     void* ptr = SDL_malloc(size);
-
     if (ptr == NULL)
         log_fatal(src_basename(filename), line, "Allocation failed");
-
     return ptr;
 }
 
 void _lame_free(void** ptr, const char* filename, int line) {
-    if (ptr == NULL)
-        log_fatal(src_basename(filename), line, "Freeing null double pointer");
-    if (*ptr == NULL)
-        log_fatal(src_basename(filename), line, "Freeing null pointer");
+    if (ptr == NULL || *ptr == NULL)
+        log_fatal(src_basename(filename), line, "Freeing a null pointer?");
 
     SDL_free(*ptr);
     *ptr = NULL;
 }
 
 void* _lame_copy(void* dest, const void* src, size_t n, const char* filename, int line) {
-    if (dest == NULL)
-        log_fatal(src_basename(filename), line, "Copying to null");
-    if (src == NULL)
-        log_fatal(src_basename(filename), line, "Copying from null");
-
+    if (dest == NULL || src == NULL)
+        log_fatal(src_basename(filename), line, "Copying from %u to %u?", src, dest);
     return SDL_memcpy(dest, src, n);
 }
 
 void _lame_realloc(void** ptr, size_t size, const char* filename, int line) {
-    if (ptr == NULL)
-        log_fatal(src_basename(filename), line, "Resizing null double pointer");
-    if (*ptr == NULL)
-        log_fatal(src_basename(filename), line, "Resizing null pointer");
+    if (ptr == NULL || *ptr == NULL)
+        log_fatal(src_basename(filename), line, "Resizing a null pointer?");
+    if (!size)
+        log_fatal(src_basename(filename), line, "Reallocating to 0 bytes?");
 
     *ptr = SDL_realloc(*ptr, size);
     if (*ptr == NULL)

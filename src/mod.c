@@ -1,13 +1,13 @@
 #include <stdio.h>
 
-#include <SDL3/SDL_iostream.h>
-#include <SDL3/SDL_stdinc.h>
-#include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_iostream.h>
+#include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_stdinc.h>
 
-#include "mod.h"
-#include "mem.h"
 #include "log.h"
+#include "mem.h"
+#include "mod.h"
 
 static struct Mod* mods = NULL;
 static SDL_PropertiesID disabled = 0;
@@ -135,7 +135,7 @@ const char* get_file(const char* filename, const char* exclude_ext) {
 
         int success = 0;
         for (int i = 0; i < count; i++) {
-            const char *file = files[i];
+            const char* file = files[i];
 
             if (exclude_ext != NULL) {
                 const char* ext = SDL_strrchr(file, '.');

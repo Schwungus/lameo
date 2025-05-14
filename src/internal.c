@@ -1,12 +1,12 @@
 #include <SDL3/SDL.h>
 
+#include "asset.h"
+#include "audio.h"
 #include "internal.h"
 #include "log.h"
-#include "video.h"
-#include "audio.h"
 #include "mod.h"
-#include "asset.h"
 #include "player.h"
+#include "video.h"
 
 #define TICKRATE 30
 #define TICKTIME (1000 / TICKRATE)

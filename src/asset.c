@@ -2,9 +2,9 @@
 #include <yyjson.h>
 
 #include "asset.h"
+#include "audio.h"
 #include "log.h"
 #include "mod.h"
-#include "audio.h"
 
 #define ASSET_PATH_MAX 256
 

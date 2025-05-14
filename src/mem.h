@@ -1,6 +1,6 @@
 #pragma once
 
-//#include "log.h"
+// #include "log.h"
 
 void* _lame_alloc(size_t, const char*, int);
 void _lame_free(void**, const char*, int);
@@ -12,22 +12,24 @@ void _lame_realloc(void**, size_t, const char*, int);
 #define lame_copy(dest, src, size) _lame_copy(dest, src, size, __FILE__, __LINE__)
 #define lame_realloc(ptr, size) _lame_realloc((void**)ptr, size, __FILE__, __LINE__)
 
-#define CLOSE_POINTER(varname, callback) if (varname != NULL) {\
-    callback(varname);\
-    varname = NULL;\
-}
+#define CLOSE_POINTER(varname, callback)                                                                               \
+    if (varname != NULL) {                                                                                             \
+        callback(varname);                                                                                             \
+        varname = NULL;                                                                                                \
+    }
 
-#define CLOSE_HANDLE(varname, callback) if (varname != 0) {\
-    callback(varname);\
-    varname = 0;\
-}
+#define CLOSE_HANDLE(varname, callback)                                                                                \
+    if (varname != 0) {                                                                                                \
+        callback(varname);                                                                                             \
+        varname = 0;                                                                                                   \
+    }
 
 // A database for storing handles (numeric IDs -> pointer or NULL).
 struct Fixture {
     struct Handle* handles;
     size_t size, capacity; // Size = live handles, capacity = array size.
-    size_t next; // Next invalid handle in the array.
-    size_t first, last; // First and last valid handles in the array.
+    size_t next;           // Next invalid handle in the array.
+    size_t first, last;    // First and last valid handles in the array.
 };
 
 struct Handle {
