@@ -23,7 +23,7 @@ void init() {
 }
 
 void loop() {
-    int running = 1;
+    bool running = true;
 
     while (running) {
         const uint64_t start = SDL_GetTicks();
@@ -31,11 +31,12 @@ void loop() {
         // Events
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                running = 0;
-                break;
-            }
+            if (event.type == SDL_EVENT_QUIT)
+                running = false;
         }
+
+        if (!running)
+            break;
 
         // Tick
 
@@ -45,9 +46,8 @@ void loop() {
 
         // Wait
         const uint64_t delta = start - SDL_GetTicks();
-        if (delta < TICKTIME) {
+        if (delta < TICKTIME)
             SDL_Delay(TICKTIME - delta);
-        }
     }
 }
 

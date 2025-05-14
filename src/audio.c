@@ -65,6 +65,7 @@ void audio_update() {
             FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);
         dummy3 = 0;
     }
+
     FMOD_System_Update(speaker);
 }
 
