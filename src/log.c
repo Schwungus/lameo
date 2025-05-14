@@ -21,11 +21,23 @@ const char* src_basename(const char* path) {
     return s == NULL ? path : s + 1;
 }
 
-void log_init() {
-    log_file = SDL_IOFromFile(LOG_FILENAME, "w");
+void log_callback(void* userdata, int category, SDL_LogPriority priority, const char* message) {
+    printf("[SDL %u:%u] %s\n", category, priority, message);
+    fflush(stdout);
 
+    if (log_file != NULL) {
+        SDL_IOprintf(log_file, "[SDL %u:%u] %s\n", category, priority, message);
+        SDL_FlushIO(log_file);
+    }
+}
+
+void log_init() {
+    SDL_SetLogOutputFunction(log_callback, NULL);
+    SDL_SetLogPriorities(SDL_LOG_PRIORITY_TRACE);
+
+    log_file = SDL_IOFromFile(LOG_FILENAME, "w");
     if (log_file == NULL) {
-        WARN("Can't open log file");
+        WARN("Can't open log file: %s", SDL_GetError());
     } else {
         SDL_IOprintf(log_file, "[lameo]\n\n");
         SDL_IOprintf(log_file, "Operating System: %s\n", SDL_GetPlatform());
