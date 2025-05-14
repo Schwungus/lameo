@@ -29,15 +29,15 @@ void _lame_realloc(void**, size_t, const char*, int);
    Handles reduce dangling pointer problems and make it easy to tell when
    something allegedly exists -> everyone is happy.
 
-   By default, HandlerIDs are 32-bit integers; first 16 bits is index, the rest
+   By default, HandleIDs are 32-bit integers; first 16 bits is index, the rest
    is generation. So even though Fixture capacity grows dynamically, the hard
-   limit to Handler amount per fixture is around 65535.
+   limit to Handle amount per fixture is ~65535.
 
-   The smallest invalid Handler index always gets recycled. That's why Handles
+   The smallest invalid Handle index always gets recycled. That's why Handles
    have incrementing generations on create; that way you still get NULL on
-   stale HandleIDs. Generations always start at 1, then wrap after ~65535.
+   stale HandleIDs. Generations always start at 1, then wrap after 65535.
    So unless you create and destroy a godless amount of Handles (around 65k to
-   4.2b), there's no chance of a stale Handle working again.
+   4.2b), there's no chance of a stale HandleID working again.
 
    If a generation wraparound does happen though, you'll at least get a warning
    in the log.
