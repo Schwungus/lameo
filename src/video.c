@@ -40,7 +40,6 @@ void video_update() {
 }
 
 void video_teardown() {
-    // Expect memory leaks from these two, not much I can do about it.
     CLOSE_POINTER(gpu, SDL_GL_DestroyContext);
     CLOSE_POINTER(window, SDL_DestroyWindow);
 
