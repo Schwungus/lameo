@@ -20,7 +20,7 @@ void audio_init() {
     if (result != FMOD_OK)
         FATAL("Audio create fail: %s", FMOD_ErrorString(result));
 
-    result = FMOD_System_Init(speaker, MAX_CHANNELS, FMOD_INIT_STREAM_FROM_UPDATE | FMOD_INIT_MIX_FROM_UPDATE, NULL);
+    result = FMOD_System_Init(speaker, MAX_CHANNELS, FMOD_INIT_NORMAL, NULL);
     if (result != FMOD_OK)
         FATAL("Audio init fail: %s", FMOD_ErrorString(result));
 
