@@ -6,3 +6,4 @@
 /include/fmod/linux
 /.vscode
 /modsrc/1extra
+modsrc/disabled.json

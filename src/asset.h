@@ -72,7 +72,7 @@ struct Track* fetch_track(const char*);
 TrackID fetch_track_hid(const char*);
 struct Track* get_track(const char*);
 TrackID get_track_hid(const char*);
-struct Track* hid_to_track(TrackID);
+inline struct Track* hid_to_track(TrackID);
 void destroy_track(struct Track*);
 void destroy_track_hid(TrackID);
 void clear_music(int);

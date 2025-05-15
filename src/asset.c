@@ -51,7 +51,6 @@ void asset_teardown() {
 }
 
 static char path_helper[ASSET_PATH_MAX];
-
 void load_track(const char* name) {
     if (get_track(name) != NULL)
         return;
@@ -66,7 +65,7 @@ void load_track(const char* name) {
     struct Track* track = lame_alloc(sizeof(struct Track));
 
     // General
-    track->hid = (TrackID)create_handle(track_handles, track);
+    track->hid = 0;
     SDL_strlcpy(track->name, name, sizeof(track->name));
     track->transient = 0;
     if (music != NULL)
@@ -77,6 +76,8 @@ void load_track(const char* name) {
 
     // Data
     load_stream(track_file, &track->stream);
+
+    track->hid = (TrackID)create_handle(track_handles, track);
 
     INFO("Loaded track \"%s\" (%u)", name, track->hid);
 }
@@ -109,7 +110,7 @@ TrackID get_track_hid(const char* name) {
     return 0;
 }
 
-struct Track* hid_to_track(TrackID hid) {
+extern struct Track* hid_to_track(TrackID hid) {
     return (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
 }
 

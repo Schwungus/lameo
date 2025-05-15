@@ -37,6 +37,7 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     struct Mod* mod = lame_alloc(sizeof(*mod));
 
     // Data
+    mod->hid = 0;
     SDL_strlcpy(mod->name, fname, MOD_NAME_MAX);
     SDL_strlcpy(mod->path, path, MOD_PATH_MAX);
     mod->crc32 = 0;
