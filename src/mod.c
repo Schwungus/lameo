@@ -7,11 +7,10 @@
 
 #include "asset.h"
 #include "log.h"
-#include "mem.h"
 #include "mod.h"
 
 static struct Mod* mods = NULL;
-static SDL_PropertiesID disabled = 0;
+static struct Fixture* mod_handles = NULL;
 
 SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const char* fname) {
     char path[MOD_PATH_MAX];
@@ -23,9 +22,16 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
         return SDL_ENUM_CONTINUE;
 
     // Skip disabled mods
-    if (SDL_GetBooleanProperty(disabled, fname, false)) {
-        INFO("Skipping disabled mod \"%s\"", fname);
-        return SDL_ENUM_CONTINUE;
+    if (userdata != NULL) {
+        size_t i, n;
+        yyjson_val* value;
+        yyjson_arr_foreach((yyjson_val*)userdata, i, n, value) {
+            const char* str = yyjson_get_str(value);
+            if (str != NULL && SDL_strcmp(fname, str) == 0) {
+                INFO("Skipping disabled mod \"%s\"", fname);
+                return SDL_ENUM_CONTINUE;
+            }
+        }
     }
 
     struct Mod* mod = lame_alloc(sizeof(*mod));
@@ -46,7 +52,7 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
         mod->version = 0;
     } else {
         yyjson_val* root = yyjson_doc_get_root(json);
-        if (yyjson_get_type(root) == YYJSON_TYPE_OBJ) {
+        if (yyjson_is_obj(root)) {
             const char* title = yyjson_get_str(yyjson_obj_get(root, "title"));
             SDL_strlcpy(mod->title, title == NULL ? fname : title, MOD_NAME_MAX);
             mod->version = (uint16_t)yyjson_get_uint(yyjson_obj_get(root, "version"));
@@ -57,15 +63,13 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
         yyjson_doc_free(json);
     }
 
-    mod->previous = NULL;
-
     // Push
-    if (mods != NULL)
-        mod->previous = mods;
+    mod->previous = mods;
     mods = mod;
-    SDL_SetBooleanProperty(disabled, fname, false);
 
-    INFO("Added mod \"%s\" (%u, %s -> %u)", mod->title, mod->version, mod->name, mod->crc32);
+    mod->hid = (ModID)create_handle(mod_handles, mod);
+
+    INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
     return SDL_ENUM_CONTINUE;
 }
 
@@ -93,28 +97,25 @@ SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const c
 }
 
 void mod_init() {
+    mod_handles = create_fixture();
+
     // Load enabled mods
-    disabled = SDL_CreateProperties();
-    if (disabled == 0)
-        FATAL("Mod list fail: %s", SDL_GetError());
-
-    FILE* disfile = fopen("data/disable.txt", "r");
-    if (disfile != NULL) {
-        char line[MOD_NAME_MAX];
-        while (fgets(line, sizeof(line), disfile) != NULL) // i don't suppose there's an SDL equivalent
-            if (line[0] != '\0' && line[0] != '\n') {
-                size_t len = SDL_strlen(line);
-                if (line[len - 1] == '\n')
-                    line[len - 1] = '\0';
-
-                SDL_SetBooleanProperty(disabled, line, true);
-            }
-
-        fclose(disfile);
+    yyjson_doc* json = yyjson_read_file("data/disabled.json", JSON_FLAGS, NULL, NULL);
+    yyjson_val* disabled = NULL;
+    if (json != NULL) {
+        disabled = yyjson_doc_get_root(json);
+        if (!yyjson_is_arr(disabled)) {
+            ERROR("Expected root array in \"disabled.json\", got %s", yyjson_get_type_desc(disabled));
+            yyjson_doc_free(json);
+            json = NULL;
+            disabled = NULL;
+        }
     }
 
-    if (!SDL_EnumerateDirectory("data/", iterate_mods, NULL))
+    if (!SDL_EnumerateDirectory("data/", iterate_mods, (void*)disabled))
         FATAL("Mod load fail: %s", SDL_GetError());
+    if (json != NULL)
+        yyjson_doc_free(json);
 
     // Check internal mods
     if (get_mod("0main") == NULL)
@@ -128,10 +129,11 @@ void mod_teardown() {
         const struct Mod* mod = mods;
         mods = mod->previous;
         INFO("Removed mod \"%s\" (%s)", mod->title, mod->name);
+        // destroy_handle(mod_handles, mod->hid);
         lame_free(&mod);
     }
 
-    CLOSE_HANDLE(disabled, SDL_DestroyProperties);
+    CLOSE_POINTER(mod_handles, destroy_fixture);
 
     INFO("Closed");
 }
@@ -143,6 +145,19 @@ struct Mod* get_mod(const char* name) {
     }
 
     return NULL;
+}
+
+ModID get_mod_hid(const char* name) {
+    for (struct Mod* mod = mods; mod != NULL; mod = mod->previous) {
+        if (SDL_strcmp(mod->name, name) == 0)
+            return mod->hid;
+    }
+
+    return 0;
+}
+
+extern struct Mod* hid_to_mod(ModID hid) {
+    return (struct Mod*)hid_to_pointer(mod_handles, (HandleID)hid);
 }
 
 static char path_result[MOD_PATH_MAX];
@@ -159,7 +174,6 @@ const char* get_file(const char* filename, const char* exclude_ext) {
 
             if (exclude_ext != NULL) {
                 const char* ext = SDL_strrchr(file, '.');
-
                 if (ext != NULL && SDL_strcmp(ext, exclude_ext) == 0)
                     continue;
             }
