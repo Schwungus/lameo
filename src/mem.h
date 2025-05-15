@@ -60,10 +60,15 @@ struct Handle {
 
 typedef HID_TYPE HandleID;
 
-struct Fixture* create_fixture();
-void destroy_fixture(struct Fixture*);
+struct Fixture* _create_fixture(const char*, int);
+inline void _destroy_fixture(struct Fixture*, const char*, int);
+HandleID _create_handle(struct Fixture*, void*, const char*, int);
+void _destroy_handle(struct Fixture*, HandleID, const char*, int);
 
-HandleID create_handle(struct Fixture*, void*);
-void destroy_handle(struct Fixture*, HandleID);
+#define create_fixture() _create_fixture(__FILE__, __LINE__)
+#define destroy_fixture(fixture) _destroy_fixture(fixture, __FILE__, __LINE__)
+#define create_handle(fixture, ptr) _create_handle(fixture, (void*)ptr, __FILE__, __LINE__)
+#define destroy_handle(fixture, hid) _destroy_handle(fixture, (HandleID)hid, __FILE__, __LINE__)
+
 struct Handle* hid_to_handle(struct Fixture*, HandleID);
 void* hid_to_pointer(struct Fixture*, HandleID);

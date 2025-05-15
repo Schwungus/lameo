@@ -38,35 +38,41 @@ void _lame_realloc(void** ptr, size_t size, const char* filename, int line) {
         log_fatal(src_basename(filename), line, "Reallocation failed");
 }
 
-struct Fixture* create_fixture() {
-    struct Fixture* fixture = lame_alloc(sizeof(struct Fixture));
+struct Fixture* _create_fixture(const char* filename, int line) {
+    struct Fixture* fixture = _lame_alloc(sizeof(struct Fixture), filename, line);
+    fixture->handles = NULL;
     fixture->size = 0;
     fixture->capacity = 1;
     fixture->next = 0;
 
-    // Handles array
-    fixture->handles = lame_alloc(fixture->capacity * sizeof(struct Handle));
+    fixture->handles = _lame_alloc(sizeof(struct Handle), filename, line);
     fixture->handles[0].ptr = NULL;
     fixture->handles[0].generation = 0;
 
+    // log_generic(src_basename(filename), line, "Created fixture %u", fixture);
     return fixture;
 }
 
-void destroy_fixture(struct Fixture* fixture) {
-    lame_free(&fixture);
+extern void _destroy_fixture(struct Fixture* fixture, const char* filename, int line) {
+    // log_generic(src_basename(filename), line, "Destroyed fixture %u", fixture);
+    if (fixture->handles != NULL)
+        _lame_free(&fixture->handles, filename, line);
+    _lame_free(&fixture, filename, line);
 }
 
-HandleID create_handle(struct Fixture* fixture, void* ptr) {
-    if (ptr == NULL)
-        FATAL("Creating a handle for a null pointer?");
+HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename, int line) {
+    if (ptr == NULL) {
+        log_generic(src_basename(filename), line, "!! Creating a handle for a null pointer?");
+        return 0;
+    }
     if (fixture->size >= HID_LIMIT)
-        FATAL("Out of handles (%u >= %u)", fixture->size, HID_LIMIT);
+        log_fatal(src_basename(filename), line, "!!! Out of handles (%u >= %u)", fixture->size, HID_LIMIT);
 
     // Expand handles array on demand
     size_t old_capacity = fixture->capacity;
     if (fixture->next >= old_capacity) {
         if (old_capacity >= HID_LIMIT)
-            FATAL("Out of handle capacity (%u >= %u)", old_capacity, HID_LIMIT);
+            log_fatal(src_basename(filename), line, "!!! Out of handle capacity (%u >= %u)", old_capacity, HID_LIMIT);
 
         size_t new_capacity = fixture->capacity * 2;
         lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle));
@@ -83,7 +89,10 @@ HandleID create_handle(struct Fixture* fixture, void* ptr) {
     struct Handle* handle = &fixture->handles[index];
     handle->ptr = ptr;
     if (++handle->generation <= 0) {
-        WARN("%u handle index %u generation wrapped, expect undefined behavior from stale handle IDs", fixture, index);
+        log_generic(
+            src_basename(filename), line,
+            "! %u handle index %u generation wrapped, expect undefined behavior from stale handle IDs", fixture, index
+        );
         handle->generation = 1;
     }
     ++fixture->size;
@@ -97,24 +106,38 @@ HandleID create_handle(struct Fixture* fixture, void* ptr) {
 
     // Generate handle ID
     HandleID hid = ((HID_HALF)index << HID_BITS) | (HID_HALF)handle->generation;
-    INFO("%u created %u (%u/%u) for %u", fixture, hid, index, handle->generation, ptr);
+    // log_generic(
+    //     src_basename(filename), line, "%u created %u (%u/%u) for %u", fixture, hid, index, handle->generation, ptr
+    // );
     return hid;
 }
 
-void destroy_handle(struct Fixture* fixture, HandleID hid) {
+void _destroy_handle(struct Fixture* fixture, HandleID hid, const char* filename, int line) {
     size_t index = (size_t)(hid >> HID_BITS);
     HID_HALF generation = (HID_HALF)(hid & HID_LIMIT);
 
+    // Sanity check
+    if (index >= fixture->capacity) {
+        log_generic(
+            src_basename(filename), line, "!! %u destroying invalid handle %u (%u/%u)?", fixture, hid, index, generation
+        );
+        return;
+    }
+
     struct Handle* handle = &fixture->handles[index];
-    if (handle->ptr == NULL || handle->generation != generation)
-        FATAL("Destroying an invalid handle at index %u, generation %u", index, generation);
+    if (handle->ptr == NULL || handle->generation != generation) {
+        log_generic(
+            src_basename(filename), line, "!! %u destroying invalid handle %u (%u/%u)?", fixture, hid, index, generation
+        );
+        return;
+    }
 
     handle->ptr = NULL;
     if (index < fixture->next)
         fixture->next = index;
     --fixture->size;
 
-    INFO("%u destroyed %u (%u/%u)", fixture, hid, index, generation);
+    // log_generic(src_basename(filename), line, "%u destroyed %u (%u/%u)", fixture, hid, index, generation);
 }
 
 struct Handle* hid_to_handle(struct Fixture* fixture, HandleID hid) {
