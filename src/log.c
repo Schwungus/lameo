@@ -25,10 +25,8 @@ void log_callback(void* userdata, int category, SDL_LogPriority priority, const 
     printf("[SDL %u:%u] %s\n", category, priority, message);
     fflush(stdout);
 
-    if (log_file != NULL) {
+    if (log_file != NULL)
         SDL_IOprintf(log_file, "[SDL %u:%u] %s\n", category, priority, message);
-        SDL_FlushIO(log_file);
-    }
 }
 
 void log_init() {
@@ -43,8 +41,8 @@ void log_init() {
         SDL_IOprintf(log_file, "Operating System: %s\n", SDL_GetPlatform());
 
         SDL_Time ticks;
-        SDL_GetCurrentTime(&ticks);
         SDL_DateTime dt;
+        SDL_GetCurrentTime(&ticks);
         SDL_TimeToDateTime(ticks, &dt, false);
         SDL_IOprintf(
             log_file, "Date: %02d/%02d/%04d %02d.%02d.%02d\n\n", dt.day, dt.month, dt.year, dt.hour, dt.minute,
@@ -69,7 +67,6 @@ void log_generic(const char* filename, int line, const char* format, ...) {
         SDL_IOprintf(log_file, "[%s:%d] ", filename, line);
         SDL_IOvprintf(log_file, format, args2);
         SDL_IOprintf(log_file, "\n");
-        SDL_FlushIO(log_file);
     }
     va_end(args2);
 }
