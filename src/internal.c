@@ -24,7 +24,6 @@ void init() {
 
 void loop() {
     bool running = true;
-
     while (running) {
         const uint64_t start = SDL_GetTicks();
 
@@ -57,6 +56,6 @@ void cleanup() {
     mod_teardown();
     audio_teardown();
     video_teardown();
-    SDL_Quit();
     log_teardown();
+    SDL_Quit();
 }
