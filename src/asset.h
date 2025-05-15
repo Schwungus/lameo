@@ -1,10 +1,12 @@
 #pragma once
 
 #include <fmod.h>
+#include <yyjson.h>
 
 #include "mem.h"
 
 #define ASSET_NAME_MAX 128
+#define JSON_FLAGS (YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS)
 
 typedef HandleID SpriteID;
 typedef HandleID MaterialID;

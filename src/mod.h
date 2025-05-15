@@ -10,6 +10,9 @@ struct Mod {
     char path[MOD_PATH_MAX];
     uint32_t crc32;
 
+    char title[MOD_NAME_MAX];
+    uint16_t version;
+
     struct Mod* previous;
 };
 

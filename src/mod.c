@@ -5,6 +5,7 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_stdinc.h>
 
+#include "asset.h"
 #include "log.h"
 #include "mem.h"
 #include "mod.h"
@@ -14,7 +15,7 @@ static SDL_PropertiesID disabled = 0;
 
 SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const char* fname) {
     char path[MOD_PATH_MAX];
-    SDL_snprintf(path, sizeof(path), "%s%s/", dirname, fname);
+    SDL_snprintf(path, MOD_PATH_MAX, "%s%s/", dirname, fname);
 
     // Mods are folders so skip anything that isn't
     SDL_PathInfo info;
@@ -27,15 +28,34 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
         return SDL_ENUM_CONTINUE;
     }
 
-    // Alloc
     struct Mod* mod = lame_alloc(sizeof(*mod));
+
+    // Data
     SDL_strlcpy(mod->name, fname, MOD_NAME_MAX);
     SDL_strlcpy(mod->path, path, MOD_PATH_MAX);
-
-    uint32_t crc32 = 0;
-    if (!SDL_EnumerateDirectory(path, iterate_crc32, &crc32))
+    mod->crc32 = 0;
+    if (!SDL_EnumerateDirectory(path, iterate_crc32, &mod->crc32))
         FATAL("CRC32 fail: %s", SDL_GetError());
-    mod->crc32 = crc32;
+
+    // Info
+    SDL_strlcat(path, "mod.json", MOD_PATH_MAX);
+    yyjson_doc* json = yyjson_read_file(path, JSON_FLAGS, NULL, NULL);
+    if (json == NULL) {
+        WARN("Failed to open \"mod.json\" for \"%s\"", fname);
+        SDL_strlcpy(mod->title, fname, MOD_NAME_MAX);
+        mod->version = 0;
+    } else {
+        yyjson_val* root = yyjson_doc_get_root(json);
+        if (yyjson_get_type(root) == YYJSON_TYPE_OBJ) {
+            const char* title = yyjson_get_str(yyjson_obj_get(root, "title"));
+            SDL_strlcpy(mod->title, title == NULL ? fname : title, MOD_NAME_MAX);
+            mod->version = (uint16_t)yyjson_get_uint(yyjson_obj_get(root, "version"));
+        } else {
+            ERROR("Expected root object in \"%s/mod.json\", got %s", fname, yyjson_get_type_desc(root));
+        }
+
+        yyjson_doc_free(json);
+    }
 
     mod->previous = NULL;
 
@@ -45,7 +65,7 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     mods = mod;
     SDL_SetBooleanProperty(disabled, fname, false);
 
-    INFO("Added mod \"%s\" (%u)", mod->name, mod->crc32);
+    INFO("Added mod \"%s\" (%u, %s -> %u)", mod->title, mod->version, mod->name, mod->crc32);
     return SDL_ENUM_CONTINUE;
 }
 
@@ -57,7 +77,7 @@ SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const c
     SDL_PathInfo info;
     if (SDL_GetPathInfo(path, &info) && info.type == SDL_PATHTYPE_DIRECTORY) {
         // Add folder name to hash so they actually matter
-        *(uint32_t*)userdata += SDL_crc32(*(uint32_t*)userdata, fname, SDL_strlen(fname));
+        *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, fname, SDL_strlen(fname));
         return SDL_EnumerateDirectory(path, iterate_crc32, userdata) ? SDL_ENUM_CONTINUE : SDL_ENUM_FAILURE;
     }
 
@@ -66,7 +86,7 @@ SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const c
     void* buffer = SDL_LoadFile(path, &size);
     if (buffer == NULL)
         FATAL("CRC32 fail: %s", SDL_GetError());
-    *(uint32_t*)userdata += SDL_crc32(*(uint32_t*)userdata, buffer, size);
+    *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, buffer, size);
     lame_free(&buffer);
 
     return SDL_ENUM_CONTINUE;
@@ -105,9 +125,9 @@ void mod_init() {
 
 void mod_teardown() {
     while (mods != NULL) {
-        struct Mod* mod = mods;
+        const struct Mod* mod = mods;
         mods = mod->previous;
-        INFO("Removed mod \"%s\" (%u)", mod->name, mod->crc32);
+        INFO("Removed mod \"%s\" (%s)", mod->title, mod->name);
         lame_free(&mod);
     }
 

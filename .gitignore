@@ -4,6 +4,5 @@
 
 /include/fmod/windows
 /include/fmod/linux
-modsrc/0main/music/sample.xm
-modsrc/0main/music/sample2.mp3
 /.vscode
+/modsrc/1extra
