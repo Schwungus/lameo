@@ -15,6 +15,9 @@ typedef HandleID FontID;
 typedef HandleID SoundID;
 typedef HandleID TrackID;
 
+typedef FMOD_SOUND Sample;
+typedef FMOD_SOUND Stream;
+
 struct Sprite {
     SpriteID hid;
     char name[ASSET_NAME_MAX];
@@ -49,10 +52,11 @@ struct Sound {
     bool transient;
     struct Sound *previous, *next;
 
-    FMOD_SOUND** samples;
+    Sample** samples;
     size_t num_samples;
 
-    float gain, pitch[3];
+    float gain;
+    float pitch[2]; // lower, upper
 };
 
 struct Track {
@@ -61,11 +65,21 @@ struct Track {
     bool transient;
     struct Track *previous, *next;
 
-    FMOD_SOUND* stream;
+    Stream* stream;
 };
 
 void asset_init();
 void asset_teardown();
+
+void load_sound(const char*);
+struct Sound* fetch_sound(const char*);
+SoundID fetch_sound_hid(const char*);
+struct Sound* get_sound(const char*);
+SoundID get_sound_hid(const char*);
+inline struct Sound* hid_to_sound(SoundID);
+void destroy_sound(struct Sound*);
+void destroy_sound_hid(SoundID);
+void clear_sounds(int);
 
 void load_track(const char*);
 struct Track* fetch_track(const char*);

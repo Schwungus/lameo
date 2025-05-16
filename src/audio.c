@@ -1,9 +1,10 @@
 #include <SDL3/SDL_stdinc.h>
 #include <fmod_errors.h>
 
-#include "asset.h"
 #include "audio.h"
 #include "log.h"
+#include "math.h"
+#include "mem.h"
 
 #define MAX_CHANNELS 256
 
@@ -44,37 +45,17 @@ void audio_init() {
     INFO("Opened");
 }
 
-static int dummy = 0, dummy2 = 0, dummy3 = 0;
-static TrackID dummy4 = 0;
 void audio_update() {
-    if (!dummy) {
-        const TrackID hid = fetch_track_hid("sample");
-        const struct Track* track = hid_to_track(hid);
-        if (track != NULL)
-            FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);
-        dummy = 1;
-    }
-
-    if (!dummy2) {
-        dummy4 = fetch_track_hid("sample2");
-        dummy2 = 1;
-    } else if (++dummy3 >= 100) {
-        const struct Track* track = hid_to_track(dummy4);
-        if (track != NULL)
-            FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);
-        dummy3 = 0;
-    }
-
     FMOD_System_Update(speaker);
 }
 
 void audio_teardown() {
-    CLOSE_POINTER(ui_group, FMOD_ChannelGroup_Release);
-    CLOSE_POINTER(world_group, FMOD_ChannelGroup_Release);
-    CLOSE_POINTER(sound_group, FMOD_ChannelGroup_Release);
-    CLOSE_POINTER(music_group, FMOD_ChannelGroup_Release);
+    FMOD_ChannelGroup_Release(ui_group);
+    FMOD_ChannelGroup_Release(world_group);
+    FMOD_ChannelGroup_Release(sound_group);
+    FMOD_ChannelGroup_Release(music_group);
 
-    CLOSE_POINTER(speaker, FMOD_System_Release);
+    FMOD_System_Release(speaker);
 
     INFO("Closed");
 }
@@ -85,13 +66,47 @@ audio_debug_callback(FMOD_DEBUG_FLAGS flags, const char* file, int line, const c
     return FMOD_OK;
 }
 
-void load_stream(const char* filename, FMOD_SOUND** stream) {
-    FMOD_RESULT result =
-        FMOD_System_CreateSound(speaker, filename, FMOD_CREATESTREAM | FMOD_ACCURATETIME, NULL, stream);
-    if (result != FMOD_OK)
-        FATAL("Stream fail: %s", FMOD_ErrorString(result));
+// Sound
+extern void load_sample(const char* filename, FMOD_SOUND** sample) {
+    FMOD_RESULT result = FMOD_System_CreateSound(speaker, filename, FMOD_CREATESAMPLE, NULL, sample);
+    if (result != FMOD_OK) {
+        ERROR("Sample fail: %s", FMOD_ErrorString(result));
+        *sample = NULL;
+    }
 }
 
-void destroy_stream(FMOD_SOUND* stream) {
+extern void destroy_sample(FMOD_SOUND* sample) {
+    FMOD_Sound_Release(sample);
+}
+
+FMOD_CHANNEL* play_ui_sound(const struct Sound* sound, bool loop, uint32_t offset, float pitch, float gain) {
+    if (sound == NULL || sound->samples == NULL)
+        return NULL;
+
+    FMOD_SOUND* sample = sound->samples[SDL_rand(sound->num_samples)];
+    if (sample == NULL)
+        return NULL;
+
+    FMOD_CHANNEL* instance;
+    FMOD_System_PlaySound(speaker, sample, ui_group, true, &instance);
+    FMOD_Channel_SetMode(instance, loop ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF);
+    FMOD_Channel_SetPosition(instance, offset, FMOD_TIMEUNIT_MS);
+    FMOD_Channel_SetPitch(instance, pitch * lerp(sound->pitch[0], sound->pitch[1], SDL_randf()));
+    FMOD_Channel_SetVolume(instance, gain * sound->gain);
+    FMOD_Channel_SetPaused(instance, false);
+    return instance;
+}
+
+// Music
+extern void load_stream(const char* filename, FMOD_SOUND** stream) {
+    FMOD_RESULT result =
+        FMOD_System_CreateSound(speaker, filename, FMOD_CREATESTREAM | FMOD_ACCURATETIME, NULL, stream);
+    if (result != FMOD_OK) {
+        ERROR("Stream fail: %s", FMOD_ErrorString(result));
+        *stream = NULL;
+    }
+}
+
+extern void destroy_stream(FMOD_SOUND* stream) {
     FMOD_Sound_Release(stream);
 }
