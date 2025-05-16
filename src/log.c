@@ -8,6 +8,7 @@
 
 #include "internal.h"
 #include "log.h"
+#include "mem.h"
 
 #define LOG_FILENAME "lameo.log"
 
@@ -87,23 +88,18 @@ void log_fatal(const char* filename, int line, const char* format, ...) {
     if (log_file != NULL) {
         SDL_IOprintf(log_file, message);
         SDL_CloseIO(log_file);
-        log_file = NULL;
+        // log_file = NULL;
     }
 
     char dialog[1024];
     SDL_snprintf(dialog, sizeof(dialog), "Fatal error!\n\n%s\nCheck \"%s\" for more details.", message, LOG_FILENAME);
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "lameo", dialog, NULL);
 
-    cleanup();
-    exit(1);
+    exit(1); // lololololololololololololololololololololololololololololololol
 }
 
 void log_teardown() {
-    if (log_file != NULL) {
-        SDL_CloseIO(log_file);
-        log_file = NULL;
-        SDL_RemovePath(LOG_FILENAME);
-    }
+    CLOSE_POINTER(log_file, SDL_CloseIO);
 
     INFO("Closed");
 }

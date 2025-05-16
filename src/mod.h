@@ -25,7 +25,9 @@ SDL_EnumerationResult iterate_mods(void*, const char*, const char*);
 SDL_EnumerationResult iterate_crc32(void*, const char*, const char*);
 void mod_init();
 void mod_teardown();
+
 struct Mod* get_mod(const char*);
 ModID get_mod_hid(const char*);
 inline struct Mod* hid_to_mod(ModID);
+
 const char* get_file(const char*, const char*);

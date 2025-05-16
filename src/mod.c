@@ -2,7 +2,6 @@
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_iostream.h>
-#include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_stdinc.h>
 
 #include "asset.h"
@@ -37,7 +36,7 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     struct Mod* mod = lame_alloc(sizeof(*mod));
 
     // Data
-    mod->hid = 0;
+    mod->hid = (ModID)create_handle(mod_handles, mod);
     SDL_strlcpy(mod->name, fname, MOD_NAME_MAX);
     SDL_strlcpy(mod->path, path, MOD_PATH_MAX);
     mod->crc32 = 0;
@@ -67,8 +66,6 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     // Push
     mod->previous = mods;
     mods = mod;
-
-    mod->hid = (ModID)create_handle(mod_handles, mod);
 
     INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
     return SDL_ENUM_CONTINUE;
@@ -134,26 +131,22 @@ void mod_teardown() {
         lame_free(&mod);
     }
 
-    CLOSE_POINTER(mod_handles, destroy_fixture);
+    destroy_fixture(mod_handles);
 
     INFO("Closed");
 }
 
 struct Mod* get_mod(const char* name) {
-    for (struct Mod* mod = mods; mod != NULL; mod = mod->previous) {
+    for (struct Mod* mod = mods; mod != NULL; mod = mod->previous)
         if (SDL_strcmp(mod->name, name) == 0)
             return mod;
-    }
-
     return NULL;
 }
 
 ModID get_mod_hid(const char* name) {
-    for (struct Mod* mod = mods; mod != NULL; mod = mod->previous) {
+    for (struct Mod* mod = mods; mod != NULL; mod = mod->previous)
         if (SDL_strcmp(mod->name, name) == 0)
             return mod->hid;
-    }
-
     return 0;
 }
 

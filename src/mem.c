@@ -40,14 +40,12 @@ void _lame_realloc(void** ptr, size_t size, const char* filename, int line) {
 
 struct Fixture* _create_fixture(const char* filename, int line) {
     struct Fixture* fixture = _lame_alloc(sizeof(struct Fixture), filename, line);
-    fixture->handles = NULL;
-    fixture->size = 0;
-    fixture->capacity = 1;
-    fixture->next = 0;
-
     fixture->handles = _lame_alloc(sizeof(struct Handle), filename, line);
     fixture->handles[0].ptr = NULL;
     fixture->handles[0].generation = 0;
+    fixture->size = 0;
+    fixture->capacity = 1;
+    fixture->next = 0;
 
     // log_generic(src_basename(filename), line, "Created fixture %u", fixture);
     return fixture;
@@ -75,7 +73,7 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
             log_fatal(src_basename(filename), line, "!!! Out of handle capacity (%u >= %u)", old_capacity, HID_LIMIT);
 
         size_t new_capacity = fixture->capacity * 2;
-        lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle));
+        _lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
         fixture->capacity = new_capacity;
 
         for (int i = old_capacity; i < new_capacity; i++) {

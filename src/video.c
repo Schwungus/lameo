@@ -40,8 +40,8 @@ void video_update() {
 }
 
 void video_teardown() {
-    CLOSE_POINTER(gpu, SDL_GL_DestroyContext);
-    CLOSE_POINTER(window, SDL_DestroyWindow);
+    SDL_GL_DestroyContext(gpu);
+    SDL_DestroyWindow(window);
 
     INFO("Closed");
 }
