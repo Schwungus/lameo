@@ -1,45 +1,53 @@
 #include "player.h"
+#include "flags.h"
 #include "log.h"
 #include "mem.h"
 
-#define MAX_PLAYERS 4
+static FlagsID default_pflags = 0;
 
-struct Player players[MAX_PLAYERS] = {0};
-struct Player* ready_players = NULL;
-struct Player* active_players = NULL;
+static struct Player players[MAX_PLAYERS] = {0};
+static struct Player* ready_players = NULL;
+static struct Player* active_players = NULL;
 
 void player_init() {
+    if ((default_pflags = (FlagsID)SDL_CreateProperties()) == 0)
+        FATAL("Player init fail: %s", SDL_GetError());
+
     for (int i = 0; i < MAX_PLAYERS; i++) {
         players[i].slot = i;
 
         players[i].status = PS_INACTIVE;
-        players[i].previous_ready = NULL;
-        players[i].next_ready = NULL;
-        players[i].previous_active = NULL;
-        players[i].next_active = NULL;
+        players[i].previous_ready = players[i].next_ready = NULL;
+        players[i].previous_active = players[i].next_active = NULL;
 
-        players[i].input.move_x = 0;
-        players[i].input.move_y = 0;
-        players[i].input.aim_x = 0;
-        players[i].input.aim_y = 0;
+        players[i].input.move_x = players[i].input.move_y = 0;
+        players[i].input.aim_x = players[i].input.aim_y = 0;
         players[i].input.buttons = PB_NONE;
         players[i].last_input = players[i].input;
 
-        players[i].states = SDL_CreateProperties();
-        if (players[i].states == 0)
-            FATAL("Player %d state fail: %s", i, SDL_GetError());
+        if ((players[i].flags = (FlagsID)SDL_CreateProperties()) == 0)
+            FATAL("Player %d flags fail: %s", i, SDL_GetError());
 
-        players[i].room = NULL;
-        players[i].actor = NULL;
-        players[i].camera = NULL;
+        players[i].room = players[i].actor = players[i].camera = NULL;
     }
 
-    player_activate(0);
+    activate_player(0);
 
     INFO("Opened");
 }
 
-int player_activate(int slot) {
+void player_teardown() {
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        SDL_DestroyProperties((SDL_PropertiesID)players[i].flags);
+    }
+    ready_players = active_players = NULL;
+
+    SDL_DestroyProperties((SDL_PropertiesID)default_pflags);
+
+    INFO("Closed");
+}
+
+int activate_player(int slot) {
     if (slot < 0 || slot >= MAX_PLAYERS)
         return -1;
 
@@ -60,10 +68,9 @@ int player_activate(int slot) {
     return 0;
 }
 
-int player_deactivate(int slot) {
+int deactivate_player(int slot) {
     if (slot < 0 || slot >= MAX_PLAYERS)
         return -1;
-
     if (slot == 0) {
         WARN("Player 0 is always active");
         return -1;
@@ -95,14 +102,91 @@ int player_deactivate(int slot) {
     return 0;
 }
 
-void player_teardown() {
-    for (int i = 0; i < MAX_PLAYERS; i++) {
-        struct Player* player = &players[i];
-        CLOSE_HANDLE(player->states, SDL_DestroyProperties);
-    }
+// Player iterators
+extern int next_ready_player(int slot) {
+    if (IS_INVALID_PSLOT(slot))
+        return ready_players == NULL ? -1 : ready_players->slot;
+    return players[slot].next_ready == NULL ? -1 : players[slot].next_ready->slot;
+}
 
-    ready_players = NULL;
-    active_players = NULL;
+extern int next_active_player(int slot) {
+    if (IS_INVALID_PSLOT(slot))
+        return active_players == NULL ? -1 : active_players->slot;
+    return players[slot].next_active == NULL ? -1 : players[slot].next_active->slot;
+}
 
-    INFO("Closed");
+// Flag getters
+extern enum FlagTypes get_pflag_type(int slot, const char* name) {
+    return IS_INVALID_PSLOT(slot) ? FT_NULL : SDL_GetPropertyType((SDL_PropertiesID)players[slot].flags, name);
+}
+
+extern bool get_bool_pflag(int slot, const char* name, bool default_value) {
+    return IS_INVALID_PSLOT(slot) ? default_value
+                                  : SDL_GetBooleanProperty((SDL_PropertiesID)players[slot].flags, name, default_value);
+}
+
+extern Sint64 get_int_pflag(int slot, const char* name, Sint64 default_value) {
+    return IS_INVALID_PSLOT(slot) ? default_value
+                                  : SDL_GetNumberProperty((SDL_PropertiesID)players[slot].flags, name, default_value);
+}
+
+extern float get_float_pflag(int slot, const char* name, float default_value) {
+    return IS_INVALID_PSLOT(slot) ? default_value
+                                  : SDL_GetFloatProperty((SDL_PropertiesID)players[slot].flags, name, default_value);
+}
+
+extern const char* get_string_pflag(int slot, const char* name, const char* default_value) {
+    return IS_INVALID_PSLOT(slot) ? default_value
+                                  : SDL_GetStringProperty((SDL_PropertiesID)players[slot].flags, name, default_value);
+}
+
+// Flag setters
+extern void set_bool_pflag(int slot, const char* name, bool value) {
+    if (IS_VALID_PSLOT(slot))
+        SDL_SetBooleanProperty((SDL_PropertiesID)players[slot].flags, name, value);
+}
+
+extern void set_int_pflag(int slot, const char* name, Sint64 value) {
+    if (IS_VALID_PSLOT(slot))
+        SDL_SetNumberProperty((SDL_PropertiesID)players[slot].flags, name, value);
+}
+
+extern void set_float_pflag(int slot, const char* name, float value) {
+    if (IS_VALID_PSLOT(slot))
+        SDL_SetFloatProperty((SDL_PropertiesID)players[slot].flags, name, value);
+}
+
+extern void set_string_pflag(int slot, const char* name, const char* value) {
+    if (IS_VALID_PSLOT(slot))
+        SDL_SetStringProperty((SDL_PropertiesID)players[slot].flags, name, value);
+}
+
+// Flag utilities
+extern void reset_pflag(int slot, const char* name) {
+    if (IS_VALID_PSLOT(slot))
+        SDL_ClearProperty((SDL_PropertiesID)players[slot].flags, name);
+}
+
+extern bool toggle_pflag(int slot, const char* name) {
+    if (IS_INVALID_PSLOT(slot))
+        return false;
+    bool b = !(SDL_GetBooleanProperty((SDL_PropertiesID)players[slot].flags, name, false));
+    SDL_SetBooleanProperty((SDL_PropertiesID)players[slot].flags, name, b);
+    return b;
+}
+
+extern Sint64 increment_pflag(int slot, const char* name) {
+    if (IS_INVALID_PSLOT(slot))
+        return 0;
+    Sint64 i = SDL_GetNumberProperty((SDL_PropertiesID)players[slot].flags, name, 0) + 1;
+    SDL_SetNumberProperty((SDL_PropertiesID)players[slot].flags, name, i);
+    return i;
+}
+
+extern Sint64 decrement_pflag(int slot, const char* name) {
+    if (IS_INVALID_PSLOT(slot))
+        return 0;
+    Sint64 i = SDL_GetNumberProperty((SDL_PropertiesID)players[slot].flags, name, 0) - 1;
+    SDL_SetNumberProperty((SDL_PropertiesID)players[slot].flags, name, i);
+    return i;
 }

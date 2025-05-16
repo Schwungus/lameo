@@ -2,6 +2,7 @@
 
 #include "asset.h"
 #include "audio.h"
+#include "flags.h"
 #include "internal.h"
 #include "log.h"
 #include "mod.h"
@@ -17,9 +18,10 @@ void init() {
         FATAL("SDL fail: %s", SDL_GetError());
     video_init();
     audio_init();
+    flags_init();
+    player_init();
     mod_init();
     asset_init();
-    player_init();
 }
 
 void loop() {
@@ -29,11 +31,17 @@ void loop() {
 
         // Events
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT)
-                running = false;
-        }
+        while (SDL_PollEvent(&event))
+            switch (event.type) {
+                case SDL_EVENT_QUIT:
+                    running = false;
+                    break;
 
+                case SDL_EVENT_KEY_DOWN: {
+                    play_ui_sound(hid_to_sound(fetch_sound_hid("tick")), false, 0, 1, 1);
+                    break;
+                }
+            }
         if (!running)
             break;
 
@@ -51,9 +59,10 @@ void loop() {
 }
 
 void cleanup() {
-    player_teardown();
     asset_teardown();
     mod_teardown();
+    player_teardown();
+    flags_teardown();
     audio_teardown();
     video_teardown();
     log_teardown();
