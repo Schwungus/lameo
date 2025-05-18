@@ -10,7 +10,6 @@
 #include "video.h"
 
 #define TICKRATE 30
-#define TICKTIME (1000 / TICKRATE)
 
 void init() {
     log_init();
@@ -26,9 +25,9 @@ void init() {
 
 void loop() {
     bool running = true;
+    uint64_t last_time = SDL_GetTicks();
+    float ticks = 0;
     while (running) {
-        const uint64_t start = SDL_GetTicks();
-
         // Events
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -46,15 +45,17 @@ void loop() {
             break;
 
         // Tick
+        const uint64_t current_time = SDL_GetTicks();
+        ticks += (float)(current_time - last_time) * ((float)TICKRATE / 1000.);
+        while (ticks >= 1) {
+            // UI, game ...
+            ticks -= 1;
+        }
+        last_time = current_time;
 
         // Draw
         video_update();
         audio_update();
-
-        // Wait
-        const uint64_t delta = start - SDL_GetTicks();
-        if (delta < TICKTIME)
-            SDL_Delay(TICKTIME - delta);
     }
 }
 
