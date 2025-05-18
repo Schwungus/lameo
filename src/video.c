@@ -7,16 +7,18 @@ static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
 
 static GLuint blank_texture = 0;
-static GLuint rformats[RT_SIZE] = {0};
 
-static struct Shader* rshaders[RT_SIZE] = {NULL};
+static enum RenderTypes render_stage = RT_MAIN;
+static struct MainBatch main_batch = {0};
+static struct WorldBatch world_batch = {0};
+
+static struct Shader* default_shaders[RT_SIZE] = {NULL};
 static struct Shader* current_shader = NULL;
 
 void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
 
     window = SDL_CreateWindow("lameo", 640, 480, SDL_WINDOW_OPENGL);
     if (window == NULL)
@@ -43,73 +45,56 @@ void video_init() {
     INFO("Opened");
 }
 
-// clang-format off
-static struct MainVertex vertices[] = {
-  // position------   color----------   uv--
-    {-0.5, -0.5, 0,   255, 0, 0, 255,   0, 0},
-    {0.5,  -0.5, 0,   0, 255, 0, 255,   0, 0},
-    {0,     0.5, 0,   0, 0, 255, 255,   0, 0},
-};
-// clang-format on
-static GLuint vbo = 0;
-
 void video_init_render() {
     // Blank texture
     glGenTextures(1, &blank_texture);
     glBindTexture(GL_TEXTURE_2D, blank_texture);
-    static const uint8_t pixel[4] = {255, 255, 255, 255};
+    const uint8_t pixel[4] = {255, 255, 255, 255};
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-    // Vertex Formats
-    glCreateVertexArrays(RT_SIZE, rformats);
+    // Main batch
+    glGenVertexArrays(1, &main_batch.vao);
+    glBindVertexArray(main_batch.vao);
+    glEnableVertexArrayAttrib(main_batch.vao, VATT_POSITION);
+    glVertexArrayAttribFormat(main_batch.vao, VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
+    glEnableVertexArrayAttrib(main_batch.vao, VATT_COLOR);
+    glVertexArrayAttribFormat(main_batch.vao, VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLubyte) * 4);
+    glEnableVertexArrayAttrib(main_batch.vao, VATT_UV);
+    glVertexArrayAttribFormat(main_batch.vao, VATT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 2);
 
-    // Main format
-    // in vec3 i_position; (X, Y, Z)
-    glVertexArrayAttribFormat(rformats[RT_MAIN], SHAT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
-    glEnableVertexArrayAttrib(rformats[RT_MAIN], SHAT_POSITION);
-    // in vec4 i_color; (R, G, B, A)
-    glVertexArrayAttribFormat(rformats[RT_MAIN], SHAT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLubyte) * 4);
-    glEnableVertexArrayAttrib(rformats[RT_MAIN], SHAT_COLOR);
-    // in vec2 i_uv; (U, V)
-    glVertexArrayAttribFormat(rformats[RT_MAIN], SHAT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 2);
-    glEnableVertexArrayAttrib(rformats[RT_MAIN], SHAT_UV);
+    main_batch.vertices = lame_alloc(3 * sizeof(struct MainVertex));
+    main_batch.vertex_count = 0;
+    main_batch.vertex_capacity = 3;
 
-    // World format
-    // in vec3 i_position; (X, Y, Z)
-    glVertexArrayAttribFormat(rformats[RT_WORLD], 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 0);
-    // in vec3 i_normal; (X, Y, Z)
-    glVertexArrayAttribFormat(rformats[RT_WORLD], 1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 1);
-    // in vec4 i_color; (R, G, B, A)
-    glVertexArrayAttribFormat(rformats[RT_WORLD], 2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLubyte) * 4);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 2);
-    // in vec4 i_uv; (U, V, U, V)
-    glVertexArrayAttribFormat(rformats[RT_WORLD], 3, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 3);
-    // in ivec4 i_bone_index; (I, J, K, L)
-    glVertexArrayAttribIFormat(rformats[RT_WORLD], 4, 4, GL_UNSIGNED_BYTE, sizeof(GLubyte) * 4);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 4);
-    // in vec4 i_bone_weight; (X, Y, Z, W)
-    glVertexArrayAttribFormat(rformats[RT_WORLD], 5, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(GLfloat) * 4);
-    glEnableVertexArrayAttrib(rformats[RT_WORLD], 5);
+    glGenBuffers(1, &main_batch.vbo);
+    glBindVertexArray(main_batch.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
 
-    // Dummy VBO
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(rformats[RT_MAIN]);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(SHAT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex), (void*)0);
+    glEnableVertexAttribArray(VATT_POSITION);
     glVertexAttribPointer(
-        SHAT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct MainVertex), (void*)(3 * sizeof(GLfloat))
+        VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, position)
     );
+    glEnableVertexAttribArray(VATT_COLOR);
     glVertexAttribPointer(
-        SHAT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex),
-        (void*)((3 * sizeof(GLfloat)) + (4 * sizeof(GLubyte)))
+        VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, color)
     );
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(VATT_UV);
+    glVertexAttribPointer(
+        VATT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, uv)
+    );
+
+    main_batch.color[0] = main_batch.color[1] = main_batch.color[2] = main_batch.color[3] = 1;
+    main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 255;
+    main_batch.stencil[3] = 0;
+    main_batch.texture = blank_texture;
+    main_batch.blend_src[0] = GL_SRC_COLOR;
+    main_batch.blend_src[1] = GL_SRC_ALPHA;
+    main_batch.blend_dest[0] = GL_DST_COLOR;
+    main_batch.blend_dest[1] = GL_DST_ALPHA;
 
     // Shaders
-    if (rshaders[RT_MAIN] == NULL && (rshaders[RT_MAIN] = fetch_shader("main")) == NULL)
+    if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
         FATAL("Main shader \"main\" not found");
 
     INFO("Opened for rendering");
@@ -118,21 +103,131 @@ void video_init_render() {
 void video_update() {
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, 640, 480);
-    glUseProgram(rshaders[RT_MAIN]->program);
-    glBindTexture(GL_TEXTURE_2D, blank_texture);
-    glBindVertexArray(rformats[RT_MAIN]);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // World
+    render_stage = RT_WORLD;
+    // ...
+
+    // Main
+    render_stage = RT_MAIN;
+    set_shader(NULL);
+    main_vertex(-0.5, -0.5, 0, 255, 0, 0, 255, 0, 1);
+    main_vertex(0.5, -0.5, 0, 0, 255, 0, 255, 1, 1);
+    main_vertex(0, 0.5, 0, 0, 0, 255, 255, 0.5, 0);
+    submit_batch();
 
     SDL_GL_SwapWindow(window);
 }
 
 void video_teardown() {
-    glDeleteVertexArrays(RT_SIZE, rformats);
-    glDeleteBuffers(1, &vbo);
     glDeleteTextures(1, &blank_texture);
+
+    glDeleteVertexArrays(1, &main_batch.vao);
+    glDeleteBuffers(1, &main_batch.vbo);
+    lame_free(&main_batch.vertices);
 
     SDL_GL_DestroyContext(gpu);
     SDL_DestroyWindow(window);
 
     INFO("Closed");
+}
+
+// Shaders 'n' Uniforms
+void set_shader(struct Shader* shader) {
+    struct Shader* target = (shader == NULL) ? default_shaders[render_stage] : shader;
+
+    if (current_shader != target) {
+        submit_batch();
+        current_shader = target;
+        glUseProgram(target->program);
+    }
+}
+
+void set_uint_uniform(const char* name, GLuint value) {
+    glUniform1ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
+}
+
+void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
+    glUniform2ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+}
+
+void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
+    glUniform3ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+}
+
+void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
+    glUniform4ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+}
+
+void set_int_uniform(const char* name, GLint value) {
+    glUniform1i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
+}
+
+void set_ivec2_uniform(const char* name, GLint x, GLint y) {
+    glUniform2i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+}
+
+void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
+    glUniform3i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+}
+
+void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
+    glUniform4i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+}
+
+void set_float_uniform(const char* name, GLfloat value) {
+    glUniform1f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
+}
+
+void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
+    glUniform2f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+}
+
+void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
+    glUniform3f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+}
+
+void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+    glUniform4f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+}
+
+// Batch
+void submit_batch() {
+    switch (render_stage) {
+        case RT_MAIN: {
+            if (main_batch.vertex_count <= 0)
+                return;
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, main_batch.texture);
+            set_int_uniform("u_texture", 0);
+            glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
+            glBufferSubData(
+                GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices
+            );
+            glBindVertexArray(main_batch.vao);
+            glBlendFuncSeparate(
+                main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
+            );
+            glDrawArrays(GL_TRIANGLES, 0, main_batch.vertex_count);
+            main_batch.vertex_count = 0;
+            break;
+        }
+
+        case RT_WORLD:
+            break;
+    }
+}
+
+// Main
+void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
+    if (main_batch.vertex_count >= main_batch.vertex_capacity) {
+        main_batch.vertex_capacity *= 2;
+        INFO("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
+        lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
+    }
+
+    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex
+    ){x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
+      u, v};
 }

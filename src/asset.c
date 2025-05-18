@@ -11,8 +11,8 @@
 static struct Shader* shaders = NULL;
 static struct Fixture* shader_handles = NULL;
 
-static struct Sprite* sprites = NULL;
-static struct Fixture* sprite_handles = NULL;
+static struct TexturePage* texture_pages = NULL;
+static struct Fixture* texture_page_handles = NULL;
 
 static struct Material* materials = NULL;
 static struct Fixture* material_handles = NULL;
@@ -31,7 +31,7 @@ static struct Fixture* track_handles = NULL;
 
 void asset_init() {
     shader_handles = create_fixture();
-    sprite_handles = create_fixture();
+    texture_page_handles = create_fixture();
     material_handles = create_fixture();
     model_handles = create_fixture();
     font_handles = create_fixture();
@@ -49,7 +49,7 @@ void asset_teardown() {
     clear_music(1);
 
     destroy_fixture(shader_handles);
-    destroy_fixture(sprite_handles);
+    destroy_fixture(texture_page_handles);
     destroy_fixture(material_handles);
     destroy_fixture(model_handles);
     destroy_fixture(font_handles);
@@ -61,7 +61,7 @@ void asset_teardown() {
 
 static char path_helper[ASSET_PATH_MAX];
 
-// #region Shaders
+// Shaders
 void load_shader(const char* name) {
     if (get_shader(name) != NULL)
         return;
@@ -134,12 +134,12 @@ void load_shader(const char* name) {
     shader->program = glCreateProgram();
     glAttachShader(shader->program, vertex);
     glAttachShader(shader->program, fragment);
-    glBindAttribLocation(shader->program, SHAT_POSITION, "i_position");
-    glBindAttribLocation(shader->program, SHAT_NORMAL, "i_normal");
-    glBindAttribLocation(shader->program, SHAT_COLOR, "i_color");
-    glBindAttribLocation(shader->program, SHAT_UV, "i_uv");
-    glBindAttribLocation(shader->program, SHAT_BONE_INDEX, "i_bone_index");
-    glBindAttribLocation(shader->program, SHAT_BONE_WEIGHT, "i_bone_weight");
+    glBindAttribLocation(shader->program, VATT_POSITION, "i_position");
+    glBindAttribLocation(shader->program, VATT_NORMAL, "i_normal");
+    glBindAttribLocation(shader->program, VATT_COLOR, "i_color");
+    glBindAttribLocation(shader->program, VATT_UV, "i_uv");
+    glBindAttribLocation(shader->program, VATT_BONE_INDEX, "i_bone_index");
+    glBindAttribLocation(shader->program, VATT_BONE_WEIGHT, "i_bone_weight");
     glLinkProgram(shader->program);
 
     glGetProgramiv(shader->program, GL_LINK_STATUS, &success);
@@ -207,9 +207,30 @@ void clear_shaders(int teardown) {
         shader = it;
     }
 }
-// #endregion Shaders
 
 // Sounds
+struct Sound* create_sound(const char* name) {
+    struct Sound* sound = lame_alloc(sizeof(struct Sound));
+
+    // General
+    sound->hid = (SoundID)create_handle(sound_handles, sound);
+    SDL_strlcpy(sound->name, name, sizeof(sound->name));
+    sound->transient = 0;
+    if (sounds != NULL)
+        sounds->next = sound;
+    sound->previous = sounds;
+    sound->next = NULL;
+    sounds = sound;
+
+    // Data
+    sound->samples = NULL;
+    sound->num_samples = 0;
+    sound->gain = 1;
+    sound->pitch[0] = sound->pitch[1] = 1;
+
+    return sound;
+}
+
 void load_sound(const char* name) {
     if (get_sound(name) != NULL)
         return;
@@ -225,24 +246,12 @@ void load_sound(const char* name) {
             return;
         }
 
-        struct Sound* sound = lame_alloc(sizeof(struct Sound));
-
-        // General
-        sound->hid = (SoundID)create_handle(sound_handles, sound);
-        SDL_strlcpy(sound->name, name, sizeof(sound->name));
-        sound->transient = 0;
-        if (sounds != NULL)
-            sounds->next = sound;
-        sound->previous = sounds;
-        sound->next = NULL;
-        sounds = sound;
+        struct Sound* sound = create_sound(name);
 
         // Data
         sound->samples = lame_alloc(sizeof(struct Sample*));
         sound->num_samples = 1;
         load_sample(file, &sound->samples[0]);
-        sound->gain = 1;
-        sound->pitch[0] = sound->pitch[1] = 1;
 
         INFO("Loaded sound \"%s\" (%u)", name, sound->hid);
         return;
@@ -262,23 +271,7 @@ void load_sound(const char* name) {
     }
 
     // Allocate empty sound at this point
-    struct Sound* sound = lame_alloc(sizeof(struct Sound));
-
-    // General
-    sound->hid = (SoundID)create_handle(sound_handles, sound);
-    SDL_strlcpy(sound->name, name, sizeof(sound->name));
-    sound->transient = 0;
-    if (sounds != NULL)
-        sounds->next = sound;
-    sound->previous = sounds;
-    sound->next = NULL;
-    sounds = sound;
-
-    // Data
-    sound->samples = NULL;
-    sound->num_samples = 0;
-    sound->gain = 1;
-    sound->pitch[0] = sound->pitch[1] = 1;
+    struct Sound* sound = create_sound(name);
 
     // Samples
     yyjson_val* value = yyjson_obj_get(root, "sample");
@@ -322,9 +315,8 @@ void load_sound(const char* name) {
     }
 
     // Gain
-    if (yyjson_is_num(value = yyjson_obj_get(root, "gain"))) {
+    if (yyjson_is_num(value = yyjson_obj_get(root, "gain")))
         sound->gain = (float)yyjson_get_num(value);
-    }
 
     // Pitch
     value = yyjson_obj_get(root, "pitch");

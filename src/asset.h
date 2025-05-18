@@ -10,7 +10,7 @@
 #define JSON_FLAGS (YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS)
 
 typedef HandleID ShaderID;
-typedef HandleID SpriteID;
+typedef HandleID TexturePageID;
 typedef HandleID MaterialID;
 typedef HandleID ModelID;
 typedef HandleID FontID;
@@ -19,16 +19,6 @@ typedef HandleID TrackID;
 
 typedef FMOD_SOUND Sample;
 typedef FMOD_SOUND Stream;
-
-enum ShaderAttributes {
-    SHAT_POSITION,
-    SHAT_NORMAL,
-    SHAT_COLOR,
-    SHAT_UV,
-    SHAT_BONE_INDEX,
-    SHAT_BONE_WEIGHT,
-    SHAT_SIZE,
-};
 
 struct Shader {
     ShaderID hid;
@@ -40,11 +30,21 @@ struct Shader {
     SDL_PropertiesID uniforms;
 };
 
-struct Sprite {
-    SpriteID hid;
+struct Texture {
+    char name[ASSET_NAME_MAX];
+    GLuint texture;
+    uint16_t size[2], offset[2];
+    GLfloat uvs[4];
+};
+
+struct TexturePage {
+    TexturePageID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
-    struct Sprite *previous, *next;
+    struct TexturePage *previous, *next;
+
+    struct Texture* textures;
+    size_t num_textures;
 };
 
 struct Material {
@@ -99,11 +99,11 @@ ShaderID fetch_shader_hid(const char*);
 struct Shader* get_shader(const char*);
 ShaderID get_shader_hid(const char*);
 inline struct Shader* hid_to_shader(ShaderID);
-void set_int_uniform(struct Shader*, const char*, GLint);
 void destroy_shader(struct Shader*);
 void destroy_shader_hid(ShaderID);
 void clear_shaders(int);
 
+struct Sound* create_sound(const char*);
 void load_sound(const char*);
 struct Sound* fetch_sound(const char*);
 SoundID fetch_sound_hid(const char*);

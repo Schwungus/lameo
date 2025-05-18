@@ -13,6 +13,16 @@ enum RenderTypes {
     RT_SIZE,
 };
 
+enum VertexAttributes {
+    VATT_POSITION,
+    VATT_NORMAL,
+    VATT_COLOR,
+    VATT_UV,
+    VATT_BONE_INDEX,
+    VATT_BONE_WEIGHT,
+    VATT_SIZE,
+};
+
 struct MainVertex {
     GLfloat position[3];
     GLubyte color[4];
@@ -28,7 +38,62 @@ struct WorldVertex {
     GLfloat bone_weight[4];
 };
 
+struct MainBatch {
+    GLuint vao, vbo;
+    size_t vertex_count, vertex_capacity;
+    struct MainVertex* vertices;
+
+    GLfloat color[4];
+    GLubyte stencil[4];
+    GLint texture;
+    GLenum blend_src[2], blend_dest[2];
+};
+
+struct WorldBatch {
+    GLuint vao, vbo;
+    size_t vertex_count, vertex_capacity;
+    struct WorldVertex* vertices;
+
+    GLfloat color[4];
+    GLubyte stencil[4];
+    GLint texture;
+    GLubyte alpha_test, bright;
+    GLenum blend_src[2], blend_dest[2];
+};
+
 void video_init();
 void video_init_render();
 void video_update();
 void video_teardown();
+
+// Shaders 'n' uniforms
+void set_shader(struct Shader*);
+
+void set_uint_uniform(const char*, GLuint);
+void set_uvec2_uniform(const char*, GLuint, GLuint);
+void set_uvec3_uniform(const char*, GLuint, GLuint, GLuint);
+void set_uvec4_uniform(const char*, GLuint, GLuint, GLuint, GLuint);
+
+void set_int_uniform(const char*, GLint);
+void set_ivec2_uniform(const char*, GLint, GLint);
+void set_ivec3_uniform(const char*, GLint, GLint, GLint);
+void set_ivec4_uniform(const char*, GLint, GLint, GLint, GLint);
+
+void set_float_uniform(const char*, GLfloat);
+void set_vec2_uniform(const char*, GLfloat, GLfloat);
+void set_vec3_uniform(const char*, GLfloat, GLfloat, GLfloat);
+void set_vec4_uniform(const char*, GLfloat, GLfloat, GLfloat, GLfloat);
+
+// Batch
+void submit_batch();
+
+// Main
+void set_main_color(GLubyte, GLubyte, GLubyte);
+void set_main_alpha(GLubyte);
+void set_main_stencil_color(GLubyte, GLubyte, GLubyte);
+void set_main_stencil_alpha(GLubyte);
+void set_main_texture(GLint);
+
+void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
+
+// World
