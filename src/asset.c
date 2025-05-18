@@ -8,6 +8,9 @@
 
 #define ASSET_PATH_MAX 256
 
+static struct Shader* shaders = NULL;
+static struct Fixture* shader_handles = NULL;
+
 static struct Sprite* sprites = NULL;
 static struct Fixture* sprite_handles = NULL;
 
@@ -27,6 +30,7 @@ static struct Track* music = NULL;
 static struct Fixture* track_handles = NULL;
 
 void asset_init() {
+    shader_handles = create_fixture();
     sprite_handles = create_fixture();
     material_handles = create_fixture();
     model_handles = create_fixture();
@@ -34,13 +38,17 @@ void asset_init() {
     sound_handles = create_fixture();
     track_handles = create_fixture();
 
+    video_init_render();
+
     INFO("Opened");
 }
 
 void asset_teardown() {
+    clear_shaders(1);
     clear_sounds(1);
     clear_music(1);
 
+    destroy_fixture(shader_handles);
     destroy_fixture(sprite_handles);
     destroy_fixture(material_handles);
     destroy_fixture(model_handles);
@@ -52,6 +60,154 @@ void asset_teardown() {
 }
 
 static char path_helper[ASSET_PATH_MAX];
+
+// #region Shaders
+void load_shader(const char* name) {
+    if (get_shader(name) != NULL)
+        return;
+
+    // Vertex shader
+    SDL_snprintf(path_helper, sizeof(path_helper), "shaders/%s.vsh", name);
+    const char* file = get_file(path_helper, NULL);
+    if (file == NULL) {
+        WARN("Vertex shader for \"%s\" not found", name);
+        return;
+    }
+
+    GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
+
+    GLchar* code = (GLchar*)SDL_LoadFile(file, NULL);
+    if (code == NULL)
+        FATAL("Failed to load vertex shader \"%s\": %s", name, SDL_GetError());
+    glShaderSource(vertex, 1, &code, NULL);
+    glCompileShader(vertex);
+
+    GLint success;
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        lame_realloc(&code, 1024); // Why not reuse the code string?
+        glGetShaderInfoLog(vertex, 1024, NULL, code);
+        FATAL("Failed to compile vertex shader \"%s\":\n%s", name, code);
+    }
+    lame_free(&code);
+
+    // Fragment shader
+    SDL_snprintf(path_helper, sizeof(path_helper), "shaders/%s.fsh", name);
+    file = get_file(path_helper, NULL);
+    if (file == NULL) {
+        WARN("Fragment shader for \"%s\" not found", name);
+        glDeleteShader(vertex);
+        return;
+    }
+
+    GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
+
+    code = (GLchar*)SDL_LoadFile(file, NULL);
+    if (code == NULL)
+        FATAL("Failed to load fragment shader for \"%s\": %s", name, SDL_GetError());
+    glShaderSource(fragment, 1, &code, NULL);
+    glCompileShader(fragment);
+
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        lame_realloc(&code, 1024);
+        glGetShaderInfoLog(fragment, 1024, NULL, code);
+        FATAL("Failed to compile fragment shader for \"%s\":\n%s", name, code);
+    }
+    // Hold on to "code", we still have to attach the shaders.
+    // lame_free(&code);
+
+    // Shader struct
+    struct Shader* shader = lame_alloc(sizeof(struct Shader));
+
+    // General
+    shader->hid = (ShaderID)create_handle(shader_handles, shader);
+    SDL_strlcpy(shader->name, name, sizeof(shader->name));
+    shader->transient = 1; // No sense in unloading shaders
+    if (shaders != NULL)
+        shaders->next = shader;
+    shader->previous = shaders;
+    shader->next = NULL;
+    shaders = shader;
+
+    // Program
+    shader->program = glCreateProgram();
+    glAttachShader(shader->program, vertex);
+    glAttachShader(shader->program, fragment);
+    glBindAttribLocation(shader->program, SHAT_POSITION, "i_position");
+    glBindAttribLocation(shader->program, SHAT_NORMAL, "i_normal");
+    glBindAttribLocation(shader->program, SHAT_COLOR, "i_color");
+    glBindAttribLocation(shader->program, SHAT_UV, "i_uv");
+    glBindAttribLocation(shader->program, SHAT_BONE_INDEX, "i_bone_index");
+    glBindAttribLocation(shader->program, SHAT_BONE_WEIGHT, "i_bone_weight");
+    glLinkProgram(shader->program);
+
+    glGetProgramiv(shader->program, GL_LINK_STATUS, &success);
+    if (!success) {
+        lame_realloc(&code, 1024);
+        glGetProgramInfoLog(shader->program, 1024, NULL, code);
+        FATAL("Failed to link shader program for \"%s\":\n%s", name, code);
+    }
+    lame_free(&code); // Now we're good
+
+    glDeleteShader(vertex);
+    glDeleteShader(fragment);
+
+    // Uniforms
+    if ((shader->uniforms = SDL_CreateProperties()) == 0)
+        FATAL("Shader \"%s\" uniforms fail: %s", name, SDL_GetError());
+    GLsizei unum, ulen;
+    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &(GLint)unum);
+    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &(GLint)ulen);
+    for (GLsizei i = 0; i < unum; i++) {
+        GLchar uname[ASSET_NAME_MAX];
+        glGetActiveUniform(shader->program, i, ulen, NULL, NULL, NULL, uname);
+        if (!SDL_SetNumberProperty(shader->uniforms, uname, (Sint64)glGetUniformLocation(shader->program, uname)))
+            FATAL("Shader \"%s\" uniform \"%s\" fail: %s", name, uname, SDL_GetError());
+    }
+
+    INFO("Loaded shader \"%s\" (%u)", name, shader->hid);
+}
+
+struct Shader* get_shader(const char* name) {
+    for (struct Shader* shader = shaders; shader != NULL; shader = shader->previous)
+        if (SDL_strcmp(shader->name, name) == 0)
+            return shader;
+    return NULL;
+}
+
+struct Shader* fetch_shader(const char* name) {
+    load_shader(name);
+    return get_shader(name);
+}
+
+void destroy_shader(struct Shader* shader) {
+    if (shaders == shader)
+        shaders = shader->previous;
+    if (shader->previous != NULL)
+        shader->previous->next = shader->next;
+    if (shader->next != NULL)
+        shader->next->previous = shader->previous;
+
+    glDeleteProgram(shader->program);
+    SDL_DestroyProperties(shader->uniforms);
+
+    INFO("Freed shader \"%s\" (%u)", shader->name, shader->hid);
+    destroy_handle(shader_handles, shader->hid);
+    lame_free(&shader);
+}
+
+void clear_shaders(int teardown) {
+    struct Shader* shader = shaders;
+
+    while (shader != NULL) {
+        struct Shader* it = shader->previous;
+        if (!shader->transient || teardown)
+            destroy_shader(shader);
+        shader = it;
+    }
+}
+// #endregion Shaders
 
 // Sounds
 void load_sound(const char* name) {
@@ -94,13 +250,13 @@ void load_sound(const char* name) {
 
     yyjson_doc* json = yyjson_read_file(file, JSON_FLAGS, NULL, NULL);
     if (json == NULL) {
-        ERROR("Failed to load Sound \"%s.json\"", name);
+        WTF("Failed to load Sound \"%s.json\"", name);
         return;
     }
 
     yyjson_val* root = yyjson_doc_get_root(json);
     if (!yyjson_is_obj(root)) {
-        ERROR("Expected root object in \"%s.json\", got %s", name, yyjson_get_type_desc(root));
+        WTF("Expected root object in \"%s.json\", got %s", name, yyjson_get_type_desc(root));
         yyjson_doc_free(json);
         return;
     }
@@ -149,7 +305,7 @@ void load_sound(const char* name) {
                 continue;
             } else if (!yyjson_is_str(entry)) {
                 sound->samples[i] = NULL;
-                ERROR("Expected \"sample\" index %u as string or null, got %s", i, yyjson_get_type_desc(entry));
+                WTF("Expected \"sample\" index %u as string or null, got %s", i, yyjson_get_type_desc(entry));
                 continue;
             }
 
@@ -162,7 +318,7 @@ void load_sound(const char* name) {
             load_sample(file, &sound->samples[i]);
         }
     } else if (!yyjson_is_null(value)) {
-        ERROR("Expected \"sample\" as string, array or null in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
+        WTF("Expected \"sample\" as string, array or null in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
     }
 
     // Gain

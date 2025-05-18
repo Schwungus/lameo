@@ -4,7 +4,7 @@
 
 #define INFO(format, ...) log_generic(src_basename(__FILE__), __LINE__, format, ##__VA_ARGS__)
 #define WARN(format, ...) log_generic(src_basename(__FILE__), __LINE__, "! " format, ##__VA_ARGS__)
-#define ERROR(format, ...) log_generic(src_basename(__FILE__), __LINE__, "!! " format, ##__VA_ARGS__)
+#define WTF(format, ...) log_generic(src_basename(__FILE__), __LINE__, "!! " format, ##__VA_ARGS__)
 #define FATAL(format, ...) log_fatal(src_basename(__FILE__), __LINE__, format, ##__VA_ARGS__)
 
 const char* src_basename(const char*);

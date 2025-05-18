@@ -88,7 +88,7 @@ void log_fatal(const char* filename, int line, const char* format, ...) {
     if (log_file != NULL) {
         SDL_IOprintf(log_file, message);
         SDL_CloseIO(log_file);
-        // log_file = NULL;
+        log_file = NULL;
     }
 
     char dialog[1024];

@@ -57,7 +57,7 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
             SDL_strlcpy(mod->title, title == NULL ? fname : title, MOD_NAME_MAX);
             mod->version = (uint16_t)yyjson_get_uint(yyjson_obj_get(root, "version"));
         } else {
-            ERROR("Expected root object in \"%s/mod.json\", got %s", fname, yyjson_get_type_desc(root));
+            WTF("Expected root object in \"%s/mod.json\", got %s", fname, yyjson_get_type_desc(root));
         }
 
         yyjson_doc_free(json);
@@ -103,7 +103,7 @@ void mod_init() {
     if (json != NULL) {
         disabled = yyjson_doc_get_root(json);
         if (!yyjson_is_arr(disabled)) {
-            ERROR("Expected root array in \"disabled.json\", got %s", yyjson_get_type_desc(disabled));
+            WTF("Expected root array in \"disabled.json\", got %s", yyjson_get_type_desc(disabled));
             yyjson_doc_free(json);
             json = NULL;
             disabled = NULL;

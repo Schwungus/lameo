@@ -45,7 +45,14 @@ void audio_init() {
     INFO("Opened");
 }
 
+static bool dummy = false;
 void audio_update() {
+    if (!dummy) {
+        const struct Track* track = hid_to_track(fetch_track_hid("sample"));
+        if (track != NULL)
+            FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);
+        dummy = true;
+    }
     FMOD_System_Update(speaker);
 }
 
@@ -70,7 +77,7 @@ audio_debug_callback(FMOD_DEBUG_FLAGS flags, const char* file, int line, const c
 extern void load_sample(const char* filename, FMOD_SOUND** sample) {
     FMOD_RESULT result = FMOD_System_CreateSound(speaker, filename, FMOD_CREATESAMPLE, NULL, sample);
     if (result != FMOD_OK) {
-        ERROR("Sample fail: %s", FMOD_ErrorString(result));
+        WTF("Sample fail: %s", FMOD_ErrorString(result));
         *sample = NULL;
     }
 }
@@ -102,7 +109,7 @@ extern void load_stream(const char* filename, FMOD_SOUND** stream) {
     FMOD_RESULT result =
         FMOD_System_CreateSound(speaker, filename, FMOD_CREATESTREAM | FMOD_ACCURATETIME, NULL, stream);
     if (result != FMOD_OK) {
-        ERROR("Stream fail: %s", FMOD_ErrorString(result));
+        WTF("Stream fail: %s", FMOD_ErrorString(result));
         *stream = NULL;
     }
 }

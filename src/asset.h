@@ -4,10 +4,12 @@
 #include <yyjson.h>
 
 #include "mem.h"
+#include "video.h"
 
 #define ASSET_NAME_MAX 128
 #define JSON_FLAGS (YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS)
 
+typedef HandleID ShaderID;
 typedef HandleID SpriteID;
 typedef HandleID MaterialID;
 typedef HandleID ModelID;
@@ -17,6 +19,26 @@ typedef HandleID TrackID;
 
 typedef FMOD_SOUND Sample;
 typedef FMOD_SOUND Stream;
+
+enum ShaderAttributes {
+    SHAT_POSITION,
+    SHAT_NORMAL,
+    SHAT_COLOR,
+    SHAT_UV,
+    SHAT_BONE_INDEX,
+    SHAT_BONE_WEIGHT,
+    SHAT_SIZE,
+};
+
+struct Shader {
+    ShaderID hid;
+    char name[ASSET_NAME_MAX];
+    bool transient;
+    struct Shader *previous, *next;
+
+    GLuint program;
+    SDL_PropertiesID uniforms;
+};
 
 struct Sprite {
     SpriteID hid;
@@ -70,6 +92,17 @@ struct Track {
 
 void asset_init();
 void asset_teardown();
+
+void load_shader(const char*);
+struct Shader* fetch_shader(const char*);
+ShaderID fetch_shader_hid(const char*);
+struct Shader* get_shader(const char*);
+ShaderID get_shader_hid(const char*);
+inline struct Shader* hid_to_shader(ShaderID);
+void set_int_uniform(struct Shader*, const char*, GLint);
+void destroy_shader(struct Shader*);
+void destroy_shader_hid(ShaderID);
+void clear_shaders(int);
 
 void load_sound(const char*);
 struct Sound* fetch_sound(const char*);

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.27.0 FATAL_ERROR)
 
 project(
     lameo
@@ -18,7 +18,7 @@ set(BUILD_STATIC_LIBS OFF)
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 
-# SDL3 (3.2.12)
+# SDL3 (3.2.14)
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)
 FetchContent_Declare(
@@ -28,8 +28,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL3)
 
-# OpenGL (ES 2.0)
+# OpenGL
 find_package(OpenGL REQUIRED)
+
+# GLAD (2.0.8, OpenGL 3.3 Core)
+FetchContent_Declare(
+    glad
+    GIT_REPOSITORY https://github.com/Dav1dde/glad.git
+    GIT_TAG        v2.0.8
+    SOURCE_SUBDIR  cmake
+)
+FetchContent_MakeAvailable(glad)
+glad_add_library(glad_gl_core_33 SHARED REPRODUCIBLE LOADER API gl:core=3.3)
 
 # FMOD Core API (2.03)
 add_subdirectory(${CMAKE_SOURCE_DIR}/include/fmod)
@@ -42,7 +52,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yyjson)
 
-set(LIBS SDL3::SDL3-shared OpenGL::GL fmod yyjson)
+set(LIBS SDL3::SDL3-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson)
 set(LIBTYPE SHARED)
 
 # Build
