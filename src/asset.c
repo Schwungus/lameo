@@ -1,4 +1,5 @@
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3_image/SDL_image.h>
 #include <yyjson.h>
 
 #include "asset.h"
@@ -11,8 +12,8 @@
 static struct Shader* shaders = NULL;
 static struct Fixture* shader_handles = NULL;
 
-static struct TexturePage* texture_pages = NULL;
-static struct Fixture* texture_page_handles = NULL;
+static struct Texture* textures = NULL;
+static struct Fixture* texture_handles = NULL;
 
 static struct Material* materials = NULL;
 static struct Fixture* material_handles = NULL;
@@ -31,7 +32,7 @@ static struct Fixture* track_handles = NULL;
 
 void asset_init() {
     shader_handles = create_fixture();
-    texture_page_handles = create_fixture();
+    texture_handles = create_fixture();
     material_handles = create_fixture();
     model_handles = create_fixture();
     font_handles = create_fixture();
@@ -45,11 +46,12 @@ void asset_init() {
 
 void asset_teardown() {
     clear_shaders(1);
+    clear_textures(1);
     clear_sounds(1);
     clear_music(1);
 
     destroy_fixture(shader_handles);
-    destroy_fixture(texture_page_handles);
+    destroy_fixture(texture_handles);
     destroy_fixture(material_handles);
     destroy_fixture(model_handles);
     destroy_fixture(font_handles);
@@ -205,6 +207,120 @@ void clear_shaders(int teardown) {
         if (!shader->transient || teardown)
             destroy_shader(shader);
         shader = it;
+    }
+}
+
+// Textures
+void load_texture(const char* name) {
+    if (get_texture(name) != NULL)
+        return;
+
+    SDL_snprintf(path_helper, sizeof(path_helper), "textures/%s.*", name);
+    const char* file = get_file(path_helper, ".json");
+    if (file == NULL) {
+        WARN("Texture \"%s\" not found", name);
+        return;
+    }
+
+    SDL_Surface* surface = IMG_Load(file);
+    if (surface == NULL)
+        FATAL("Failed to load image for texture \"s\": %s", SDL_GetError());
+
+    // Texture struct
+    struct Texture* texture = lame_alloc(sizeof(struct Texture));
+
+    // General
+    texture->hid = (TextureID)create_handle(texture_handles, texture);
+    SDL_strlcpy(texture->name, name, sizeof(texture->name));
+    if (textures != NULL)
+        textures->next = texture;
+    texture->previous = textures;
+    texture->next = NULL;
+    textures = texture;
+
+    // Data
+    texture->size[0] = surface->w;
+    texture->size[1] = surface->h;
+    texture->offset[0] = texture->offset[1] = 0;
+    texture->uvs[0] = texture->uvs[1] = 0;
+    texture->uvs[2] = texture->uvs[3] = 1;
+
+    glGenTextures(1, &texture->texture);
+    glBindTexture(GL_TEXTURE_2D, texture->texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    SDL_Surface* surface_rgba = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
+    if (surface_rgba == NULL)
+        FATAL("Failed to load image for texture \"s\": %s", SDL_GetError());
+    SDL_DestroySurface(surface);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA8, surface_rgba->w, surface_rgba->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface_rgba->pixels
+    );
+    SDL_DestroySurface(surface_rgba);
+
+    INFO("Loaded texture \"%s\" (%u)", name, texture->hid);
+}
+
+struct Texture* fetch_texture(const char* name) {
+    load_texture(name);
+    return get_texture(name);
+}
+
+TextureID fetch_texture_hid(const char* name) {
+    load_texture(name);
+    return get_texture_hid(name);
+}
+
+struct Texture* get_texture(const char* name) {
+    for (struct Texture* texture = textures; texture != NULL; texture = texture->previous)
+        if (SDL_strcmp(texture->name, name) == 0)
+            return texture;
+    return NULL;
+}
+
+TextureID get_texture_hid(const char* name) {
+    for (struct Texture* texture = textures; texture != NULL; texture = texture->previous)
+        if (SDL_strcmp(texture->name, name) == 0)
+            return texture->hid;
+    return 0;
+}
+
+extern struct Texture* hid_to_texture(TextureID hid) {
+    return (struct Texture*)hid_to_pointer(texture_handles, (TextureID)hid);
+}
+
+void destroy_texture(struct Texture* texture) {
+    if (textures == texture)
+        textures = texture->previous;
+    if (texture->previous != NULL)
+        texture->previous->next = texture->next;
+    if (texture->next != NULL)
+        texture->next->previous = texture->previous;
+
+    glDeleteTextures(1, &texture->texture);
+
+    INFO("Freed texture \"%s\" (%u)", texture->name, texture->hid);
+    destroy_handle(texture_handles, texture->hid);
+    lame_free(&texture);
+}
+
+void destroy_texture_hid(TextureID hid) {
+    struct Texture* texture = (struct Texture*)hid_to_pointer(texture_handles, (HandleID)hid);
+    if (texture != NULL)
+        destroy_texture(texture);
+}
+
+void clear_textures(int teardown) {
+    struct Texture* texture = textures;
+
+    while (texture != NULL) {
+        struct Texture* it = texture->previous;
+        if (!texture->transient || teardown)
+            destroy_texture(texture);
+        texture = it;
     }
 }
 

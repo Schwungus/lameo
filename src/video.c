@@ -100,21 +100,29 @@ void video_init_render() {
     INFO("Opened for rendering");
 }
 
+static int dummy = 0;
+static TextureID dumtex = 0;
 void video_update() {
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, 640, 480);
 
     // World
-    render_stage = RT_WORLD;
+    set_render_stage(RT_WORLD);
+    submit_world_batch();
     // ...
 
     // Main
     render_stage = RT_MAIN;
     set_shader(NULL);
+    if (!dummy) {
+        dumtex = fetch_texture_hid("dumdum");
+        dummy = 1;
+    }
+    set_main_texture(hid_to_texture(dumtex));
     main_vertex(-0.5, -0.5, 0, 255, 0, 0, 255, 0, 1);
     main_vertex(0.5, -0.5, 0, 0, 255, 0, 255, 1, 1);
     main_vertex(0, 0.5, 0, 0, 0, 255, 255, 0.5, 0);
-    submit_batch();
+    submit_main_batch();
 
     SDL_GL_SwapWindow(window);
 }
@@ -191,35 +199,52 @@ void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat
     glUniform4f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-// Batch
+// Render stages
+void set_render_stage(enum RenderTypes type) {
+    if (render_stage != type) {
+        submit_batch();
+        render_stage = type;
+    }
+}
+
 void submit_batch() {
     switch (render_stage) {
-        case RT_MAIN: {
-            if (main_batch.vertex_count <= 0)
-                return;
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, main_batch.texture);
-            set_int_uniform("u_texture", 0);
-            glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
-            glBufferSubData(
-                GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices
-            );
-            glBindVertexArray(main_batch.vao);
-            glBlendFuncSeparate(
-                main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
-            );
-            glDrawArrays(GL_TRIANGLES, 0, main_batch.vertex_count);
-            main_batch.vertex_count = 0;
+        case RT_MAIN:
+            submit_main_batch();
             break;
-        }
-
         case RT_WORLD:
+            submit_world_batch();
             break;
     }
 }
 
 // Main
+void submit_main_batch() {
+    if (main_batch.vertex_count <= 0)
+        return;
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, main_batch.texture);
+    set_int_uniform("u_texture", 0);
+    glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices);
+    glBindVertexArray(main_batch.vao);
+    glBlendFuncSeparate(
+        main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
+    );
+    glDrawArrays(GL_TRIANGLES, 0, main_batch.vertex_count);
+    main_batch.vertex_count = 0;
+}
+
+void set_main_texture(struct Texture* texture) {
+    GLint target = texture == NULL ? blank_texture : texture->texture;
+
+    if (main_batch.texture != target) {
+        submit_main_batch();
+        main_batch.texture = target;
+    }
+}
+
 void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
     if (main_batch.vertex_count >= main_batch.vertex_capacity) {
         main_batch.vertex_capacity *= 2;
@@ -227,7 +252,11 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
         lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
     }
 
-    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex
-    ){x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
-      u, v};
+    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){
+        x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
+        u, v
+    };
 }
+
+// World
+void submit_world_batch() {}

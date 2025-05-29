@@ -10,7 +10,7 @@
 #define JSON_FLAGS (YYJSON_READ_ALLOW_COMMENTS | YYJSON_READ_ALLOW_TRAILING_COMMAS)
 
 typedef HandleID ShaderID;
-typedef HandleID TexturePageID;
+typedef HandleID TextureID;
 typedef HandleID MaterialID;
 typedef HandleID ModelID;
 typedef HandleID FontID;
@@ -31,20 +31,14 @@ struct Shader {
 };
 
 struct Texture {
+    TextureID hid;
     char name[ASSET_NAME_MAX];
+    bool transient;
+    struct Texture *previous, *next;
+
     GLuint texture;
     uint16_t size[2], offset[2];
     GLfloat uvs[4];
-};
-
-struct TexturePage {
-    TexturePageID hid;
-    char name[ASSET_NAME_MAX];
-    bool transient;
-    struct TexturePage *previous, *next;
-
-    struct Texture* textures;
-    size_t num_textures;
 };
 
 struct Material {
@@ -102,6 +96,16 @@ inline struct Shader* hid_to_shader(ShaderID);
 void destroy_shader(struct Shader*);
 void destroy_shader_hid(ShaderID);
 void clear_shaders(int);
+
+void load_texture(const char*);
+struct Texture* fetch_texture(const char*);
+TextureID fetch_texture_hid(const char*);
+struct Texture* get_texture(const char*);
+TextureID get_texture_hid(const char*);
+inline struct Texture* hid_to_texture(TextureID);
+void destroy_texture(struct Texture*);
+void destroy_texture_hid(TextureID);
+void clear_textures(int);
 
 struct Sound* create_sound(const char*);
 void load_sound(const char*);

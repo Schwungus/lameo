@@ -84,16 +84,19 @@ void set_vec2_uniform(const char*, GLfloat, GLfloat);
 void set_vec3_uniform(const char*, GLfloat, GLfloat, GLfloat);
 void set_vec4_uniform(const char*, GLfloat, GLfloat, GLfloat, GLfloat);
 
-// Batch
+// Render stages
+void set_render_stage(enum RenderTypes);
 void submit_batch();
 
 // Main
+void submit_main_batch();
 void set_main_color(GLubyte, GLubyte, GLubyte);
 void set_main_alpha(GLubyte);
 void set_main_stencil_color(GLubyte, GLubyte, GLubyte);
 void set_main_stencil_alpha(GLubyte);
-void set_main_texture(GLint);
+void set_main_texture(struct Texture*);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 
 // World
+void submit_world_batch();

@@ -28,6 +28,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SDL3)
 
+# SDL_image (3.2.4)
+set(SDLIMAGE_AVIF OFF)
+set(SDLIMAGE_TIF OFF)
+set(SDLIMAGE_WEBP OFF)
+FetchContent_Declare(
+    SDL3_image
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+    GIT_TAG release-3.2.4
+)
+FetchContent_MakeAvailable(SDL3_image)
+
 # OpenGL
 find_package(OpenGL REQUIRED)
 
@@ -52,7 +63,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yyjson)
 
-set(LIBS SDL3::SDL3-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson)
+set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson)
 set(LIBTYPE SHARED)
 
 # Build
