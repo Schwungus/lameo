@@ -26,8 +26,8 @@ enum PlayerButtons {
 };
 
 struct PlayerInput {
-    int8_t move_x, move_y;
-    int16_t aim_x, aim_y;
+    int8_t move[2];
+    int16_t aim[2];
     uint8_t buttons;
 };
 
@@ -37,6 +37,7 @@ struct Player {
     enum PlayerStatus status;
     struct Player *previous_ready, *next_ready;
     struct Player *previous_active, *next_active;
+    struct Player *previous_neighbor, *next_neighbor;
 
     struct PlayerInput input, last_input;
 
@@ -51,11 +52,14 @@ void player_teardown();
 int activate_player(int);
 int deactivate_player(int);
 
+inline struct Player* get_player(int);
+
 inline int next_ready_player(int);
 inline int next_active_player(int);
+inline int next_neighbor_player(int);
 
 #define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
-#define IS_VALID_PSLOT(slot) (slot > 0 && slot < MAX_PLAYERS)
+#define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
 
 inline enum FlagTypes get_pflag_type(int, const char*);
 inline bool get_bool_pflag(int, const char*, bool);

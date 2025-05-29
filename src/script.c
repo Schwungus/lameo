@@ -113,8 +113,75 @@ SCRIPT_GETTER_FLAG(increment_flag, integer);
 SCRIPT_GETTER_FLAG(decrement_flag, integer);
 
 // Players
+SCRIPT_FUNCTION(get_player_status) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    lua_pushinteger(L, player == NULL ? PS_INACTIVE : player->status);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_move) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    if (player == NULL) {
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+    } else {
+        lua_pushinteger(L, player->input.move[0]);
+        lua_pushinteger(L, player->input.move[1]);
+    }
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_aim) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    if (player == NULL) {
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+    } else {
+        lua_pushinteger(L, player->input.aim[0]);
+        lua_pushinteger(L, player->input.aim[1]);
+    }
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_buttons) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    lua_pushinteger(L, player == NULL ? PB_NONE : player->input.buttons);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_last_move) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    if (player == NULL) {
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+    } else {
+        lua_pushinteger(L, player->last_input.move[0]);
+        lua_pushinteger(L, player->last_input.move[1]);
+    }
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_last_aim) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    if (player == NULL) {
+        lua_pushinteger(L, 0);
+        lua_pushinteger(L, 0);
+    } else {
+        lua_pushinteger(L, player->last_input.aim[0]);
+        lua_pushinteger(L, player->last_input.aim[1]);
+    }
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_last_buttons) {
+    struct Player* player = get_player(lua_tointeger(L, -1));
+    lua_pushinteger(L, player == NULL ? PB_NONE : player->last_input.buttons);
+    return 1;
+}
+
 SCRIPT_GETTER_SLOT(next_ready_player, integer);
 SCRIPT_GETTER_SLOT(next_active_player, integer);
+SCRIPT_GETTER_SLOT(next_neighbor_player, integer);
 
 SCRIPT_FUNCTION(get_pflag_type) {
     switch (get_pflag_type(lua_tointeger(L, -2), lua_tostring(L, -1))) {
@@ -237,6 +304,8 @@ void script_init() {
     EXPOSE_FUNCTION(decrement_flag);
 
     // Players
+    EXPOSE_INTEGER(MAX_PLAYERS);
+
     EXPOSE_INTEGER(PS_INACTIVE);
     EXPOSE_INTEGER(PS_READY);
     EXPOSE_INTEGER(PS_ACTIVE);
@@ -251,8 +320,17 @@ void script_init() {
     EXPOSE_INTEGER(PB_INVENTORY4);
     EXPOSE_INTEGER(PB_AIM);
 
+    EXPOSE_FUNCTION(get_player_status);
+    EXPOSE_FUNCTION(get_player_move);
+    EXPOSE_FUNCTION(get_player_aim);
+    EXPOSE_FUNCTION(get_player_buttons);
+    EXPOSE_FUNCTION(get_player_last_move);
+    EXPOSE_FUNCTION(get_player_last_aim);
+    EXPOSE_FUNCTION(get_player_last_buttons);
+
     EXPOSE_FUNCTION(next_ready_player);
     EXPOSE_FUNCTION(next_active_player);
+    EXPOSE_FUNCTION(next_neighbor_player);
 
     EXPOSE_FUNCTION(get_pflag_type);
     EXPOSE_FUNCTION(get_pflag);

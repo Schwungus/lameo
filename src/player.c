@@ -19,9 +19,10 @@ void player_init() {
         players[i].status = PS_INACTIVE;
         players[i].previous_ready = players[i].next_ready = NULL;
         players[i].previous_active = players[i].next_active = NULL;
+        players[i].previous_neighbor = players[i].next_neighbor = NULL;
 
-        players[i].input.move_x = players[i].input.move_y = 0;
-        players[i].input.aim_x = players[i].input.aim_y = 0;
+        players[i].input.move[0] = players[i].input.move[1] = 0;
+        players[i].input.aim[0] = players[i].input.aim[1] = 0;
         players[i].input.buttons = PB_NONE;
         players[i].last_input = players[i].input;
 
@@ -103,6 +104,10 @@ int deactivate_player(int slot) {
 }
 
 // Player iterators
+extern struct Player* get_player(int slot) {
+    return IS_VALID_PSLOT(slot) ? &players[slot] : NULL;
+}
+
 extern int next_ready_player(int slot) {
     if (IS_INVALID_PSLOT(slot))
         return ready_players == NULL ? -1 : ready_players->slot;
@@ -113,6 +118,10 @@ extern int next_active_player(int slot) {
     if (IS_INVALID_PSLOT(slot))
         return active_players == NULL ? -1 : active_players->slot;
     return players[slot].next_active == NULL ? -1 : players[slot].next_active->slot;
+}
+
+extern int next_neighbor_player(int slot) {
+    return (IS_INVALID_PSLOT(slot) || players[slot].next_neighbor == NULL) ? -1 : players[slot].next_neighbor->slot;
 }
 
 // Flag getters
