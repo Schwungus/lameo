@@ -55,7 +55,7 @@ FetchContent_Declare(
     SOURCE_SUBDIR  cmake
 )
 FetchContent_MakeAvailable(glad)
-glad_add_library(glad_gl_core_33 SHARED REPRODUCIBLE LOADER API gl:core=3.3)
+glad_add_library(glad_gl_core_33 SHARED REPRODUCIBLE API gl:core=3.3)
 
 # FMOD Core API (2.03)
 add_subdirectory(${CMAKE_SOURCE_DIR}/include/fmod)
