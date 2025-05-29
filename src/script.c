@@ -350,6 +350,15 @@ void script_teardown() {
     INFO("Closed");
 }
 
+void set_import_path(const char* path) {
+    lua_getglobal(context, "package");
+    lua_getfield(context, -1, "path");
+    lua_pop(context, 1);
+    lua_pushstring(context, path);
+    lua_setfield(context, -2, "path");
+    lua_pop(context, 1);
+}
+
 void _execute_buffer(void* buffer, size_t size, const char* name, const char* filename, int line) {
     if (luaL_loadbuffer(context, buffer, size, name))
         log_fatal(src_basename(filename), line, "Failed to load script \"%s\": %s", name, lua_tostring(context, -1));

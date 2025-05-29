@@ -133,12 +133,14 @@ void mod_init_script() {
         while (mod->previous != NULL)
             mod = mod->previous;
 
-        char filename[MOD_PATH_MAX];
+        char path[MOD_PATH_MAX];
         void* buffer;
         size_t size;
         while (mod != NULL) {
-            SDL_snprintf(filename, MOD_PATH_MAX, "%sscript.lua", mod->path);
-            if ((buffer = SDL_LoadFile(filename, &size)) != NULL) {
+            SDL_snprintf(path, MOD_PATH_MAX, "%sscript.lua", mod->path);
+            if ((buffer = SDL_LoadFile(path, &size)) != NULL) {
+                SDL_snprintf(path, MOD_PATH_MAX, "%s?.lua", mod->path);
+                set_import_path(path);
                 execute_buffer(buffer, size, mod->name);
                 lame_free(&buffer);
             }

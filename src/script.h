@@ -43,4 +43,6 @@
 void script_init();
 void script_teardown();
 
+void set_import_path(const char*);
+
 void _execute_buffer(void*, size_t, const char*, const char*, int);
