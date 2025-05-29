@@ -91,7 +91,7 @@ void log_script(const char* source, const char* name, int line, const char* form
 }
 
 void log_fatal(const char* filename, int line, const char* format, ...) {
-    char message[256];
+    char message[1024];
     int msgpos = SDL_snprintf(message, sizeof(message), "[%s:%d] !!! ", filename, line);
 
     va_list args;
@@ -109,7 +109,7 @@ void log_fatal(const char* filename, int line, const char* format, ...) {
         log_file = NULL;
     }
 
-    char dialog[1024];
+    char dialog[2048];
     SDL_snprintf(dialog, sizeof(dialog), "Fatal error!\n\n%s\nCheck \"%s\" for more details.", message, LOG_FILENAME);
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "lameo", dialog, NULL);
 
