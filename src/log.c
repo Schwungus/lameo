@@ -72,6 +72,24 @@ void log_generic(const char* filename, int line, const char* format, ...) {
     va_end(args2);
 }
 
+void log_script(const char* source, const char* name, int line, const char* format, ...) {
+    printf("{%s:%s:%d} ", source, name, line);
+    va_list args, args2;
+    va_start(args, format);
+    va_copy(args2, args);
+    vprintf(format, args);
+    va_end(args);
+    printf("\n");
+    fflush(stdout);
+
+    if (log_file != NULL) {
+        SDL_IOprintf(log_file, "{%s:%s:%d} ", source, name, line);
+        SDL_IOvprintf(log_file, format, args2);
+        SDL_IOprintf(log_file, "\n");
+    }
+    va_end(args2);
+}
+
 void log_fatal(const char* filename, int line, const char* format, ...) {
     char message[256];
     int msgpos = SDL_snprintf(message, sizeof(message), "[%s:%d] !!! ", filename, line);

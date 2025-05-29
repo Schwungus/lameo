@@ -11,5 +11,6 @@ const char* src_basename(const char*);
 void log_callback(void*, int, SDL_LogPriority, const char*);
 void log_init();
 void log_generic(const char*, int, const char*, ...);
+void log_script(const char*, const char*, int, const char*, ...);
 void log_fatal(const char*, int, const char*, ...);
 void log_teardown();

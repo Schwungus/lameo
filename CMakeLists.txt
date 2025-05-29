@@ -21,6 +21,10 @@ set(FETCHCONTENT_QUIET FALSE)
 # SDL3 (3.2.14)
 set(SDL_SHARED ON)
 set(SDL_STATIC OFF)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_RENDER OFF)
+set(SDL_AUDIO OFF)
+
 FetchContent_Declare(
     SDL3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -32,6 +36,7 @@ FetchContent_MakeAvailable(SDL3)
 set(SDLIMAGE_AVIF OFF)
 set(SDLIMAGE_TIF OFF)
 set(SDLIMAGE_WEBP OFF)
+
 FetchContent_Declare(
     SDL3_image
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
@@ -63,7 +68,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yyjson)
 
-set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson)
+# Lua (5.4.7)
+set(LUA_ENABLE_SHARED ON)
+set(LUA_ENABLE_TESTING OFF)
+
+FetchContent_Declare(
+    lua
+    GIT_REPOSITORY https://github.com/walterschell/Lua.git
+    GIT_TAG 3ed55a56eaa05c9221f40b3c07d0e908eb1067b0
+)
+FetchContent_MakeAvailable(lua)
+
+set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson lua_shared)
 set(LIBTYPE SHARED)
 
 # Build

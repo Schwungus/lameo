@@ -21,6 +21,7 @@ void init() {
     player_init();
     mod_init();
     asset_init();
+    script_init();
 }
 
 void loop() {
@@ -60,6 +61,7 @@ void loop() {
 }
 
 void cleanup() {
+    script_teardown();
     asset_teardown();
     mod_teardown();
     player_teardown();

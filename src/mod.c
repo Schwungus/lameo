@@ -7,6 +7,7 @@
 #include "asset.h"
 #include "log.h"
 #include "mod.h"
+#include "script.h"
 
 static struct Mod* mods = NULL;
 static struct Fixture* mod_handles = NULL;
@@ -64,7 +65,10 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     }
 
     // Push
+    if (mods != NULL)
+        mods->next = mod;
     mod->previous = mods;
+    mod->next = NULL;
     mods = mod;
 
     INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
@@ -120,6 +124,30 @@ void mod_init() {
         FATAL("Internal mod \"0main\" not found");
 
     INFO("Opened");
+}
+
+void mod_init_script() {
+    // Load entry scripts from first to last mod
+    struct Mod* mod = mods;
+    if (mod != NULL) {
+        while (mod->previous != NULL)
+            mod = mod->previous;
+
+        char filename[MOD_PATH_MAX];
+        void* buffer;
+        size_t size;
+        while (mod != NULL) {
+            SDL_snprintf(filename, MOD_PATH_MAX, "%sscript.lua", mod->path);
+            if ((buffer = SDL_LoadFile(filename, &size)) != NULL) {
+                execute_buffer(buffer, size, mod->name);
+                lame_free(&buffer);
+            }
+
+            mod = mod->next;
+        }
+    }
+
+    INFO("Opened for scripting");
 }
 
 void mod_teardown() {
