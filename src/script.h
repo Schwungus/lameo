@@ -2,6 +2,8 @@
 
 #include <lua.h>
 
+#include "log.h"
+
 #define SCRIPT_PREFIX(name) s_##name
 #define SCRIPT_PUSH(type) lua_push##type
 #define SCRIPT_TO(type) lua_to##type
@@ -37,6 +39,11 @@
         SCRIPT_PUSH(type)(L, name(lua_tointeger(L, -2), lua_tostring(L, -1)));                                         \
         return 1;                                                                                                      \
     }
+
+#define SCRIPT_LOG(format, ...)                                                                                        \
+    lua_getstack(L, 1, &debug);                                                                                        \
+    lua_getinfo(L, "nSl", &debug);                                                                                     \
+    log_script(debug.source, debug.name, debug.currentline, format, ##__VA_ARGS__);
 
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
 

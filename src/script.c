@@ -19,18 +19,44 @@ SCRIPT_FUNCTION(tostring) {
     return 1;
 }
 
+// Definitions
+SCRIPT_FUNCTION(define_handler) {
+    luaL_checkstring(L, -2);
+    luaL_checktype(L, -1, LUA_TTABLE);
+
+    SCRIPT_LOG("Defined Handler \"%s\"", lua_tostring(L, -2));
+
+    return 0;
+}
+
+SCRIPT_FUNCTION(define_ui) {
+    luaL_checkstring(L, -2);
+    luaL_checktype(L, -1, LUA_TTABLE);
+
+    SCRIPT_LOG("Defined UI \"%s\"", lua_tostring(L, -2));
+
+    return 0;
+}
+
+SCRIPT_FUNCTION(define_actor) {
+    luaL_checkstring(L, -2);
+    luaL_checktype(L, -1, LUA_TTABLE);
+
+    SCRIPT_LOG("Defined Actor \"%s\"", lua_tostring(L, -2));
+
+    return 0;
+}
+
 // Debug
 SCRIPT_FUNCTION(print) {
     lua_getstack(L, 1, &debug);
     lua_getinfo(L, "nSl", &debug);
-    const char* str = lua_tostring(L, -1);
-    log_script(debug.source, debug.name, debug.currentline, str == NULL ? "(null)" : str);
+    log_script(debug.source, debug.name, debug.currentline, "%s", lua_tostring(L, -1));
     return 0;
 }
 
 SCRIPT_FUNCTION(error) {
-    luaL_error(L, lua_tostring(L, -1));
-    return 0;
+    return luaL_error(L, lua_tostring(L, -1));
 }
 
 // Flags
@@ -38,17 +64,17 @@ SCRIPT_FUNCTION(get_flag_type) {
     switch (get_flag_type(lua_tointeger(L, -2), lua_tostring(L, -1))) {
         default:
         case FT_NULL:
-            lua_pushstring(L, "nil");
+            lua_pushstring(L, lua_typename(L, LUA_TNIL));
             break;
         case FT_BOOL:
-            lua_pushstring(L, "boolean");
+            lua_pushstring(L, lua_typename(L, LUA_TBOOLEAN));
             break;
         case FT_INT:
         case FT_FLOAT:
-            lua_pushstring(L, "number");
+            lua_pushstring(L, lua_typename(L, LUA_TNUMBER));
             break;
         case FT_STRING:
-            lua_pushstring(L, "string");
+            lua_pushstring(L, lua_typename(L, LUA_TSTRING));
             break;
     }
 
@@ -187,17 +213,17 @@ SCRIPT_FUNCTION(get_pflag_type) {
     switch (get_pflag_type(lua_tointeger(L, -2), lua_tostring(L, -1))) {
         default:
         case FT_NULL:
-            lua_pushstring(L, "nil");
+            lua_pushstring(L, lua_typename(L, LUA_TNIL));
             break;
         case FT_BOOL:
-            lua_pushstring(L, "boolean");
+            lua_pushstring(L, lua_typename(L, LUA_TBOOLEAN));
             break;
         case FT_INT:
         case FT_FLOAT:
-            lua_pushstring(L, "number");
+            lua_pushstring(L, lua_typename(L, LUA_TNUMBER));
             break;
         case FT_STRING:
-            lua_pushstring(L, "string");
+            lua_pushstring(L, lua_typename(L, LUA_TSTRING));
             break;
     }
 
@@ -283,6 +309,11 @@ void script_init() {
     EXPOSE_PACKAGE(LUA_LOADLIBNAME, luaopen_package);
     EXPOSE_PACKAGE(LUA_MATHLIBNAME, luaopen_math);
     EXPOSE_PACKAGE(LUA_STRLIBNAME, luaopen_string);
+
+    // Info
+    EXPOSE_FUNCTION(define_handler);
+    EXPOSE_FUNCTION(define_actor);
+    EXPOSE_FUNCTION(define_ui);
 
     // Types
     EXPOSE_FUNCTION(tostring);
