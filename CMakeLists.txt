@@ -57,6 +57,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glad)
 glad_add_library(glad_gl_core_33 SHARED REPRODUCIBLE API gl:core=3.3)
 
+# cglm
+FetchContent_Declare(
+    cglm
+    GIT_REPOSITORY https://github.com/recp/cglm.git
+    GIT_TAG v0.9.6
+)
+FetchContent_MakeAvailable(cglm)
+
 # FMOD Core API (2.03)
 add_subdirectory(${CMAKE_SOURCE_DIR}/include/fmod)
 
@@ -79,7 +87,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua)
 
-set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 fmod yyjson lua_shared)
+set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_shared)
 set(LIBTYPE SHARED)
 
 # Build

@@ -15,6 +15,8 @@ static struct WorldBatch world_batch = {0};
 static struct Shader* default_shaders[RT_SIZE] = {NULL};
 static struct Shader* current_shader = NULL;
 
+static mat4 model_matrix, view_matrix, projection_matrix, mvp_matrix;
+
 void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -41,6 +43,12 @@ void video_init() {
     INFO("OpenGL shading language version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     glClearColor(0, 0, 0, 1);
+    glm_mat4_identity(model_matrix);
+    glm_mat4_identity(view_matrix);
+    glm_mat4_identity(projection_matrix);
+    glm_ortho(0, 640, 480, 0, -1000, 1000, projection_matrix);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
     INFO("Opened");
 }
@@ -119,9 +127,12 @@ void video_update() {
         dummy = 1;
     }
     set_main_texture(hid_to_texture(dumtex));
-    main_vertex(-0.5, -0.5, 0, 255, 0, 0, 255, 0, 1);
+    main_vertex(0, 480, 0, 255, 0, 0, 255, 0, 1);
+    main_vertex(640, 480, 0, 0, 255, 0, 255, 1, 1);
+    main_vertex(320, 0, 0, 0, 0, 255, 255, 0.5, 0);
+    /*main_vertex(-0.5, -0.5, 0, 255, 0, 0, 255, 0, 1);
     main_vertex(0.5, -0.5, 0, 0, 255, 0, 255, 1, 1);
-    main_vertex(0, 0.5, 0, 0, 0, 255, 255, 0.5, 0);
+    main_vertex(0, 0.5, 0, 0, 0, 255, 255, 0.5, 0);*/
     submit_main_batch();
 
     SDL_GL_SwapWindow(window);
@@ -151,52 +162,70 @@ void set_shader(struct Shader* shader) {
     }
 }
 
-void set_uint_uniform(const char* name, GLuint value) {
+extern void set_uint_uniform(const char* name, GLuint value) {
     glUniform1ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
+extern void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
     glUniform2ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
+extern void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
     glUniform3ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
+extern void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
     glUniform4ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-void set_int_uniform(const char* name, GLint value) {
+extern void set_int_uniform(const char* name, GLint value) {
     glUniform1i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_ivec2_uniform(const char* name, GLint x, GLint y) {
+extern void set_ivec2_uniform(const char* name, GLint x, GLint y) {
     glUniform2i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
+extern void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
     glUniform3i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
+extern void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
     glUniform4i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-void set_float_uniform(const char* name, GLfloat value) {
+extern void set_float_uniform(const char* name, GLfloat value) {
     glUniform1f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
+extern void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
     glUniform2f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
+extern void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
     glUniform3f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+extern void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
     glUniform4f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+}
+
+extern void set_mat2_uniform(const char* name, mat2* matrix) {
+    glUniformMatrix2fv(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
+    );
+}
+
+extern void set_mat3_uniform(const char* name, mat3* matrix) {
+    glUniformMatrix3fv(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
+    );
+}
+
+extern void set_mat4_uniform(const char* name, mat4* matrix) {
+    glUniformMatrix4fv(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
+    );
 }
 
 // Render stages
@@ -223,6 +252,10 @@ void submit_main_batch() {
     if (main_batch.vertex_count <= 0)
         return;
 
+    set_mat4_uniform("u_model_matrix", &model_matrix);
+    set_mat4_uniform("u_view_matrix", &view_matrix);
+    set_mat4_uniform("u_projection_matrix", &projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, main_batch.texture);
     set_int_uniform("u_texture", 0);
