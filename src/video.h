@@ -47,7 +47,7 @@ struct MainBatch {
 
     GLfloat color[4];
     GLubyte stencil[4];
-    GLint texture;
+    GLuint texture;
     GLenum blend_src[2], blend_dest[2];
 };
 
@@ -58,7 +58,7 @@ struct WorldBatch {
 
     GLfloat color[4];
     GLubyte stencil[4];
-    GLint texture;
+    GLuint texture;
     GLubyte alpha_test, bright;
     GLenum blend_src[2], blend_dest[2];
 };
@@ -103,6 +103,8 @@ void set_main_stencil_alpha(GLubyte);
 void set_main_texture(struct Texture*);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
+void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
+void main_string(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat);
 
 // World
 void submit_world_batch();

@@ -47,6 +47,7 @@ void asset_init() {
 void asset_teardown() {
     clear_shaders(1);
     clear_textures(1);
+    clear_fonts(1);
     clear_sounds(1);
     clear_music(1);
 
@@ -238,6 +239,11 @@ void load_texture(const char* name) {
     texture->next = NULL;
     textures = texture;
 
+    // Inheritance
+    texture->parent = NULL;
+    texture->children = NULL;
+    texture->num_children = 0;
+
     // Data
     texture->size[0] = surface->w;
     texture->size[1] = surface->h;
@@ -334,7 +340,13 @@ void destroy_texture(struct Texture* texture) {
     if (texture->next != NULL)
         texture->next->previous = texture->previous;
 
-    glDeleteTextures(1, &texture->texture);
+    if (texture->children != NULL) {
+        for (int i = 0; i < texture->num_children; i++)
+            destroy_texture_hid(texture->children[i]);
+        lame_free(&texture->children);
+    }
+    if (texture->parent == NULL)
+        glDeleteTextures(1, &texture->texture);
 
     INFO("Freed texture \"%s\" (%u)", texture->name, texture->hid);
     destroy_handle(texture_handles, texture->hid);
@@ -355,6 +367,170 @@ void clear_textures(int teardown) {
         if (!texture->transient || teardown)
             destroy_texture(texture);
         texture = it;
+    }
+}
+
+// Fonts
+void load_font(const char* name) {
+    if (get_font(name) != NULL)
+        return;
+
+    SDL_snprintf(path_helper, sizeof(path_helper), "fonts/%s.json", name);
+    const char* file = get_file(path_helper, NULL);
+    if (file == NULL) {
+        WARN("Font \"%s\" not found", name);
+        return;
+    }
+
+    yyjson_doc* json = yyjson_read_file(file, JSON_FLAGS, NULL, NULL);
+    if (json == NULL) {
+        WTF("Failed to load Font \"%s.json\"", name);
+        return;
+    }
+
+    yyjson_val* root = yyjson_doc_get_root(json);
+    if (!yyjson_is_obj(root)) {
+        WTF("Expected root object in \"%s.json\", got %s", name, yyjson_get_type_desc(root));
+        yyjson_doc_free(json);
+        return;
+    }
+
+    struct Font* font = lame_alloc(sizeof(struct Font));
+
+    // General
+    font->hid = (FontID)create_handle(font_handles, font);
+    SDL_strlcpy(font->name, name, sizeof(font->name));
+    font->transient = 0;
+    if (fonts != NULL)
+        fonts->next = font;
+    font->previous = fonts;
+    font->next = NULL;
+    fonts = font;
+
+    // Data
+    font->texture = 0;
+    font->size = 0;
+    font->glyphs = NULL;
+    font->num_glyphs = 0;
+
+    // Texture
+    struct Texture* texture;
+    yyjson_val* value = yyjson_obj_get(root, "texture");
+    if (yyjson_is_str(value)) {
+        if ((texture = fetch_texture(yyjson_get_str(value))) == NULL)
+            FATAL("Font texture \"%s\" not found", name);
+        font->texture = texture->hid;
+    } else {
+        FATAL("Expected \"texture\" as string in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
+    }
+
+    // Glyphs
+    value = yyjson_obj_get(root, "size");
+    if (!yyjson_is_uint(value))
+        FATAL("Expected \"size\" as uint in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
+    if ((font->size = yyjson_get_uint(value)) <= 0)
+        FATAL("Expected non-zero size for font \"%s\"", name);
+
+    value = yyjson_obj_get(root, "glyphs");
+    if (!yyjson_is_obj(value))
+        FATAL("Expected \"glyphs\" as object in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
+
+    size_t i, n;
+    yyjson_val *key, *val;
+    yyjson_obj_foreach(value, i, n, key, val) {
+        if (!yyjson_is_obj(val))
+            FATAL(
+                "Expected glyph \"%c\" as object in \"%s.json\", got %s", yyjson_get_str(key)[0], name,
+                yyjson_get_type_desc(value)
+            );
+
+        unsigned char gid = yyjson_get_str(key)[0];
+        if (font->num_glyphs <= gid)
+            if (font->glyphs == NULL) {
+                font->num_glyphs = gid + 1;
+                font->glyphs = lame_alloc(font->num_glyphs * sizeof(struct Glyph));
+                lame_set(font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph));
+            } else {
+                size_t old_num = font->num_glyphs;
+                font->num_glyphs = gid + 1;
+                lame_realloc(&font->glyphs, font->num_glyphs * sizeof(struct Glyph));
+                lame_set(font->glyphs + old_num, 0, (font->num_glyphs - old_num) * sizeof(struct Glyph));
+            }
+
+        struct Glyph* glyph = &font->glyphs[gid];
+        glyph->size[0] = (GLfloat)yyjson_get_uint(yyjson_obj_get(val, "width"));
+        glyph->size[1] = (GLfloat)yyjson_get_uint(yyjson_obj_get(val, "height"));
+        glyph->offset[0] = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "x_offset"));
+        glyph->offset[1] = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "y_offset"));
+        glyph->uvs[0] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "x"))) / texture->size[0];
+        glyph->uvs[1] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "y"))) / texture->size[1];
+        glyph->uvs[2] = glyph->uvs[0] + (glyph->size[0] / texture->size[0]);
+        glyph->uvs[3] = glyph->uvs[1] + (glyph->size[1] / texture->size[1]);
+        glyph->advance = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "advance"));
+    }
+
+    yyjson_doc_free(json);
+
+    INFO("Loaded font \"%s\" (%u)", name, font->hid);
+}
+
+struct Font* fetch_font(const char* name) {
+    load_font(name);
+    return get_font(name);
+}
+
+FontID fetch_font_hid(const char* name) {
+    load_font(name);
+    return get_font_hid(name);
+}
+
+struct Font* get_font(const char* name) {
+    for (struct Font* font = fonts; font != NULL; font = font->previous)
+        if (SDL_strcmp(font->name, name) == 0)
+            return font;
+    return NULL;
+}
+
+FontID get_font_hid(const char* name) {
+    for (struct Font* font = fonts; font != NULL; font = font->previous)
+        if (SDL_strcmp(font->name, name) == 0)
+            return font->hid;
+    return 0;
+}
+
+extern struct Font* hid_to_font(FontID hid) {
+    return (struct Font*)hid_to_pointer(font_handles, (FontID)hid);
+}
+
+void destroy_font(struct Font* font) {
+    if (fonts == font)
+        fonts = font->previous;
+    if (font->previous != NULL)
+        font->previous->next = font->next;
+    if (font->next != NULL)
+        font->next->previous = font->previous;
+
+    if (font->glyphs != NULL)
+        lame_free(&font->glyphs);
+
+    INFO("Freed font \"%s\" (%u)", font->name, font->hid);
+    destroy_handle(font_handles, font->hid);
+    lame_free(&font);
+}
+
+void destroy_font_hid(FontID hid) {
+    struct Font* font = (struct Font*)hid_to_pointer(font_handles, (HandleID)hid);
+    if (font != NULL)
+        destroy_font(font);
+}
+
+void clear_fonts(int teardown) {
+    struct Font* font = fonts;
+    while (font != NULL) {
+        struct Font* it = font->previous;
+        if (!font->transient || teardown)
+            destroy_font(font);
+        font = it;
     }
 }
 

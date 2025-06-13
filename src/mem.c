@@ -21,21 +21,29 @@ void _lame_free(void** ptr, const char* filename, int line) {
     *ptr = NULL;
 }
 
-void* _lame_copy(void* dest, const void* src, size_t n, const char* filename, int line) {
+void* _lame_copy(void* dest, const void* src, size_t size, const char* filename, int line) {
     if (dest == NULL || src == NULL)
         log_fatal(src_basename(filename), line, "Copying from %u to %u?", src, dest);
-    return SDL_memcpy(dest, src, n);
+    return SDL_memcpy(dest, src, size);
 }
 
 void _lame_realloc(void** ptr, size_t size, const char* filename, int line) {
     if (ptr == NULL || *ptr == NULL)
         log_fatal(src_basename(filename), line, "Resizing a null pointer?");
-    if (!size)
+    if (size <= 0)
         log_fatal(src_basename(filename), line, "Reallocating to 0 bytes?");
 
     *ptr = SDL_realloc(*ptr, size);
     if (*ptr == NULL)
         log_fatal(src_basename(filename), line, "Reallocation failed");
+}
+
+void _lame_set(void* dest, char val, size_t size, const char* filename, int line) {
+    if (dest == NULL)
+        log_fatal(src_basename(filename), line, "Filling a null pointer?");
+    if (size <= 0)
+        log_fatal(src_basename(filename), line, "Filling 0 bytes?");
+    SDL_memset(dest, val, size);
 }
 
 struct Fixture* _create_fixture(const char* filename, int line) {

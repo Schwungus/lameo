@@ -4,11 +4,13 @@ void* _lame_alloc(size_t, const char*, int);
 void _lame_free(void**, const char*, int);
 void* _lame_copy(void*, const void*, size_t, const char*, int);
 void _lame_realloc(void**, size_t, const char*, int);
+void _lame_set(void*, char, size_t, const char*, int);
 
 #define lame_alloc(size) _lame_alloc(size, __FILE__, __LINE__)
 #define lame_free(ptr) _lame_free((void**)ptr, __FILE__, __LINE__)
 #define lame_copy(dest, src, size) _lame_copy(dest, src, size, __FILE__, __LINE__)
 #define lame_realloc(ptr, size) _lame_realloc((void**)ptr, size, __FILE__, __LINE__)
+#define lame_set(dest, val, size) _lame_set(dest, val, size, __FILE__, __LINE__)
 
 #define CLOSE_POINTER(varname, callback)                                                                               \
     if (varname != NULL) {                                                                                             \

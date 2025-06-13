@@ -14,6 +14,7 @@ static struct WorldBatch world_batch = {0};
 
 static struct Shader* default_shaders[RT_SIZE] = {NULL};
 static struct Shader* current_shader = NULL;
+static struct Font* default_font = NULL;
 
 static mat4 model_matrix, view_matrix, projection_matrix, mvp_matrix;
 
@@ -70,12 +71,11 @@ void video_init_render() {
     glEnableVertexArrayAttrib(main_batch.vao, VATT_UV);
     glVertexArrayAttribFormat(main_batch.vao, VATT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 2);
 
-    main_batch.vertices = lame_alloc(3 * sizeof(struct MainVertex));
     main_batch.vertex_count = 0;
     main_batch.vertex_capacity = 3;
+    main_batch.vertices = lame_alloc(main_batch.vertex_capacity * sizeof(struct MainVertex));
 
     glGenBuffers(1, &main_batch.vbo);
-    glBindVertexArray(main_batch.vao);
     glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
 
@@ -96,20 +96,25 @@ void video_init_render() {
     main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 255;
     main_batch.stencil[3] = 0;
     main_batch.texture = blank_texture;
-    main_batch.blend_src[0] = GL_SRC_COLOR;
+    main_batch.blend_src[0] = GL_SRC_ALPHA;
     main_batch.blend_src[1] = GL_SRC_ALPHA;
-    main_batch.blend_dest[0] = GL_DST_COLOR;
-    main_batch.blend_dest[1] = GL_DST_ALPHA;
+    main_batch.blend_dest[0] = GL_ONE_MINUS_SRC_ALPHA;
+    main_batch.blend_dest[1] = GL_ONE;
+    glEnable(GL_BLEND);
 
     // Shaders
     if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
         FATAL("Main shader \"main\" not found");
 
+    // Fonts
+    if ((default_font = fetch_font("main")) == NULL)
+        FATAL("Main font \"main\" not found");
+
     INFO("Opened for rendering");
 }
 
 static int dummy = 0;
-static TextureID dumtex = 0;
+static struct Texture* dumtex = NULL;
 void video_update() {
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, 640, 480);
@@ -123,16 +128,27 @@ void video_update() {
     render_stage = RT_MAIN;
     set_shader(NULL);
     if (!dummy) {
-        dumtex = fetch_texture_hid("dumdum");
+        dumtex = fetch_texture("dumdum");
         dummy = 1;
     }
-    set_main_texture(hid_to_texture(dumtex));
+
+    /*set_main_texture(dumtex);
     main_vertex(0, 480, 0, 255, 0, 0, 255, 0, 1);
     main_vertex(640, 480, 0, 0, 255, 0, 255, 1, 1);
-    main_vertex(320, 0, 0, 0, 0, 255, 255, 0.5, 0);
-    /*main_vertex(-0.5, -0.5, 0, 255, 0, 0, 255, 0, 1);
-    main_vertex(0.5, -0.5, 0, 0, 255, 0, 255, 1, 1);
-    main_vertex(0, 0.5, 0, 0, 0, 255, 255, 0.5, 0);*/
+    main_vertex(320, 0, 0, 0, 0, 255, 255, 0.5, 0);*/
+    main_sprite(dumtex, 130, 120, -1);
+    // main_sprite(dumtex, 320, 240, -2);
+    main_string(
+        "  ________________\n"
+        "< go fuck yourself >\n"
+        "  ----------------\n"
+        "         \\   ^__^\n"
+        "          \\  (oo)\\_______\n"
+        "             (__)\\       )\\/\\\\\n"
+        "                 ||----w |\n"
+        "                 ||     ||",
+        NULL, 16, 0, 0, -8
+    );
     submit_main_batch();
 
     SDL_GL_SwapWindow(window);
@@ -256,21 +272,24 @@ void submit_main_batch() {
     set_mat4_uniform("u_view_matrix", &view_matrix);
     set_mat4_uniform("u_projection_matrix", &projection_matrix);
     set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+
+    glBindVertexArray(main_batch.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, main_batch.texture);
     set_int_uniform("u_texture", 0);
-    glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices);
-    glBindVertexArray(main_batch.vao);
     glBlendFuncSeparate(
         main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
     );
+
     glDrawArrays(GL_TRIANGLES, 0, main_batch.vertex_count);
     main_batch.vertex_count = 0;
 }
 
 void set_main_texture(struct Texture* texture) {
-    GLint target = texture == NULL ? blank_texture : texture->texture;
+    GLuint target = texture == NULL ? blank_texture : texture->texture;
 
     if (main_batch.texture != target) {
         submit_main_batch();
@@ -280,15 +299,71 @@ void set_main_texture(struct Texture* texture) {
 
 void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
     if (main_batch.vertex_count >= main_batch.vertex_capacity) {
+        submit_main_batch();
         main_batch.vertex_capacity *= 2;
         INFO("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
         lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
+        glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
     }
 
     main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){
         x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
         u, v
     };
+}
+
+void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
+    if (texture == NULL)
+        return;
+    set_main_texture(texture);
+
+    GLfloat x1 = x;
+    GLfloat y1 = y;
+    GLfloat x2 = x1 + texture->size[0];
+    GLfloat y2 = y1 + texture->size[1];
+    main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[3]);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[1]);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
+}
+
+void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GLfloat y, GLfloat z) {
+    if (font == NULL)
+        font = default_font;
+    set_main_texture(hid_to_texture(font->texture));
+
+    GLfloat scale = size / font->size;
+    GLfloat cx = x;
+    GLfloat cy = y;
+    for (size_t i = 0, n = SDL_strlen(str); i < n; i++) {
+        unsigned char gid = str[i];
+        if (gid == '\n') {
+            cx = x;
+            cy += size;
+            continue;
+        }
+        if (gid >= font->num_glyphs)
+            continue;
+
+        struct Glyph* glyph = &font->glyphs[gid];
+
+        GLfloat x1 = cx + (glyph->offset[0] * scale);
+        GLfloat y1 = cy + (glyph->offset[1] * scale);
+        GLfloat x2 = x1 + (glyph->size[0] * scale);
+        GLfloat y2 = y1 + (glyph->size[1] * scale);
+
+        main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
+        main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
+        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+        main_vertex(x1, y1, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[1]);
+        main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
+
+        cx += glyph->advance * scale;
+    }
 }
 
 // World

@@ -36,6 +36,10 @@ struct Texture {
     bool transient;
     struct Texture *previous, *next;
 
+    struct Texture* parent;
+    TextureID* children;
+    size_t num_children;
+
     GLuint texture;
     uint16_t size[2], offset[2];
     GLfloat uvs[4];
@@ -55,11 +59,20 @@ struct Model {
     struct Model *previous, *next;
 };
 
+struct Glyph {
+    GLfloat size[2], offset[2], uvs[4], advance;
+};
+
 struct Font {
     FontID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
     struct Font *previous, *next;
+
+    TextureID texture;
+    float size;
+    struct Glyph* glyphs;
+    size_t num_glyphs;
 };
 
 struct Sound {
@@ -106,6 +119,16 @@ inline struct Texture* hid_to_texture(TextureID);
 void destroy_texture(struct Texture*);
 void destroy_texture_hid(TextureID);
 void clear_textures(int);
+
+void load_font(const char*);
+struct Font* fetch_font(const char*);
+FontID fetch_font_hid(const char*);
+struct Font* get_font(const char*);
+FontID get_font_hid(const char*);
+inline struct Font* hid_to_font(FontID);
+void destroy_font(struct Font*);
+void destroy_font_hid(FontID);
+void clear_fonts(int);
 
 struct Sound* create_sound(const char*);
 void load_sound(const char*);
