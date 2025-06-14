@@ -105,6 +105,7 @@ void set_main_texture(struct Texture*);
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
 void main_string(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat);
+void main_string_wrap(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat);
 
 // World
 void submit_world_batch();

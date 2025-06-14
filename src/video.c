@@ -149,6 +149,10 @@ void video_update() {
         "                 ||     ||",
         NULL, 16, 0, 0, -8
     );
+    main_string_wrap(
+        "I am a string. Look at me I am wrapping. There I wrapped again. It just never stops. I actually can't stop.",
+        NULL, 16, 100, 320, 0, 0
+    );
     submit_main_batch();
 
     SDL_GL_SwapWindow(window);
@@ -299,7 +303,7 @@ void set_main_texture(struct Texture* texture) {
 
 void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
     if (main_batch.vertex_count >= main_batch.vertex_capacity) {
-        submit_main_batch();
+        // submit_main_batch();
         main_batch.vertex_capacity *= 2;
         INFO("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
         lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
@@ -340,21 +344,23 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
     GLfloat cy = y;
     for (size_t i = 0, n = SDL_strlen(str); i < n; i++) {
         unsigned char gid = str[i];
+        if (gid == '\r')
+            continue;
         if (gid == '\n') {
             cx = x;
             cy += size;
             continue;
         }
+        if (SDL_isspace(gid))
+            gid = ' ';
         if (gid >= font->num_glyphs)
             continue;
 
         struct Glyph* glyph = &font->glyphs[gid];
-
         GLfloat x1 = cx + (glyph->offset[0] * scale);
         GLfloat y1 = cy + (glyph->offset[1] * scale);
         GLfloat x2 = x1 + (glyph->size[0] * scale);
         GLfloat y2 = y1 + (glyph->size[1] * scale);
-
         main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
         main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
         main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
@@ -363,6 +369,78 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
         main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
 
         cx += glyph->advance * scale;
+    }
+}
+
+void main_string_wrap(
+    const char* str, struct Font* font, GLfloat size, GLfloat width, GLfloat x, GLfloat y, GLfloat z
+) {
+    if (font == NULL)
+        font = default_font;
+    set_main_texture(hid_to_texture(font->texture));
+
+    GLfloat scale = size / font->size;
+    GLfloat cx = x;
+    GLfloat cy = y;
+
+    // https://github.com/raysan5/raylib/blob/master/examples/text/text_rectangle_bounds.c
+    size_t n = SDL_strlen(str);
+    bool measure = true;
+    int start_pos = -1, end_pos = -1;
+
+    for (int i = 0; i < n; i++) {
+        unsigned char gid = str[i];
+        GLfloat gwidth = (gid >= font->num_glyphs || gid == '\n') ? 0 : (font->glyphs[gid].advance * scale);
+
+        if (measure) {
+            if (SDL_isspace(gid))
+                end_pos = i;
+
+            if (((cx + gwidth) - x) > width) {
+                end_pos = (end_pos < 1) ? i : end_pos;
+                if (i == end_pos)
+                    end_pos -= 1;
+                if ((start_pos + 1) == end_pos)
+                    end_pos = i - 1;
+                measure = !measure;
+            } else if ((i + 1) == n) {
+                end_pos = i;
+                measure = !measure;
+            } else if (gid == '\n') {
+                measure = !measure;
+            }
+
+            if (!measure) {
+                cx = x;
+                i = start_pos;
+                gwidth = 0;
+            }
+        } else {
+            if (gid != '\n' && gid < font->num_glyphs) {
+                struct Glyph* glyph = &font->glyphs[gid];
+                GLfloat x1 = cx + (glyph->offset[0] * scale);
+                GLfloat y1 = cy + (glyph->offset[1] * scale);
+                GLfloat x2 = x1 + (glyph->size[0] * scale);
+                GLfloat y2 = y1 + (glyph->size[1] * scale);
+                main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
+                main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
+                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+                main_vertex(x1, y1, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[1]);
+                main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
+            }
+
+            if (i == end_pos) {
+                cy += size;
+                cx = x;
+                start_pos = end_pos;
+                end_pos = 0;
+                measure = !measure;
+            }
+        }
+
+        if (cx > x || !SDL_isspace(gid))
+            cx += gwidth;
     }
 }
 
