@@ -6,7 +6,16 @@ in vec4 v_color;
 in vec2 v_uv;
 
 uniform sampler2D u_texture;
+uniform float u_alpha_test;
+uniform vec4 u_stencil;
 
 void main() {
-    o_color = v_color * texture(u_texture, v_uv);
+    vec4 sample = texture(u_texture, v_uv);
+    if (u_alpha_test > 0.) {
+        if (sample.a < u_alpha_test) discard;
+        sample.a = 1;
+    }
+
+    o_color = v_color * sample;
+    o_color.rgb = mix(o_color.rgb, u_stencil.rgb, u_stencil.a);
 }

@@ -7,9 +7,8 @@
 #include "log.h"
 #include "mod.h"
 #include "player.h"
+#include "tick.h"
 #include "video.h"
-
-#define TICKRATE 30
 
 void init() {
     log_init();
@@ -22,12 +21,11 @@ void init() {
     mod_init();
     asset_init();
     script_init();
+    tick_init();
 }
 
 void loop() {
     bool running = true;
-    uint64_t last_time = SDL_GetTicks();
-    float ticks = 0;
     while (running) {
         // Events
         SDL_Event event;
@@ -45,22 +43,14 @@ void loop() {
         if (!running)
             break;
 
-        // Tick
-        const uint64_t current_time = SDL_GetTicks();
-        ticks += (float)(current_time - last_time) * ((float)TICKRATE / 1000.);
-        while (ticks >= 1) {
-            // UI, game ...
-            ticks -= 1;
-        }
-        last_time = current_time;
-
-        // Draw
+        tick_update();
         video_update();
         audio_update();
     }
 }
 
 void cleanup() {
+    tick_teardown();
     script_teardown();
     asset_teardown();
     mod_teardown();

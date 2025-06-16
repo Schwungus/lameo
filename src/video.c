@@ -3,8 +3,15 @@
 #include "log.h"
 #include "mem.h"
 
+#define DEFAULT_DISPLAY_WIDTH 640
+#define DEFAULT_DISPLAY_HEIGHT 480
+#define DEFAULT_FULLSCREEN_MODE FSM_FULLSCREEN
+#define DEFAULT_VSYNC false
+
 static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
+
+static struct Display display = {-1, -1, 0};
 
 static GLuint blank_texture = 0;
 
@@ -23,10 +30,13 @@ void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
+    // Window
     window = SDL_CreateWindow("lameo", 640, 480, SDL_WINDOW_OPENGL);
     if (window == NULL)
         FATAL("Window fail: %s", SDL_GetError());
+    set_display(DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, DEFAULT_FULLSCREEN_MODE, DEFAULT_VSYNC);
 
+    // OpenGL
     gpu = SDL_GL_CreateContext(window);
     if (gpu == NULL)
         FATAL("GPU fail: %s", SDL_GetError());
@@ -36,13 +46,12 @@ void video_init() {
         FATAL("Failed to load OpenGL functions");
     INFO("GLAD version: %d.%d", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
 
-    SDL_GL_SetSwapInterval(0);
-
     INFO("OpenGL vendor: %s", glGetString(GL_VENDOR));
     INFO("OpenGL version: %s", glGetString(GL_VERSION));
     INFO("OpenGL renderer: %s", glGetString(GL_RENDERER));
     INFO("OpenGL shading language version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    // Rendering
     glClearColor(0, 0, 0, 1);
     glm_mat4_identity(model_matrix);
     glm_mat4_identity(view_matrix);
@@ -93,13 +102,15 @@ void video_init_render() {
     );
 
     main_batch.color[0] = main_batch.color[1] = main_batch.color[2] = main_batch.color[3] = 1;
-    main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 255;
-    main_batch.stencil[3] = 0;
+    main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 1;
+    main_batch.stencil[3] = 1;
     main_batch.texture = blank_texture;
+    main_batch.alpha_test = 0;
     main_batch.blend_src[0] = GL_SRC_ALPHA;
     main_batch.blend_src[1] = GL_SRC_ALPHA;
     main_batch.blend_dest[0] = GL_ONE_MINUS_SRC_ALPHA;
     main_batch.blend_dest[1] = GL_ONE;
+    main_batch.filter = false;
     glEnable(GL_BLEND);
 
     // Shaders
@@ -117,14 +128,21 @@ static int dummy = 0;
 static struct Texture* dumtex = NULL;
 void video_update() {
     glClear(GL_COLOR_BUFFER_BIT);
-    glViewport(0, 0, 640, 480);
 
     // World
+    glViewport(0, 0, display.width, display.height);
     set_render_stage(RT_WORLD);
     submit_world_batch();
     // ...
 
     // Main
+    const float scale = SDL_min(
+        (float)display.width / (float)(DEFAULT_DISPLAY_WIDTH), (float)display.height / (float)(DEFAULT_DISPLAY_HEIGHT)
+    );
+    const float width = (float)(DEFAULT_DISPLAY_WIDTH)*scale;
+    const float height = (float)(DEFAULT_DISPLAY_HEIGHT)*scale;
+    glViewport(((float)display.width - width) / 2, ((float)display.height - height) / 2, width, height);
+
     render_stage = RT_MAIN;
     set_shader(NULL);
     if (!dummy) {
@@ -169,6 +187,67 @@ void video_teardown() {
     SDL_DestroyWindow(window);
 
     INFO("Closed");
+}
+
+// Display
+void set_display(int width, int height, enum FullscreenModes fullscreen, bool vsync) {
+    if (window == NULL || (display.width == width && display.height == height && display.fullscreen == fullscreen &&
+                           display.vsync == vsync))
+        return;
+
+    // Size
+    if (display.width <= 0 || display.height <= 0) {
+        display.width = DEFAULT_DISPLAY_WIDTH;
+        display.height = DEFAULT_DISPLAY_HEIGHT;
+    } else {
+        SDL_DisplayID did = SDL_GetDisplayForWindow(window);
+        const SDL_DisplayMode* monitor = (display.fullscreen != FSM_WINDOWED && fullscreen == FSM_WINDOWED)
+                                             ? SDL_GetDesktopDisplayMode(did)
+                                             : SDL_GetCurrentDisplayMode(did);
+        if (monitor != NULL) {
+            display.width = SDL_min(width, monitor->w);
+            display.height = SDL_min(height, monitor->h);
+        } else {
+            display.width = width;
+            display.height = height;
+        }
+    }
+    SDL_SetWindowSize(window, display.width, display.height);
+
+    // Fullscreen
+    display.fullscreen = fullscreen;
+    if (display.fullscreen > FSM_EXCLUSIVE_FULLSCREEN)
+        display.fullscreen = FSM_EXCLUSIVE_FULLSCREEN;
+
+    /* Exclusive fullscreen commented out as WinAPI does some weird stuff that
+       CRT considers as "memory leaks".
+       220 bytes are "leaked" every time you tab out and back in. */
+    /*
+    if (display.fullscreen == FSM_EXCLUSIVE_FULLSCREEN) {
+        SDL_DisplayMode dm;
+        SDL_SetWindowFullscreenMode(
+            window, SDL_GetClosestFullscreenDisplayMode(
+                        SDL_GetDisplayForWindow(window), display.width, display.height, 0, true, &dm
+                    )
+                        ? &dm
+                        : NULL
+        );
+    } else {
+        SDL_SetWindowFullscreenMode(window, NULL);
+    }
+    */
+    SDL_SetWindowFullscreen(window, display.fullscreen != FSM_WINDOWED);
+
+    // Vsync
+    SDL_GL_SetSwapInterval(display.vsync = vsync);
+
+    // Center and wait
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_RestoreWindow(window);
+    SDL_SyncWindow(window);
+
+    SDL_GetWindowSize(window, &display.width, &display.height);
+    INFO("Display set to %dx%d, mode %d, vsync %d", display.width, display.height, display.fullscreen, display.vsync);
 }
 
 // Shaders 'n' Uniforms
@@ -272,6 +351,7 @@ void submit_main_batch() {
     if (main_batch.vertex_count <= 0)
         return;
 
+    // Apply matrices
     set_mat4_uniform("u_model_matrix", &model_matrix);
     set_mat4_uniform("u_view_matrix", &view_matrix);
     set_mat4_uniform("u_projection_matrix", &projection_matrix);
@@ -281,9 +361,21 @@ void submit_main_batch() {
     glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices);
 
+    // Apply stencil
+    set_vec4_uniform(
+        "u_stencil", main_batch.stencil[0], main_batch.stencil[1], main_batch.stencil[2], main_batch.stencil[3]
+    );
+
+    // Apply texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, main_batch.texture);
+    const GLint filter = main_batch.filter ? GL_LINEAR : GL_NEAREST;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     set_int_uniform("u_texture", 0);
+    set_float_uniform("u_alpha_test", main_batch.alpha_test);
+
+    // Apply blend mode
     glBlendFuncSeparate(
         main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
     );

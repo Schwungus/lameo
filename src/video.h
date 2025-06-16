@@ -9,6 +9,18 @@
 
 #include "math.h"
 
+struct Display {
+    int width, height;
+    enum FullscreenModes fullscreen;
+    bool vsync;
+};
+
+enum FullscreenModes {
+    FSM_WINDOWED,
+    FSM_FULLSCREEN,
+    FSM_EXCLUSIVE_FULLSCREEN,
+};
+
 enum RenderTypes {
     RT_MAIN,
     RT_WORLD,
@@ -46,9 +58,11 @@ struct MainBatch {
     struct MainVertex* vertices;
 
     GLfloat color[4];
-    GLubyte stencil[4];
+    GLfloat stencil[4];
     GLuint texture;
+    GLfloat alpha_test;
     GLenum blend_src[2], blend_dest[2];
+    bool filter;
 };
 
 struct WorldBatch {
@@ -57,16 +71,20 @@ struct WorldBatch {
     struct WorldVertex* vertices;
 
     GLfloat color[4];
-    GLubyte stencil[4];
+    GLfloat stencil[4];
     GLuint texture;
-    GLubyte alpha_test, bright;
+    GLfloat alpha_test, bright;
     GLenum blend_src[2], blend_dest[2];
+    bool filter;
 };
 
 void video_init();
 void video_init_render();
 void video_update();
 void video_teardown();
+
+// Display
+void set_display(int, int, enum FullscreenModes, bool);
 
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);
@@ -96,11 +114,14 @@ void submit_batch();
 
 // Main
 void submit_main_batch();
-void set_main_color(GLubyte, GLubyte, GLubyte);
-void set_main_alpha(GLubyte);
-void set_main_stencil_color(GLubyte, GLubyte, GLubyte);
-void set_main_stencil_alpha(GLubyte);
+void set_main_color(GLfloat, GLfloat, GLfloat);
+void set_main_alpha(GLfloat);
+void set_main_stencil_color(GLfloat, GLfloat, GLfloat);
+void set_main_stencil_alpha(GLfloat);
+void set_main_alpha_test(GLfloat);
 void set_main_texture(struct Texture*);
+void set_main_filter(bool);
+inline void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, bool);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
