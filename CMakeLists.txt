@@ -12,15 +12,15 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 # Libraries
-set(BUILD_SHARED_LIBS ON)
-set(BUILD_STATIC_LIBS OFF)
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_STATIC_LIBS ON)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 
-# SDL3 (3.2.14)
-set(SDL_SHARED ON)
-set(SDL_STATIC OFF)
+# SDL3 (3.2.16)
+set(SDL_SHARED OFF)
+set(SDL_STATIC ON)
 set(SDL_TEST_LIBRARY OFF)
 set(SDL_RENDER OFF)
 set(SDL_AUDIO OFF)
@@ -28,7 +28,7 @@ set(SDL_AUDIO OFF)
 FetchContent_Declare(
     SDL3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG release-3.2.12
+    GIT_TAG release-3.2.16
 )
 FetchContent_MakeAvailable(SDL3)
 
@@ -55,9 +55,12 @@ FetchContent_Declare(
     SOURCE_SUBDIR  cmake
 )
 FetchContent_MakeAvailable(glad)
-glad_add_library(glad_gl_core_33 SHARED REPRODUCIBLE API gl:core=3.3)
+glad_add_library(glad_gl_core_33 STATIC API gl:core=3.3)
 
 # cglm
+set(CGLM_SHARED OFF)
+set(CGLM_STATIC ON)
+
 FetchContent_Declare(
     cglm
     GIT_REPOSITORY https://github.com/recp/cglm.git
@@ -77,7 +80,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(yyjson)
 
 # Lua (5.4.7)
-set(LUA_ENABLE_SHARED ON)
+set(LUA_ENABLE_SHARED OFF)
 set(LUA_ENABLE_TESTING OFF)
 
 FetchContent_Declare(
@@ -87,8 +90,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua)
 
-set(LIBS SDL3::SDL3-shared SDL3_image::SDL3_image-shared ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_shared)
-set(LIBTYPE SHARED)
+set(LIBS SDL3::SDL3-static SDL3_image::SDL3_image-static ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_static)
+set(LIBTYPE STATIC)
 
 # Build
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
