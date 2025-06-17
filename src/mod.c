@@ -12,7 +12,30 @@
 static struct Mod* mods = NULL;
 static struct Fixture* mod_handles = NULL;
 
-SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const char* fname) {
+static SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const char* fname) {
+    char path[MOD_PATH_MAX];
+    SDL_snprintf(path, sizeof(path), "%s%s", dirname, fname);
+
+    // Recursive into directories
+    SDL_PathInfo info;
+    if (SDL_GetPathInfo(path, &info) && info.type == SDL_PATHTYPE_DIRECTORY) {
+        // Add folder name to hash so they actually matter
+        *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, fname, SDL_strlen(fname));
+        return SDL_EnumerateDirectory(path, iterate_crc32, userdata) ? SDL_ENUM_CONTINUE : SDL_ENUM_FAILURE;
+    }
+
+    // Add file to hash
+    size_t size;
+    void* buffer = SDL_LoadFile(path, &size);
+    if (buffer == NULL)
+        FATAL("CRC32 fail: %s", SDL_GetError());
+    *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, buffer, size);
+    lame_free(&buffer);
+
+    return SDL_ENUM_CONTINUE;
+}
+
+static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const char* fname) {
     char path[MOD_PATH_MAX];
     SDL_snprintf(path, MOD_PATH_MAX, "%s%s/", dirname, fname);
 
@@ -72,29 +95,6 @@ SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const ch
     mods = mod;
 
     INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
-    return SDL_ENUM_CONTINUE;
-}
-
-SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const char* fname) {
-    char path[MOD_PATH_MAX];
-    SDL_snprintf(path, sizeof(path), "%s%s", dirname, fname);
-
-    // Recursive into directories
-    SDL_PathInfo info;
-    if (SDL_GetPathInfo(path, &info) && info.type == SDL_PATHTYPE_DIRECTORY) {
-        // Add folder name to hash so they actually matter
-        *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, fname, SDL_strlen(fname));
-        return SDL_EnumerateDirectory(path, iterate_crc32, userdata) ? SDL_ENUM_CONTINUE : SDL_ENUM_FAILURE;
-    }
-
-    // Add file to hash
-    size_t size;
-    void* buffer = SDL_LoadFile(path, &size);
-    if (buffer == NULL)
-        FATAL("CRC32 fail: %s", SDL_GetError());
-    *(uint32_t*)userdata = SDL_crc32(*(uint32_t*)userdata, buffer, size);
-    lame_free(&buffer);
-
     return SDL_ENUM_CONTINUE;
 }
 

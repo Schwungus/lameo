@@ -21,8 +21,6 @@ struct Mod {
     struct Mod *previous, *next;
 };
 
-SDL_EnumerationResult iterate_mods(void*, const char*, const char*);
-SDL_EnumerationResult iterate_crc32(void*, const char*, const char*);
 void mod_init();
 void mod_init_script();
 void mod_teardown();
