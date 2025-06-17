@@ -5,6 +5,7 @@
 #include <SDL3/SDL_stdinc.h>
 
 #include "asset.h"
+#include "config.h"
 #include "log.h"
 #include "mod.h"
 #include "script.h"
@@ -102,7 +103,10 @@ void mod_init() {
     mod_handles = create_fixture();
 
     // Load enabled mods
-    yyjson_doc* json = yyjson_read_file("data/disabled.json", JSON_FLAGS, NULL, NULL);
+    const char* data_path = get_string_cvar("data_path");
+    char path[MOD_PATH_MAX];
+    SDL_snprintf(path, sizeof(path), "%s/disabled.json", data_path);
+    yyjson_doc* json = yyjson_read_file(path, JSON_FLAGS, NULL, NULL);
     yyjson_val* disabled = NULL;
     if (json != NULL) {
         disabled = yyjson_doc_get_root(json);
@@ -114,7 +118,8 @@ void mod_init() {
         }
     }
 
-    if (!SDL_EnumerateDirectory("data/", iterate_mods, (void*)disabled))
+    SDL_snprintf(path, sizeof(path), "%s/", data_path);
+    if (!SDL_EnumerateDirectory(path, iterate_mods, (void*)disabled))
         FATAL("Mod load fail: %s", SDL_GetError());
     if (json != NULL)
         yyjson_doc_free(json);

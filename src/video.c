@@ -5,8 +5,6 @@
 
 #define DEFAULT_DISPLAY_WIDTH 640
 #define DEFAULT_DISPLAY_HEIGHT 480
-#define DEFAULT_FULLSCREEN_MODE FSM_FULLSCREEN
-#define DEFAULT_VSYNC false
 
 static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
@@ -31,15 +29,15 @@ void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // Window
-    window = SDL_CreateWindow("lameo", 640, 480, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("lameo", DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, SDL_WINDOW_OPENGL);
     if (window == NULL)
         FATAL("Window fail: %s", SDL_GetError());
-    set_display(DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, DEFAULT_FULLSCREEN_MODE, DEFAULT_VSYNC);
 
     // OpenGL
     gpu = SDL_GL_CreateContext(window);
     if (gpu == NULL)
         FATAL("GPU fail: %s", SDL_GetError());
+    SDL_GL_SetSwapInterval(0);
 
     int version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
     if (version == 0)
@@ -50,6 +48,12 @@ void video_init() {
     INFO("OpenGL version: %s", glGetString(GL_VERSION));
     INFO("OpenGL renderer: %s", glGetString(GL_RENDERER));
     INFO("OpenGL shading language version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    // Display info
+    display.width = DEFAULT_DISPLAY_WIDTH;
+    display.height = DEFAULT_DISPLAY_HEIGHT;
+    display.fullscreen = FSM_WINDOWED;
+    display.vsync = false;
 
     // Rendering
     glClearColor(0, 0, 0, 1);
@@ -103,7 +107,7 @@ void video_init_render() {
 
     main_batch.color[0] = main_batch.color[1] = main_batch.color[2] = main_batch.color[3] = 1;
     main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 1;
-    main_batch.stencil[3] = 1;
+    main_batch.stencil[3] = 0;
     main_batch.texture = blank_texture;
     main_batch.alpha_test = 0;
     main_batch.blend_src[0] = GL_SRC_ALPHA;

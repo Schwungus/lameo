@@ -1,5 +1,5 @@
 #pragma once
 
-void init();
+void init(const char*);
 void loop();
 void cleanup();

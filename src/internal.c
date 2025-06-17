@@ -2,6 +2,7 @@
 
 #include "asset.h"
 #include "audio.h"
+#include "config.h"
 #include "flags.h"
 #include "internal.h"
 #include "log.h"
@@ -10,12 +11,13 @@
 #include "tick.h"
 #include "video.h"
 
-void init() {
+void init(const char* config_path) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         FATAL("SDL fail: %s", SDL_GetError());
     video_init();
     audio_init();
+    config_init(config_path);
     flags_init();
     player_init();
     mod_init();
@@ -56,6 +58,7 @@ void cleanup() {
     mod_teardown();
     player_teardown();
     flags_teardown();
+    config_teardown();
     audio_teardown();
     video_teardown();
     log_teardown();

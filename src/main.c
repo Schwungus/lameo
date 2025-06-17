@@ -26,7 +26,12 @@ int main(int argc, char** argv) {
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://schwung.us");
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 
-    init();
+    const char* config_path = NULL;
+    for (int i = 0; i < argc; i++)
+        if (SDL_strcmp(argv[i], "-config") == 0)
+            config_path = argv[++i];
+
+    init(config_path);
     loop();
     cleanup();
 
