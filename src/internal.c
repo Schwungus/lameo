@@ -56,10 +56,10 @@ void loop() {
                 case SDL_EVENT_MOUSE_BUTTON_UP:
                     handle_mouse_button((SDL_MouseButtonEvent*)&event);
                     break;
-                    /*case SDL_EVENT_MOUSE_WHEEL:
-                        handle_mouse_wheel(&event);
-                        break;
-                    case SDL_EVENT_MOUSE_MOTION:
+                case SDL_EVENT_MOUSE_WHEEL:
+                    handle_mouse_wheel((SDL_MouseWheelEvent*)&event);
+                    break;
+                    /*case SDL_EVENT_MOUSE_MOTION:
                         handle_mouse_motion(&event);
                         break;
 

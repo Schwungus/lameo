@@ -107,11 +107,16 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND_EXPAND_LISTS
 )
 
+# Download controller database
+set(GCDB_SOURCE_DIR ${CMAKE_SOURCE_DIR}/include/gamecontrollerdb.txt)
+file(DOWNLOAD "https://github.com/mdqinc/SDL_GameControllerDB/raw/refs/heads/master/gamecontrollerdb.txt" GCDB_SOURCE_DIR)
+
 # Copy assets
 set(MOD_SOURCE_DIR ${CMAKE_SOURCE_DIR}/modsrc)
 add_custom_command(
     TARGET ${PROJECT_NAME}
     POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy GCDB_SOURCE_DIR $<TARGET_FILE_DIR:${PROJECT_NAME}>/gamecontrollerdb.txt
     COMMAND ${CMAKE_COMMAND} -E remove_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${MOD_SOURCE_DIR} $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
 )
