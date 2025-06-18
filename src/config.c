@@ -32,8 +32,6 @@ void config_init(const char* confpath, const char* contpath) {
     load_config();
     apply_cvar(NULL);
 
-    save_config();
-
     INFO("Opened");
 }
 

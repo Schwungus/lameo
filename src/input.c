@@ -17,6 +17,12 @@ void input_init() {
     if ((verb_map = SDL_CreateProperties()) == 0)
         FATAL("Verb map fail: %s", SDL_GetError());
 
+    // Internally invalid gamepad buttons are -1
+    for (size_t i = 0; i < VERB_SIZE; i++) {
+        verbs[i].default_gamepad_button = verbs[i].gamepad_button = NO_GAMEPAD_BUTTON;
+        verbs[i].default_gamepad_axis = verbs[i].gamepad_axis = NO_GAMEPAD_AXIS;
+    }
+
     define_verb(VERB_UP, "up", -1, SDL_SCANCODE_W, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON, SDL_GAMEPAD_AXIS_LEFTY);
     define_verb(VERB_LEFT, "left", -1, SDL_SCANCODE_A, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON, SDL_GAMEPAD_AXIS_LEFTX);
     define_verb(VERB_DOWN, "down", 1, SDL_SCANCODE_S, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON, SDL_GAMEPAD_AXIS_LEFTY);
