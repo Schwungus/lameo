@@ -85,6 +85,7 @@ void video_teardown();
 
 // Display
 void set_display(int, int, enum FullscreenModes, bool);
+void set_framerate(uint16_t);
 
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);

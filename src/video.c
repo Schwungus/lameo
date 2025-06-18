@@ -1,8 +1,11 @@
-#include "video.h"
+#include <SDL3/SDL_timer.h>
+
 #include "asset.h"
+#include "config.h"
 #include "input.h"
 #include "log.h"
 #include "mem.h"
+#include "video.h"
 
 #define DEFAULT_DISPLAY_WIDTH 640
 #define DEFAULT_DISPLAY_HEIGHT 480
@@ -11,6 +14,9 @@ static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
 
 static struct Display display = {-1, -1, 0};
+static uint16_t framerate = 0;
+static uint64_t last_cap_time = 0;
+static float cap_wait = 0;
 
 static GLuint blank_texture = 0;
 
@@ -130,6 +136,17 @@ void video_init_render() {
 }
 
 void video_update() {
+    const uint64_t current_cap_time = SDL_GetTicks();
+    if (framerate > 0) {
+        cap_wait += (float)(current_cap_time - last_cap_time) * ((float)framerate / 1000.);
+        last_cap_time = current_cap_time;
+        if (cap_wait < 1)
+            return;
+        cap_wait -= SDL_floorf(cap_wait);
+    } else {
+        last_cap_time = current_cap_time;
+    }
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     // World
@@ -232,6 +249,16 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
 
     SDL_GetWindowSize(window, &display.width, &display.height);
     INFO("Display set to %dx%d, mode %d, vsync %d", display.width, display.height, display.fullscreen, display.vsync);
+}
+
+void set_framerate(uint16_t fps) {
+    if (framerate == fps)
+        return;
+
+    if ((framerate = fps) > 0)
+        INFO("Capped framerate to %d FPS", fps);
+    else
+        INFO("Uncapped framerate");
 }
 
 // Shaders 'n' Uniforms

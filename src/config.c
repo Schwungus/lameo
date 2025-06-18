@@ -18,13 +18,14 @@ void config_init(const char* confpath) {
     SDL_SetNumberProperty(default_cvars, "vid_height", 0);
     SDL_SetNumberProperty(default_cvars, "vid_fullscreen", FSM_WINDOWED);
     SDL_SetBooleanProperty(default_cvars, "vid_vsync", false);
+    SDL_SetNumberProperty(default_cvars, "vid_maxfps", 60);
 
     if (confpath != NULL) {
         config_path = confpath;
         INFO("Using config file \"%s\"", config_path);
     }
-
     load_config();
+    apply_cvar(NULL);
 
     INFO("Opened");
 }
@@ -124,15 +125,15 @@ bool reset_cvar(const char* name) {
 
 void apply_cvar(const char* name) {
     if (name == NULL || (SDL_strcmp(name, "vid_width") == 0 || SDL_strcmp(name, "vid_height") == 0 ||
-                         SDL_strcmp(name, "vid_fullscreen") == 0 || SDL_strcmp(name, "vid_vsync") == 0)) {
-        INFO(
-            "%d %d %d %d", get_int_cvar("vid_width"), get_int_cvar("vid_height"), get_int_cvar("vid_fullscreen"),
-            get_bool_cvar("vid_vsync")
-        );
+                         SDL_strcmp(name, "vid_fullscreen") == 0 || SDL_strcmp(name, "vid_vsync") == 0))
         set_display(
             get_int_cvar("vid_width"), get_int_cvar("vid_height"), get_int_cvar("vid_fullscreen"),
             get_bool_cvar("vid_vsync")
         );
+
+    if (name == NULL || SDL_strcmp(name, "vid_maxfps") == 0) {
+        Sint64 vid_maxfps = get_int_cvar("vid_maxfps");
+        set_framerate((int16_t)SDL_max(vid_maxfps, 0));
     }
 }
 
@@ -180,5 +181,4 @@ void load_config() {
     }
 
     yyjson_doc_free(json);
-    apply_cvar(NULL);
 }
