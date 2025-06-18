@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL_properties.h>
 
-void config_init(const char*);
+void config_init(const char*, const char*);
 void config_teardown();
 
 inline bool get_bool_cvar(const char*);

@@ -6,15 +6,18 @@
 
 #define MAX_INPUT_PLAYERS MAX_PLAYERS
 #define VERB_NAME_MAX 32
+#define VERB_VALUE_MIN -32767
 #define VERB_VALUE_MAX 32767
 
 #define NO_KEY SDL_SCANCODE_UNKNOWN
 #define NO_MOUSE_BUTTON MOUSE_NONE
 #define NO_GAMEPAD_BUTTON SDL_GAMEPAD_BUTTON_INVALID
+#define NO_GAMEPAD_AXIS SDL_GAMEPAD_AXIS_INVALID
 
 #define KEY_COUNT SDL_SCANCODE_COUNT
 #define MOUSE_BUTTON_COUNT MOUSE_SIZE
 #define GAMEPAD_BUTTON_COUNT SDL_GAMEPAD_BUTTON_COUNT
+#define GAMEPAD_AXIS_COUNT SDL_GAMEPAD_AXIS_COUNT
 
 enum MouseButtons {
     MOUSE_NONE,
@@ -78,8 +81,9 @@ struct Verb {
     SDL_Scancode key, default_key;
     enum MouseButtons mouse_button, default_mouse_button;
     SDL_GamepadButton gamepad_button, default_gamepad_button;
-    int8_t gamepad_axis, default_gamepad_axis;
+    SDL_GamepadAxis gamepad_axis, default_gamepad_axis;
 
+    int8_t axis;
     bool held;
     int16_t value;
 };
@@ -93,11 +97,14 @@ void input_init();
 void input_update();
 void input_teardown();
 
-void define_verb(enum Verbs, const char*, SDL_Scancode, enum MouseButtons, SDL_GamepadButton, int8_t);
+void define_verb(enum Verbs, const char*, int8_t, SDL_Scancode, enum MouseButtons, SDL_GamepadButton, SDL_GamepadAxis);
+void reset_verb(enum Verbs);
 void assign_verb_to_key(struct Verb*, SDL_Scancode);
 void assign_verb_to_mouse_button(struct Verb*, enum MouseButtons);
 void assign_verb_to_gamepad_button(struct Verb*, SDL_GamepadButton);
+void assign_verb_to_gamepad_axis(struct Verb*, SDL_GamepadAxis);
 inline struct Verb* get_verb(enum Verbs);
+struct Verb* find_verb(const char*);
 
 void handle_keyboard(SDL_KeyboardDeviceEvent*);
 void handle_key(SDL_KeyboardEvent*);
@@ -107,10 +114,10 @@ void handle_mouse_button(SDL_MouseButtonEvent*);
 void handle_mouse_wheel(SDL_MouseWheelEvent*);
 // void handle_mouse_motion(SDL_MouseMotionEvent*);
 
-/*void handle_gamepad(SDL_GamepadDeviceEvent*);
+void handle_gamepad(SDL_GamepadDeviceEvent*);
 void handle_gamepad_button(SDL_GamepadButtonEvent*);
 void handle_gamepad_axis(SDL_GamepadAxisEvent*);
-void handle_gamepad_sensor(SDL_GamepadSensorEvent*);
-void handle_gamepad_touchpad(SDL_GamepadTouchpadEvent*);*/
+// void handle_gamepad_sensor(SDL_GamepadSensorEvent*);
+// void handle_gamepad_touchpad(SDL_GamepadTouchpadEvent*);
 
 inline int16_t input_value(enum Verbs, size_t);

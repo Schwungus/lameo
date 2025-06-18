@@ -1,12 +1,13 @@
 #include "config.h"
 #include "asset.h"
+#include "input.h"
 #include "log.h"
 #include "video.h"
 
-static const char* config_path = NULL;
+static const char *config_path = NULL, *controls_path = NULL;
 static SDL_PropertiesID cvars = 0, default_cvars = 0;
 
-void config_init(const char* confpath) {
+void config_init(const char* confpath, const char* contpath) {
     if ((cvars = SDL_CreateProperties()) == 0)
         FATAL("CVars fail: %s", SDL_GetError());
     if ((default_cvars = SDL_CreateProperties()) == 0)
@@ -24,8 +25,14 @@ void config_init(const char* confpath) {
         config_path = confpath;
         INFO("Using config file \"%s\"", config_path);
     }
+    if (contpath != NULL) {
+        controls_path = contpath;
+        INFO("Using controls file \"%s\"", controls_path);
+    }
     load_config();
     apply_cvar(NULL);
+
+    save_config();
 
     INFO("Opened");
 }
@@ -164,62 +171,128 @@ static void iterate_save_config(void* userdata, SDL_PropertiesID props, const ch
 }
 
 void save_config() {
-    if (config_path != NULL) {
+    if (config_path == NULL) {
+        yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
+        yyjson_mut_val* root = yyjson_mut_obj(json);
+
+        yyjson_mut_doc_set_root(json, root);
+        SDL_EnumerateProperties(cvars, iterate_save_config, (void*)json);
+
+        yyjson_write_err error;
+        if (yyjson_mut_write_file("config.json", json, JSON_WRITE_FLAGS, NULL, &error))
+            INFO("Saved config");
+        else
+            WTF("Config save fail: %s", error.msg);
+        yyjson_mut_doc_free(json);
+    } else {
         WARN("Cannot overwrite custom config file");
-        return;
     }
 
-    yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
-    yyjson_mut_val* root = yyjson_mut_obj(json);
+    if (controls_path == NULL) {
+        yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
+        yyjson_mut_val* root = yyjson_mut_obj(json);
 
-    yyjson_mut_doc_set_root(json, root);
-    SDL_EnumerateProperties(cvars, iterate_save_config, (void*)json);
+        yyjson_mut_doc_set_root(json, root);
+        for (size_t i = 0; i < VERB_SIZE; i++) {
+            const struct Verb* verb = get_verb(i);
+            yyjson_mut_val* key = yyjson_mut_strcpy(json, verb->name);
+            yyjson_mut_val* value = yyjson_mut_arr(json);
+            yyjson_mut_arr_add_int(json, value, verb->key);
+            yyjson_mut_arr_add_int(json, value, verb->mouse_button);
+            yyjson_mut_arr_add_int(json, value, verb->gamepad_button);
+            yyjson_mut_arr_add_int(json, value, verb->gamepad_axis);
+            yyjson_mut_obj_add(root, key, value);
+        }
 
-    yyjson_write_err error;
-    if (yyjson_mut_write_file("config.json", json, YYJSON_WRITE_PRETTY | YYJSON_WRITE_NEWLINE_AT_END, NULL, &error))
-        INFO("Saved");
-    else
-        WTF("Save fail: %s", error.msg);
-    yyjson_mut_doc_free(json);
+        yyjson_write_err error;
+        if (yyjson_mut_write_file("controls.json", json, JSON_WRITE_FLAGS, NULL, &error))
+            INFO("Saved controls");
+        else
+            WTF("Controls save fail: %s", error.msg);
+        yyjson_mut_doc_free(json);
+    } else {
+        WARN("Cannot overwrite custom controls file");
+    }
 }
 
 void load_config() {
-    const char* confpath = config_path == NULL ? "config.json" : config_path;
+    // Config
+    const char* path = config_path == NULL ? "config.json" : config_path;
     yyjson_read_err error;
-    yyjson_doc* json = yyjson_read_file(confpath, JSON_FLAGS, NULL, &error);
+    yyjson_doc* json = yyjson_read_file(path, JSON_FLAGS, NULL, &error);
     if (json == NULL) {
-        WTF("Failed to open config \"%s\": %s", confpath, error.msg);
-        return;
-    }
+        WTF("Failed to open config \"%s\": %s", path, error.msg);
+    } else {
+        yyjson_val* root = yyjson_doc_get_root(json);
+        if (!yyjson_is_obj(root)) {
+            WTF("Expected config \"%s\" as object, got %s", path, yyjson_get_type_desc(root));
+            yyjson_doc_free(json);
+        } else {
+            size_t i, n;
+            yyjson_val *key, *value;
+            yyjson_obj_foreach(root, i, n, key, value) {
+                const char* cname = yyjson_get_str(key);
+                switch (yyjson_get_type(value)) {
+                    case YYJSON_TYPE_BOOL:
+                        set_bool_cvar(cname, yyjson_get_bool(value));
+                        break;
+                    case YYJSON_TYPE_NUM:
+                        set_numeric_cvar(cname, yyjson_get_num(value));
+                        break;
+                    case YYJSON_TYPE_STR:
+                        set_string_cvar(cname, yyjson_get_str(value));
+                        break;
+                    default:
+                        WTF("Invalid type \"%s\" for CVar \"%s\"", yyjson_get_type_desc(value), cname);
+                        break;
+                }
+            }
 
-    yyjson_val* root = yyjson_doc_get_root(json);
-    if (!yyjson_is_obj(root)) {
-        WTF("Expected config \"%s\" as object, got %s", confpath, yyjson_get_type_desc(root));
-        yyjson_doc_free(json);
-        return;
-    }
+            yyjson_doc_free(json);
 
-    size_t i, n;
-    yyjson_val *key, *value;
-    yyjson_obj_foreach(root, i, n, key, value) {
-        const char* cname = yyjson_get_str(key);
-        switch (yyjson_get_type(value)) {
-            case YYJSON_TYPE_BOOL:
-                set_bool_cvar(cname, yyjson_get_bool(value));
-                break;
-            case YYJSON_TYPE_NUM:
-                set_numeric_cvar(cname, yyjson_get_num(value));
-                break;
-            case YYJSON_TYPE_STR:
-                set_string_cvar(cname, yyjson_get_str(value));
-                break;
-            default:
-                WTF("Invalid type \"%s\" for CVar \"%s\"", yyjson_get_type_desc(value), cname);
-                break;
+            INFO("Loaded config");
         }
     }
 
-    yyjson_doc_free(json);
+    // Controls
+    path = controls_path == NULL ? "controls.json" : controls_path;
+    json = yyjson_read_file(path, JSON_FLAGS, NULL, &error);
+    if (json == NULL) {
+        WTF("Failed to open controls \"%s\": %s", path, error.msg);
+    } else {
+        yyjson_val* root = yyjson_doc_get_root(json);
+        if (!yyjson_is_obj(root)) {
+            WTF("Expected controls \"%s\" as object, got %s", path, yyjson_get_type_desc(root));
+            yyjson_doc_free(json);
+        } else {
+            size_t i, n;
+            yyjson_val *key, *value;
+            yyjson_obj_foreach(root, i, n, key, value) {
+                const char* vname = yyjson_get_str(key);
 
-    INFO("Loaded");
+                if (!yyjson_is_arr(value)) {
+                    WTF("Expected verb \"%s\" as array, got %s", vname, yyjson_get_type_desc(root));
+                    continue;
+                }
+                if (yyjson_arr_size(value) < 4) {
+                    WTF("Verb \"%s\" array size less than 4", vname);
+                    continue;
+                }
+
+                struct Verb* verb = find_verb(vname);
+                if (verb == NULL) {
+                    WARN("Unknown verb \"%s\"", vname);
+                    continue;
+                }
+                assign_verb_to_key(verb, (SDL_Scancode)yyjson_get_uint(yyjson_arr_get(value, 0)));
+                assign_verb_to_mouse_button(verb, (enum MouseButtons)yyjson_get_uint(yyjson_arr_get(value, 1)));
+                assign_verb_to_gamepad_button(verb, (SDL_GamepadButton)yyjson_get_sint(yyjson_arr_get(value, 2)));
+                assign_verb_to_gamepad_axis(verb, (SDL_GamepadAxis)yyjson_get_sint(yyjson_arr_get(value, 3)));
+            }
+
+            yyjson_doc_free(json);
+
+            INFO("Loaded controls");
+        }
+    }
 }

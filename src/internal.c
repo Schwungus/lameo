@@ -12,14 +12,14 @@
 #include "tick.h"
 #include "video.h"
 
-void init(const char* config_path) {
+void init(const char* config_path, const char* controls_path) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         FATAL("SDL fail: %s", SDL_GetError());
     video_init();
     audio_init();
     input_init();
-    config_init(config_path);
+    config_init(config_path, controls_path);
     flags_init();
     player_init();
     mod_init();
@@ -61,20 +61,20 @@ void loop() {
                     break;
                     /*case SDL_EVENT_MOUSE_MOTION:
                         handle_mouse_motion(&event);
-                        break;
+                        break;*/
 
-                    case SDL_EVENT_GAMEPAD_ADDED:
-                    case SDL_EVENT_GAMEPAD_REMOVED:
-                        handle_gamepad(&event);
-                        break;
-                    case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-                    case SDL_EVENT_GAMEPAD_BUTTON_UP:
-                        handle_gamepad_button(&event);
-                        break;
-                    case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-                        handle_gamepad_axis(&event);
-                        break;
-                    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+                case SDL_EVENT_GAMEPAD_ADDED:
+                case SDL_EVENT_GAMEPAD_REMOVED:
+                    handle_gamepad((SDL_GamepadDeviceEvent*)&event);
+                    break;
+                case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+                case SDL_EVENT_GAMEPAD_BUTTON_UP:
+                    handle_gamepad_button((SDL_GamepadButtonEvent*)&event);
+                    break;
+                case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+                    handle_gamepad_axis((SDL_GamepadAxisEvent*)&event);
+                    break;
+                    /*case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
                         handle_gamepad_sensor(&event);
                         break;
                     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
