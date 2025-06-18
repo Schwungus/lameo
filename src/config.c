@@ -137,11 +137,50 @@ void apply_cvar(const char* name) {
     }
 }
 
+static void iterate_save_config(void* userdata, SDL_PropertiesID props, const char* name) {
+    yyjson_mut_doc* json = (yyjson_mut_doc*)userdata;
+
+    yyjson_mut_val* key = yyjson_mut_strcpy(json, name);
+    yyjson_mut_val* value;
+    switch (SDL_GetPropertyType(props, name)) {
+        default:
+            value = yyjson_mut_null(json);
+            break;
+        case SDL_PROPERTY_TYPE_BOOLEAN:
+            value = yyjson_mut_bool(json, get_bool_cvar(name));
+            break;
+        case SDL_PROPERTY_TYPE_NUMBER:
+            value = yyjson_mut_sint(json, get_int_cvar(name));
+            break;
+        case SDL_PROPERTY_TYPE_FLOAT:
+            value = yyjson_mut_float(json, get_float_cvar(name));
+            break;
+        case SDL_PROPERTY_TYPE_STRING:
+            value = yyjson_mut_strcpy(json, get_string_cvar(name));
+            break;
+    }
+
+    yyjson_mut_obj_add(yyjson_mut_doc_get_root(json), key, value);
+}
+
 void save_config() {
     if (config_path != NULL) {
         WARN("Cannot overwrite custom config file");
         return;
     }
+
+    yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
+    yyjson_mut_val* root = yyjson_mut_obj(json);
+
+    yyjson_mut_doc_set_root(json, root);
+    SDL_EnumerateProperties(cvars, iterate_save_config, (void*)json);
+
+    yyjson_write_err error;
+    if (yyjson_mut_write_file("config.json", json, YYJSON_WRITE_PRETTY | YYJSON_WRITE_NEWLINE_AT_END, NULL, &error))
+        INFO("Saved");
+    else
+        WTF("Save fail: %s", error.msg);
+    yyjson_mut_doc_free(json);
 }
 
 void load_config() {
@@ -181,4 +220,6 @@ void load_config() {
     }
 
     yyjson_doc_free(json);
+
+    INFO("Loaded");
 }
