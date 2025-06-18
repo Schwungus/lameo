@@ -1,5 +1,6 @@
 #include "video.h"
 #include "asset.h"
+#include "input.h"
 #include "log.h"
 #include "mem.h"
 
@@ -128,16 +129,14 @@ void video_init_render() {
     INFO("Opened for rendering");
 }
 
-static int dummy = 0;
-static struct Texture* dumtex = NULL;
 void video_update() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // World
     glViewport(0, 0, display.width, display.height);
-    set_render_stage(RT_WORLD);
-    submit_world_batch();
-    // ...
+    // render_stage = RT_WORLD;
+    //  set_shader(NULL);
+    //  submit_world_batch();
 
     // Main
     const float scale = SDL_min(
@@ -149,34 +148,15 @@ void video_update() {
 
     render_stage = RT_MAIN;
     set_shader(NULL);
-    if (!dummy) {
-        dumtex = fetch_texture("dumdum");
-        dummy = 1;
+    for (size_t i = 0; i < VERB_SIZE; i++) {
+        char str[128];
+        struct Verb* verb = get_verb(i);
+        SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
+        main_string(str, NULL, 16, 0, i * 16, 0);
     }
-
-    /*set_main_texture(dumtex);
-    main_vertex(0, 480, 0, 255, 0, 0, 255, 0, 1);
-    main_vertex(640, 480, 0, 0, 255, 0, 255, 1, 1);
-    main_vertex(320, 0, 0, 0, 0, 255, 255, 0.5, 0);*/
-    main_sprite(dumtex, 130, 120, -1);
-    // main_sprite(dumtex, 320, 240, -2);
-    main_string(
-        "  ________________\n"
-        "< go fuck yourself >\n"
-        "  ----------------\n"
-        "         \\   ^__^\n"
-        "          \\  (oo)\\_______\n"
-        "             (__)\\       )\\/\\\\\n"
-        "                 ||----w |\n"
-        "                 ||     ||",
-        NULL, 16, 0, 0, -8
-    );
-    main_string_wrap(
-        "I am a string. Look at me I am wrapping. There I wrapped again. It just never stops. I actually can't stop.",
-        NULL, 16, 100, 320, 0, 0
-    );
     submit_main_batch();
 
+    // Present
     SDL_GL_SwapWindow(window);
 }
 
