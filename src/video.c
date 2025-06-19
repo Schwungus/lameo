@@ -223,7 +223,7 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
     // MEMORY LEAK: In exclusive fullscreen, Windows will leak ~220 bytes every
     //              time you tab out and back in.
     // Pattern: <C D D           > 43 00 44 00 44 00 00 00 00 00 00 00 00 00 00 00
-    if (display.fullscreen == FSM_EXCLUSIVE_FULLSCREEN) {
+    /*if (display.fullscreen == FSM_EXCLUSIVE_FULLSCREEN) {
         SDL_DisplayMode dm;
         SDL_SetWindowFullscreenMode(
             window, SDL_GetClosestFullscreenDisplayMode(
@@ -234,7 +234,7 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
         );
     } else {
         SDL_SetWindowFullscreenMode(window, NULL);
-    }
+    }*/
     SDL_SetWindowFullscreen(window, display.fullscreen != FSM_WINDOWED);
 
     // Vsync
@@ -245,7 +245,7 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
     SDL_RestoreWindow(window);
     SDL_SyncWindow(window);
 
-    SDL_GetWindowSize(window, &display.width, &display.height);
+    SDL_GetWindowSizeInPixels(window, &display.width, &display.height);
     INFO("Display set to %dx%d, mode %d, vsync %d", display.width, display.height, display.fullscreen, display.vsync);
 }
 
