@@ -41,35 +41,35 @@ void loop() {
 
                 case SDL_EVENT_KEYBOARD_ADDED:
                 case SDL_EVENT_KEYBOARD_REMOVED:
-                    handle_keyboard((SDL_KeyboardDeviceEvent*)&event);
+                    handle_keyboard(&event.kdevice);
                     break;
                 case SDL_EVENT_KEY_DOWN:
                 case SDL_EVENT_KEY_UP:
-                    handle_key((SDL_KeyboardEvent*)&event);
+                    handle_key(&event.key);
                     break;
 
                 case SDL_EVENT_MOUSE_ADDED:
                 case SDL_EVENT_MOUSE_REMOVED:
-                    handle_mouse((SDL_MouseDeviceEvent*)&event);
+                    handle_mouse(&event.mdevice);
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:
-                    handle_mouse_button((SDL_MouseButtonEvent*)&event);
+                    handle_mouse_button(&event.button);
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
-                    handle_mouse_wheel((SDL_MouseWheelEvent*)&event);
+                    handle_mouse_wheel(&event.wheel);
                     break;
 
                 case SDL_EVENT_GAMEPAD_ADDED:
                 case SDL_EVENT_GAMEPAD_REMOVED:
-                    handle_gamepad((SDL_GamepadDeviceEvent*)&event);
+                    handle_gamepad(&event.gdevice);
                     break;
                 case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
                 case SDL_EVENT_GAMEPAD_BUTTON_UP:
-                    handle_gamepad_button((SDL_GamepadButtonEvent*)&event);
+                    handle_gamepad_button(&event.gbutton);
                     break;
                 case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-                    handle_gamepad_axis((SDL_GamepadAxisEvent*)&event);
+                    handle_gamepad_axis(&event.gaxis);
                     break;
             }
         if (!running)
