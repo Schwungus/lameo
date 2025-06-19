@@ -219,3 +219,15 @@ const char* get_file(const char* filename, const char* exclude_ext) {
 
     return NULL;
 }
+
+const char* get_base_path(const char* filename) {
+    if (filename == NULL)
+        return SDL_GetBasePath();
+    SDL_snprintf(path_result, sizeof(path_result), "%s%s", SDL_GetBasePath(), filename);
+    return path_result;
+}
+
+bool is_base_path(const char* path) {
+    const char* base_path = SDL_GetBasePath();
+    return SDL_strncmp(path, base_path, SDL_strlen(base_path)) == 0;
+}

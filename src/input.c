@@ -1,6 +1,7 @@
 #include "input.h"
 #include "log.h"
 #include "mem.h"
+#include "mod.h"
 
 static struct Verb verbs[VERB_SIZE] = {0};
 static SDL_PropertiesID verb_map = 0;
@@ -11,7 +12,7 @@ static struct VerbList gamepad_button_map[GAMEPAD_BUTTON_COUNT] = {0};
 static struct VerbList gamepad_axis_map[GAMEPAD_AXIS_COUNT] = {0};
 
 void input_init() {
-    if (SDL_AddGamepadMappingsFromFile("gamecontrollerdb.txt") == -1)
+    if (SDL_AddGamepadMappingsFromFile(get_base_path("gamecontrollerdb.txt")) == -1)
         WTF("Gamepad database fail: %s", SDL_GetError());
 
     if ((verb_map = SDL_CreateProperties()) == 0)

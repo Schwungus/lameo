@@ -30,3 +30,5 @@ ModID get_mod_hid(const char*);
 inline struct Mod* hid_to_mod(ModID);
 
 const char* get_file(const char*, const char*);
+const char* get_base_path(const char*);
+bool is_base_path(const char*);

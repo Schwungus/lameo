@@ -9,6 +9,7 @@
 #include "internal.h"
 #include "log.h"
 #include "mem.h"
+#include "mod.h"
 
 #define LOG_FILENAME "lameo.log"
 
@@ -34,7 +35,7 @@ void log_init() {
     SDL_SetLogOutputFunction(log_callback, NULL);
     SDL_SetLogPriorities(SDL_LOG_PRIORITY_TRACE);
 
-    log_file = SDL_IOFromFile(LOG_FILENAME, "w");
+    log_file = SDL_IOFromFile(get_base_path(LOG_FILENAME), "w");
     if (log_file == NULL) {
         WARN("Can't open log file: %s", SDL_GetError());
     } else {
