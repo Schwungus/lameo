@@ -1,11 +1,11 @@
 #include "config.h"
 #include "asset.h"
+#include "file.h"
 #include "input.h"
 #include "log.h"
-#include "mod.h"
 #include "video.h"
 
-static char config_path[MOD_PATH_MAX], controls_path[MOD_PATH_MAX];
+static char config_path[FILE_PATH_MAX], controls_path[FILE_PATH_MAX];
 static SDL_PropertiesID cvars = 0, default_cvars = 0;
 
 void config_init(const char* confpath, const char* contpath) {
@@ -22,13 +22,12 @@ void config_init(const char* confpath, const char* contpath) {
     SDL_SetBooleanProperty(default_cvars, "vid_vsync", false);
     SDL_SetNumberProperty(default_cvars, "vid_maxfps", 60);
 
-    SDL_strlcpy(config_path, confpath == NULL ? get_base_path("config.json") : confpath, MOD_PATH_MAX);
-    SDL_strlcpy(controls_path, contpath == NULL ? get_base_path("controls.json") : contpath, MOD_PATH_MAX);
+    SDL_strlcpy(config_path, confpath == NULL ? get_pref_path("config.json") : confpath, sizeof(config_path));
+    SDL_strlcpy(controls_path, contpath == NULL ? get_pref_path("controls.json") : contpath, sizeof(controls_path));
     INFO("\nConfig: %s\nControls: %s", config_path, controls_path);
 
     load_config();
     apply_cvar(NULL);
-    save_config();
 
     INFO("Opened");
 }
@@ -167,24 +166,24 @@ static void iterate_save_config(void* userdata, SDL_PropertiesID props, const ch
 }
 
 void save_config() {
-    if (is_base_path(config_path)) {
+    if (is_pref_path(config_path)) {
         yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
         yyjson_mut_val* root = yyjson_mut_obj(json);
 
         yyjson_mut_doc_set_root(json, root);
         SDL_EnumerateProperties(cvars, iterate_save_config, (void*)json);
 
-        yyjson_write_err error;
-        if (yyjson_mut_write_file(config_path, json, JSON_WRITE_FLAGS, NULL, &error))
+        const char* error = save_json(json, config_path);
+        if (error == NULL)
             INFO("Saved config");
         else
-            WTF("Config save fail: %s", error.msg);
+            WTF("Config save fail: %s", error);
         yyjson_mut_doc_free(json);
     } else {
-        WARN("Cannot save config outside of base path");
+        WARN("Cannot save config outside of pref path");
     }
 
-    if (is_base_path(controls_path)) {
+    if (is_pref_path(controls_path)) {
         yyjson_mut_doc* json = yyjson_mut_doc_new(NULL);
         yyjson_mut_val* root = yyjson_mut_obj(json);
 
@@ -200,23 +199,22 @@ void save_config() {
             yyjson_mut_obj_add(root, key, value);
         }
 
-        yyjson_write_err error;
-        if (yyjson_mut_write_file(controls_path, json, JSON_WRITE_FLAGS, NULL, &error))
+        const char* error = save_json(json, controls_path);
+        if (error == NULL)
             INFO("Saved controls");
         else
-            WTF("Controls save fail: %s", error.msg);
+            WTF("Controls save fail: %s", error);
         yyjson_mut_doc_free(json);
     } else {
-        WARN("Cannot save controls outside of base path");
+        WARN("Cannot save controls outside of pref path");
     }
 }
 
 void load_config() {
     // Config
-    yyjson_read_err error;
-    yyjson_doc* json = yyjson_read_file(config_path, JSON_FLAGS, NULL, &error);
+    yyjson_doc* json = load_json(config_path);
     if (json == NULL) {
-        WTF("Failed to open config \"%s\": %s", config_path, error.msg);
+        WTF("Config load fail");
     } else {
         yyjson_val* root = yyjson_doc_get_root(json);
         if (!yyjson_is_obj(root)) {
@@ -250,9 +248,9 @@ void load_config() {
     }
 
     // Controls
-    json = yyjson_read_file(controls_path, JSON_FLAGS, NULL, &error);
+    json = load_json(controls_path);
     if (json == NULL) {
-        WTF("Failed to open controls \"%s\": %s", controls_path, error.msg);
+        WTF("Controls load fail");
     } else {
         yyjson_val* root = yyjson_doc_get_root(json);
         if (!yyjson_is_obj(root)) {

@@ -14,7 +14,7 @@ static struct Mod* mods = NULL;
 static struct Fixture* mod_handles = NULL;
 
 static SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const char* fname) {
-    char path[MOD_PATH_MAX];
+    char path[FILE_PATH_MAX];
     SDL_snprintf(path, sizeof(path), "%s%s", dirname, fname);
 
     // Recursive into directories
@@ -37,8 +37,8 @@ static SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, 
 }
 
 static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, const char* fname) {
-    char path[MOD_PATH_MAX];
-    SDL_snprintf(path, MOD_PATH_MAX, "%s%s/", dirname, fname);
+    char path[FILE_PATH_MAX];
+    SDL_snprintf(path, sizeof(path), "%s%s/", dirname, fname);
 
     // Mods are folders so skip anything that isn't
     SDL_PathInfo info;
@@ -62,15 +62,15 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
 
     // Data
     mod->hid = (ModID)create_handle(mod_handles, mod);
-    SDL_strlcpy(mod->name, fname, MOD_NAME_MAX);
-    SDL_strlcpy(mod->path, path, MOD_PATH_MAX);
+    SDL_strlcpy(mod->name, fname, FILE_NAME_MAX);
+    SDL_strlcpy(mod->path, path, FILE_PATH_MAX);
     mod->crc32 = 0;
     if (!SDL_EnumerateDirectory(path, iterate_crc32, &mod->crc32))
         FATAL("CRC32 fail: %s", SDL_GetError());
 
     // Info
-    SDL_strlcat(path, "mod.json", MOD_PATH_MAX);
-    yyjson_doc* json = yyjson_read_file(path, JSON_FLAGS, NULL, NULL);
+    SDL_strlcat(path, "mod.json", FILE_PATH_MAX);
+    yyjson_doc* json = load_json(path);
     if (json == NULL) {
         WARN("Failed to open \"mod.json\" for \"%s\"", fname);
         SDL_strlcpy(mod->title, fname, MOD_NAME_MAX);
@@ -104,9 +104,9 @@ void mod_init() {
 
     // Load enabled mods
     const char* data_path = get_string_cvar("data_path");
-    char path[MOD_PATH_MAX];
+    char path[FILE_PATH_MAX];
     SDL_snprintf(path, sizeof(path), "%s/disabled.json", data_path);
-    yyjson_doc* json = yyjson_read_file(path, JSON_FLAGS, NULL, NULL);
+    yyjson_doc* json = load_json(path);
     yyjson_val* disabled = NULL;
     if (json != NULL) {
         disabled = yyjson_doc_get_root(json);
@@ -138,13 +138,13 @@ void mod_init_script() {
         while (mod->previous != NULL)
             mod = mod->previous;
 
-        char path[MOD_PATH_MAX];
+        char path[FILE_PATH_MAX];
         void* buffer;
         size_t size;
         while (mod != NULL) {
-            SDL_snprintf(path, MOD_PATH_MAX, "%sscript.lua", mod->path);
+            SDL_snprintf(path, FILE_PATH_MAX, "%sscript.lua", mod->path);
             if ((buffer = SDL_LoadFile(path, &size)) != NULL) {
-                SDL_snprintf(path, MOD_PATH_MAX, "%s?.lua", mod->path);
+                SDL_snprintf(path, FILE_PATH_MAX, "%s?.lua", mod->path);
                 set_import_path(path);
                 execute_buffer(buffer, size, mod->name);
                 lame_free(&buffer);
@@ -189,8 +189,8 @@ extern struct Mod* hid_to_mod(ModID hid) {
     return (struct Mod*)hid_to_pointer(mod_handles, (HandleID)hid);
 }
 
-static char path_result[MOD_PATH_MAX];
-const char* get_file(const char* filename, const char* exclude_ext) {
+static char mod_file_helper[FILE_PATH_MAX];
+const char* get_mod_file(const char* filename, const char* exclude_ext) {
     for (struct Mod* mod = mods; mod != NULL; mod = mod->previous) {
         int count;
         char** files = SDL_GlobDirectory(mod->path, filename, 0, &count);
@@ -207,27 +207,15 @@ const char* get_file(const char* filename, const char* exclude_ext) {
                     continue;
             }
 
-            SDL_snprintf(path_result, sizeof(path_result), "%s%s", mod->path, file);
+            SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%s%s", mod->path, file);
             success = 1;
             break;
         }
         lame_free(&files);
 
         if (success)
-            return path_result;
+            return mod_file_helper;
     }
 
     return NULL;
-}
-
-const char* get_base_path(const char* filename) {
-    if (filename == NULL)
-        return SDL_GetBasePath();
-    SDL_snprintf(path_result, sizeof(path_result), "%s%s", SDL_GetBasePath(), filename);
-    return path_result;
-}
-
-bool is_base_path(const char* path) {
-    const char* base_path = SDL_GetBasePath();
-    return SDL_strncmp(path, base_path, SDL_strlen(base_path)) == 0;
 }

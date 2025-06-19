@@ -6,6 +6,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_time.h>
 
+#include "file.h"
 #include "internal.h"
 #include "log.h"
 #include "mem.h"
@@ -19,14 +20,12 @@ const char* src_basename(const char* path) {
     const char* s = SDL_strrchr(path, '/');
     if (s == NULL)
         s = SDL_strrchr(path, '\\');
-
     return s == NULL ? path : s + 1;
 }
 
 void log_callback(void* userdata, int category, SDL_LogPriority priority, const char* message) {
     printf("[SDL %u:%u] %s\n", category, priority, message);
     fflush(stdout);
-
     if (log_file != NULL)
         SDL_IOprintf(log_file, "[SDL %u:%u] %s\n", category, priority, message);
 }

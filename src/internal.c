@@ -3,6 +3,7 @@
 #include "asset.h"
 #include "audio.h"
 #include "config.h"
+#include "file.h"
 #include "flags.h"
 #include "input.h"
 #include "internal.h"
@@ -16,6 +17,7 @@ void init(const char* config_path, const char* controls_path) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         FATAL("SDL fail: %s", SDL_GetError());
+    file_init();
     video_init();
     audio_init();
     input_init();
@@ -93,6 +95,7 @@ void cleanup() {
     input_teardown();
     audio_teardown();
     video_teardown();
+    file_teardown();
     log_teardown();
     SDL_Quit();
 }

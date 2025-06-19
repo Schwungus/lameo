@@ -1,13 +1,11 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3_image/SDL_image.h>
-#include <yyjson.h>
 
 #include "asset.h"
 #include "audio.h"
+#include "file.h"
 #include "log.h"
 #include "mod.h"
-
-#define ASSET_PATH_MAX 256
 
 static struct Shader* shaders = NULL;
 static struct Fixture* shader_handles = NULL;
@@ -62,7 +60,7 @@ void asset_teardown() {
     INFO("Closed");
 }
 
-static char path_helper[ASSET_PATH_MAX];
+static char asset_file_helper[FILE_PATH_MAX];
 
 // Shaders
 void load_shader(const char* name) {
@@ -70,8 +68,8 @@ void load_shader(const char* name) {
         return;
 
     // Vertex shader
-    SDL_snprintf(path_helper, sizeof(path_helper), "shaders/%s.vsh", name);
-    const char* file = get_file(path_helper, NULL);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.vsh", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         WARN("Vertex shader for \"%s\" not found", name);
         return;
@@ -81,7 +79,7 @@ void load_shader(const char* name) {
 
     GLchar* code = (GLchar*)SDL_LoadFile(file, NULL);
     if (code == NULL)
-        FATAL("Failed to load vertex shader \"%s\": %s", name, SDL_GetError());
+        FATAL("Shader \"%s\" vertex load fail: %s", name, SDL_GetError());
     glShaderSource(vertex, 1, &code, NULL);
     glCompileShader(vertex);
 
@@ -90,13 +88,13 @@ void load_shader(const char* name) {
     if (!success) {
         lame_realloc(&code, 1024); // Why not reuse the code string?
         glGetShaderInfoLog(vertex, 1024, NULL, code);
-        FATAL("Failed to compile vertex shader \"%s\":\n%s", name, code);
+        FATAL("Shader \"%s\" vertex fail:\n%s", name, code);
     }
     lame_free(&code);
 
     // Fragment shader
-    SDL_snprintf(path_helper, sizeof(path_helper), "shaders/%s.fsh", name);
-    file = get_file(path_helper, NULL);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.fsh", name);
+    file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         WARN("Fragment shader for \"%s\" not found", name);
         glDeleteShader(vertex);
@@ -107,7 +105,7 @@ void load_shader(const char* name) {
 
     code = (GLchar*)SDL_LoadFile(file, NULL);
     if (code == NULL)
-        FATAL("Failed to load fragment shader for \"%s\": %s", name, SDL_GetError());
+        FATAL("Shader \"%s\" fragment load fail: %s", name, SDL_GetError());
     glShaderSource(fragment, 1, &code, NULL);
     glCompileShader(fragment);
 
@@ -115,7 +113,7 @@ void load_shader(const char* name) {
     if (!success) {
         lame_realloc(&code, 1024);
         glGetShaderInfoLog(fragment, 1024, NULL, code);
-        FATAL("Failed to compile fragment shader for \"%s\":\n%s", name, code);
+        FATAL("Shader \"%s\" fragment fail:\n%s", name, code);
     }
     // Hold on to "code", we still have to attach the shaders.
     // lame_free(&code);
@@ -149,7 +147,7 @@ void load_shader(const char* name) {
     if (!success) {
         lame_realloc(&code, 1024);
         glGetProgramInfoLog(shader->program, 1024, NULL, code);
-        FATAL("Failed to link shader program for \"%s\":\n%s", name, code);
+        FATAL("Shader \"%s\" program fail:\n%s", name, code);
     }
     lame_free(&code); // Now we're good
 
@@ -216,16 +214,18 @@ void load_texture(const char* name) {
     if (get_texture(name) != NULL)
         return;
 
-    SDL_snprintf(path_helper, sizeof(path_helper), "textures/%s.*", name);
-    const char* file = get_file(path_helper, ".json");
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "textures/%s.*", name);
+    const char* file = get_mod_file(asset_file_helper, ".json");
     if (file == NULL) {
         WARN("Texture \"%s\" not found", name);
         return;
     }
 
     SDL_Surface* surface = IMG_Load(file);
-    if (surface == NULL)
-        FATAL("Failed to load image for texture \"s\": %s", SDL_GetError());
+    if (surface == NULL) {
+        WTF("Texture \"%s\" image fail: %s", SDL_GetError());
+        return;
+    }
 
     // Texture struct
     struct Texture* texture = lame_alloc(sizeof(struct Texture));
@@ -261,7 +261,7 @@ void load_texture(const char* name) {
         default: {
             SDL_Surface* temp = SDL_ConvertSurface(surface, SDL_PIXELFORMAT_RGBA32);
             if (temp == NULL)
-                FATAL("Failed to load image for texture \"s\": %s", SDL_GetError());
+                FATAL("Texture \"%s\" image conversion fail: %s", SDL_GetError());
             SDL_DestroySurface(surface);
             surface = temp;
 
@@ -373,16 +373,16 @@ void load_font(const char* name) {
     if (get_font(name) != NULL)
         return;
 
-    SDL_snprintf(path_helper, sizeof(path_helper), "fonts/%s.json", name);
-    const char* file = get_file(path_helper, NULL);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "fonts/%s.json", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         WARN("Font \"%s\" not found", name);
         return;
     }
 
-    yyjson_doc* json = yyjson_read_file(file, JSON_FLAGS, NULL, NULL);
+    yyjson_doc* json = load_json(file);
     if (json == NULL) {
-        WTF("Failed to load Font \"%s.json\"", name);
+        WTF("Font \"%s\" load fail", name);
         return;
     }
 
@@ -560,12 +560,12 @@ void load_sound(const char* name) {
         return;
 
     // Find a JSON for definitions
-    SDL_snprintf(path_helper, sizeof(path_helper), "sounds/%s.json", name);
-    const char* file = get_file(path_helper, NULL);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.json", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         // Fall back to just using a sample
-        SDL_snprintf(path_helper, sizeof(path_helper), "sounds/%s.*", name);
-        if ((file = get_file(path_helper, ".json")) == NULL) {
+        SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", name);
+        if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
             WARN("Sound \"%s\" not found", name);
             return;
         }
@@ -581,9 +581,9 @@ void load_sound(const char* name) {
         return;
     }
 
-    yyjson_doc* json = yyjson_read_file(file, JSON_FLAGS, NULL, NULL);
+    yyjson_doc* json = load_json(file);
     if (json == NULL) {
-        WTF("Failed to load Sound \"%s.json\"", name);
+        WTF("Sound \"%s\" load fail", name);
         return;
     }
 
@@ -603,10 +603,10 @@ void load_sound(const char* name) {
         sound->samples = lame_alloc(sizeof(struct Sample*));
         sound->num_samples = 1;
 
-        SDL_snprintf(path_helper, sizeof(path_helper), "sounds/%s.*", yyjson_get_str(value));
-        if ((file = get_file(path_helper, ".json")) == NULL) {
+        SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", yyjson_get_str(value));
+        if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
             sound->samples[0] = NULL;
-            WARN("Sample \"%s\" not found", path_helper);
+            WARN("Sample \"%s\" not found", asset_file_helper);
         } else {
             load_sample(file, &sound->samples[0]);
         }
@@ -626,10 +626,10 @@ void load_sound(const char* name) {
                 continue;
             }
 
-            SDL_snprintf(path_helper, sizeof(path_helper), "sounds/%s.*", yyjson_get_str(entry));
-            if ((file = get_file(path_helper, ".json")) == NULL) {
+            SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", yyjson_get_str(entry));
+            if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
                 sound->samples[i] = NULL;
-                WARN("Sample \"%s\" not found", path_helper);
+                WARN("Sample \"%s\" not found", asset_file_helper);
                 continue;
             }
             load_sample(file, &sound->samples[i]);
@@ -728,8 +728,8 @@ void load_track(const char* name) {
     if (get_track(name) != NULL)
         return;
 
-    SDL_snprintf(path_helper, sizeof(path_helper), "music/%s.*", name);
-    const char* track_file = get_file(path_helper, ".json");
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "music/%s.*", name);
+    const char* track_file = get_mod_file(asset_file_helper, ".json");
     if (track_file == NULL) {
         WARN("Track \"%s\" not found", name);
         return;

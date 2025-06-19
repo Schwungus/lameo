@@ -1,7 +1,7 @@
 #include "input.h"
+#include "file.h"
 #include "log.h"
 #include "mem.h"
-#include "mod.h"
 
 static struct Verb verbs[VERB_SIZE] = {0};
 static SDL_PropertiesID verb_map = 0;

@@ -2,17 +2,17 @@
 
 #include <SDL3/SDL_filesystem.h>
 
+#include "file.h"
 #include "mem.h"
 
 #define MOD_NAME_MAX 128
-#define MOD_PATH_MAX 256
 
 typedef HandleID ModID;
 
 struct Mod {
     ModID hid;
-    char name[MOD_NAME_MAX];
-    char path[MOD_PATH_MAX];
+    char name[FILE_NAME_MAX];
+    char path[FILE_PATH_MAX];
     uint32_t crc32;
 
     char title[MOD_NAME_MAX];
@@ -29,6 +29,4 @@ struct Mod* get_mod(const char*);
 ModID get_mod_hid(const char*);
 inline struct Mod* hid_to_mod(ModID);
 
-const char* get_file(const char*, const char*);
-const char* get_base_path(const char*);
-bool is_base_path(const char*);
+const char* get_mod_file(const char*, const char*);
