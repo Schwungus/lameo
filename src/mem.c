@@ -77,10 +77,12 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
     // Expand handles array on demand
     size_t old_capacity = fixture->capacity;
     if (fixture->next >= old_capacity) {
-        if (old_capacity >= HID_LIMIT)
-            log_fatal(src_basename(filename), line, "!!! Out of handle capacity (%u >= %u)", old_capacity, HID_LIMIT);
-
         size_t new_capacity = fixture->capacity * 2;
+        if (new_capacity <= old_capacity)
+            log_fatal(
+                src_basename(filename), line, "!!! Out of handle capacity (%u <= %u)", new_capacity, old_capacity
+            );
+
         _lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
         fixture->capacity = new_capacity;
 
