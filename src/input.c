@@ -155,7 +155,7 @@ void assign_verb_to_key(struct Verb* verb, SDL_Scancode key) {
         return;
 
     if (verb->key != NO_KEY) {
-        struct VerbList* list = &key_map[verb->key];
+        const struct VerbList* list = &key_map[verb->key];
         if (list->list != NULL)
             for (size_t i = 0; i < list->size; i++)
                 if (list->list[i] == verb) {
@@ -199,7 +199,7 @@ void assign_verb_to_mouse_button(struct Verb* verb, enum MouseButtons mouse_butt
         return;
 
     if (verb->mouse_button != NO_MOUSE_BUTTON) {
-        struct VerbList* list = &mouse_button_map[verb->mouse_button];
+        const struct VerbList* list = &mouse_button_map[verb->mouse_button];
         if (list->list != NULL)
             for (size_t i = 0; i < list->size; i++)
                 if (list->list[i] == verb) {
@@ -243,7 +243,7 @@ void assign_verb_to_gamepad_button(struct Verb* verb, SDL_GamepadButton gamepad_
         return;
 
     if (verb->gamepad_button != NO_GAMEPAD_BUTTON) {
-        struct VerbList* list = &gamepad_button_map[verb->gamepad_button];
+        const struct VerbList* list = &gamepad_button_map[verb->gamepad_button];
         if (list->list != NULL)
             for (size_t i = 0; i < list->size; i++)
                 if (list->list[i] == verb) {
@@ -287,7 +287,7 @@ void assign_verb_to_gamepad_axis(struct Verb* verb, SDL_GamepadAxis gamepad_axis
         return;
 
     if (verb->gamepad_axis != NO_GAMEPAD_AXIS) {
-        struct VerbList* list = &gamepad_axis_map[verb->gamepad_axis];
+        const struct VerbList* list = &gamepad_axis_map[verb->gamepad_axis];
         if (list->list != NULL)
             for (size_t i = 0; i < list->size; i++)
                 if (list->list[i] == verb) {
@@ -333,14 +333,14 @@ extern struct Verb* get_verb(enum Verbs verb) {
 struct Verb* find_verb(const char* name) {
     if (!SDL_HasProperty(verb_map, name))
         return NULL;
-    enum Verbs verb = (enum Verbs)SDL_GetNumberProperty(verb_map, name, VERB_SIZE);
+    const enum Verbs verb = (enum Verbs)SDL_GetNumberProperty(verb_map, name, VERB_SIZE);
     return verb >= VERB_SIZE ? NULL : &verbs[verb];
 }
 
 void handle_keyboard(SDL_KeyboardDeviceEvent* event) {}
 
 void handle_key(SDL_KeyboardEvent* event) {
-    struct VerbList* list = &key_map[event->scancode];
+    const struct VerbList* list = &key_map[event->scancode];
     if (list->list == NULL)
         return;
 
@@ -385,7 +385,7 @@ void handle_mouse_button(SDL_MouseButtonEvent* event) {
             break;
     }
 
-    struct VerbList* list = &mouse_button_map[mouse_button];
+    const struct VerbList* list = &mouse_button_map[mouse_button];
     if (list->list == NULL)
         return;
 
@@ -410,12 +410,12 @@ void handle_mouse_wheel(SDL_MouseWheelEvent* event) {
         event->integer_x *= -1;
         event->integer_y *= -1;
     }
-    enum MouseButtons mouse_button =
+    const enum MouseButtons mouse_button =
         event->integer_y == 0
             ? (event->integer_x == 0 ? MOUSE_NONE : (event->integer_x > 0 ? MOUSE_WHEEL_LEFT : MOUSE_WHEEL_RIGHT))
             : (event->integer_y > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
 
-    struct VerbList* list = &mouse_button_map[mouse_button];
+    const struct VerbList* list = &mouse_button_map[mouse_button];
     if (list->list == NULL)
         return;
 
@@ -426,10 +426,18 @@ void handle_mouse_wheel(SDL_MouseWheelEvent* event) {
     }
 }
 
-void handle_gamepad(SDL_GamepadDeviceEvent* event) {}
+void handle_gamepad(SDL_GamepadDeviceEvent* event) {
+    // MEMORY LEAK: Windows leaks ~148 bytes when a gamepad is available.
+    //              https://github.com/libsdl-org/SDL/issues/10621#issuecomment-2325450912
+    // Pattern: <No HID devices f> 4E 6F 20 48 49 44 20 64 65 76 69 63 65 73 20 66
+    if (event->type == SDL_EVENT_GAMEPAD_ADDED)
+        SDL_OpenGamepad(event->which);
+    else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
+        SDL_CloseGamepad(SDL_GetGamepadFromID(event->which));
+}
 
 void handle_gamepad_button(SDL_GamepadButtonEvent* event) {
-    struct VerbList* list = &gamepad_button_map[event->button];
+    const struct VerbList* list = &gamepad_button_map[event->button];
     if (list->list == NULL)
         return;
 
@@ -450,7 +458,7 @@ void handle_gamepad_button(SDL_GamepadButtonEvent* event) {
 }
 
 void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
-    struct VerbList* list = &gamepad_axis_map[event->axis];
+    const struct VerbList* list = &gamepad_axis_map[event->axis];
     if (list->list == NULL)
         return;
 
@@ -458,8 +466,12 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
         struct Verb* verb = list->list[i];
         if (verb != NULL) {
             Sint16 value = verb->axis >= 0 ? SDL_max(event->value, 0) : -SDL_clamp(event->value, VERB_VALUE_MIN, 0);
-            verb->held = value != 0;
-            verb->value = SDL_max(verb->value, value);
+            if (value < 8) {
+                verb->held = false;
+            } else {
+                verb->held = true;
+                verb->value = value;
+            }
         }
     }
 }

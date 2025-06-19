@@ -59,9 +59,6 @@ void loop() {
                 case SDL_EVENT_MOUSE_WHEEL:
                     handle_mouse_wheel((SDL_MouseWheelEvent*)&event);
                     break;
-                    /*case SDL_EVENT_MOUSE_MOTION:
-                        handle_mouse_motion(&event);
-                        break;*/
 
                 case SDL_EVENT_GAMEPAD_ADDED:
                 case SDL_EVENT_GAMEPAD_REMOVED:
@@ -74,14 +71,6 @@ void loop() {
                 case SDL_EVENT_GAMEPAD_AXIS_MOTION:
                     handle_gamepad_axis((SDL_GamepadAxisEvent*)&event);
                     break;
-                    /*case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-                        handle_gamepad_sensor(&event);
-                        break;
-                    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-                    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-                    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-                        handle_gamepad_touchpad(&event);
-                        break;*/
             }
         if (!running)
             break;
