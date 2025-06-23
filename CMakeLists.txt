@@ -91,7 +91,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(lua)
 
 set(LIBS SDL3::SDL3-static SDL3_image::SDL3_image-static ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_static)
-set(LIBTYPE STATIC)
 
 # Build
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
