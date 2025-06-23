@@ -4,6 +4,18 @@
 
 #include "asset.h"
 
+enum VolumeSlots {
+    VOL_MAIN,
+    VOL_FADE,
+    VOL_GAME,
+    VOL_SIZE,
+};
+
+struct MusicInstance {
+    FMOD_CHANNEL* channel;
+    uint32_t priority;
+};
+
 void audio_init();
 void audio_update();
 void audio_teardown();
