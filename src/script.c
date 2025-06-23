@@ -1,8 +1,7 @@
 #include <SDL3/SDL_iostream.h>
-#include <lauxlib.h>
-#include <lualib.h>
 
 #include "flags.h"
+#include "handler.h"
 #include "log.h"
 #include "mem.h"
 #include "mod.h"
@@ -21,12 +20,7 @@ SCRIPT_FUNCTION(tostring) {
 
 // Definitions
 SCRIPT_FUNCTION(define_handler) {
-    luaL_checkstring(L, -2);
-    luaL_checktype(L, -1, LUA_TTABLE);
-
-    SCRIPT_LOG("Defined Handler \"%s\"", lua_tostring(L, -2));
-
-    return 0;
+    return define_handler(L);
 }
 
 SCRIPT_FUNCTION(define_ui) {
@@ -395,4 +389,15 @@ void _execute_buffer(void* buffer, size_t size, const char* name, const char* fi
         log_fatal(src_basename(filename), line, "Failed to load script \"%s\": %s", name, lua_tostring(context, -1));
     if (lua_pcall(context, 0, 0, 0) != LUA_OK)
         log_fatal(src_basename(filename), line, "Error in script \"%s\": %s", name, lua_tostring(context, -1));
+}
+
+extern void unreference(int* ref) {
+    luaL_unref(context, LUA_REGISTRYINDEX, *ref);
+    *ref = LUA_NOREF;
+}
+
+void _execute_ref(int ref, const char* name, const char* filename, int line) {
+    lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
+    if (lua_pcall(context, 0, 0, 0) != LUA_OK)
+        log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
 }

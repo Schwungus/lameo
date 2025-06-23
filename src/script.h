@@ -1,6 +1,8 @@
 #pragma once
 
+#include <lauxlib.h>
 #include <lua.h>
+#include <lualib.h>
 
 #include "log.h"
 
@@ -46,6 +48,7 @@
     log_script(debug.source, debug.name, debug.currentline, format, ##__VA_ARGS__);
 
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
+#define execute_ref(ref, name) _execute_ref(ref, name, __FILE__, __LINE__)
 
 void script_init();
 void script_teardown();
@@ -53,3 +56,6 @@ void script_teardown();
 void set_import_path(const char*);
 
 void _execute_buffer(void*, size_t, const char*, const char*, int);
+
+inline void unreference(int*);
+void _execute_ref(int, const char*, const char*, int);

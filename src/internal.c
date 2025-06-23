@@ -5,6 +5,7 @@
 #include "config.h"
 #include "file.h"
 #include "flags.h"
+#include "handler.h"
 #include "input.h"
 #include "internal.h"
 #include "log.h"
@@ -27,6 +28,7 @@ void init(const char* config_path, const char* controls_path) {
     mod_init();
     asset_init();
     script_init();
+    handler_init();
     tick_init();
 }
 
@@ -86,6 +88,7 @@ void loop() {
 
 void cleanup() {
     tick_teardown();
+    handler_teardown();
     script_teardown();
     asset_teardown();
     mod_teardown();
