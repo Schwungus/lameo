@@ -99,14 +99,6 @@ void input_init() {
         VERB_DEBUG_CONSOLE, "debug_console", 0, SDL_SCANCODE_BACKSLASH, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON,
         NO_GAMEPAD_AXIS
     );
-    define_verb(
-        VERB_DEBUG_CONSOLE_SUBMIT, "debug_console_submit", 0, SDL_SCANCODE_RETURN, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON,
-        NO_GAMEPAD_AXIS
-    );
-    define_verb(
-        VERB_DEBUG_CONSOLE_PREVIOUS, "debug_console_previous", 0, SDL_SCANCODE_UP, NO_MOUSE_BUTTON, NO_GAMEPAD_BUTTON,
-        NO_GAMEPAD_AXIS
-    );
 
     INFO("Opened");
 }
