@@ -43,11 +43,7 @@ void asset_init() {
 }
 
 void asset_teardown() {
-    clear_shaders(1);
-    clear_textures(1);
-    clear_fonts(1);
-    clear_sounds(1);
-    clear_music(1);
+    clear_assets(1);
 
     destroy_fixture(shader_handles);
     destroy_fixture(texture_handles);
@@ -58,6 +54,14 @@ void asset_teardown() {
     destroy_fixture(track_handles);
 
     INFO("Closed");
+}
+
+extern void clear_assets(int teardown) {
+    clear_shaders(teardown);
+    clear_textures(teardown);
+    clear_fonts(teardown);
+    clear_sounds(teardown);
+    clear_music(teardown);
 }
 
 static char asset_file_helper[FILE_PATH_MAX];

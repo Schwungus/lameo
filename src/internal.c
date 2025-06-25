@@ -14,6 +14,8 @@
 #include "tick.h"
 #include "video.h"
 
+static struct LoadState load_state = {0};
+
 void init(const char* config_path, const char* controls_path) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
@@ -30,6 +32,10 @@ void init(const char* config_path, const char* controls_path) {
     script_init();
     handler_init();
     tick_init();
+
+    // Default level is "main"
+    SDL_strlcpy(load_state.level, "main", LEVEL_NAME_MAX);
+    load_state.state = LOAD_START;
 }
 
 void loop() {
@@ -79,6 +85,40 @@ void loop() {
         if (!running)
             break;
 
+        switch (load_state.state) {
+            case LOAD_START: {
+                load_state.state = LOAD_UNLOAD;
+                break;
+            }
+
+            case LOAD_UNLOAD: {
+                // Unload level
+
+                // Unload assets
+                clear_assets(0);
+
+                load_state.state = LOAD_LOAD;
+                break;
+            }
+
+            case LOAD_LOAD: {
+                INFO("\n\nENTERING \"%s\" (room %d, tag %d)\n", load_state.level, load_state.room, load_state.tag);
+
+                // Load level
+
+                load_state.state = LOAD_END;
+                break;
+            }
+
+            case LOAD_END: {
+                // Ready players to active
+                // Assign players to room ID "load_state.room"
+
+                load_state.state = LOAD_NONE;
+                break;
+            }
+        }
+
         tick_update();
         video_update();
         audio_update();
@@ -101,4 +141,8 @@ void cleanup() {
     file_teardown();
     log_teardown();
     SDL_Quit();
+}
+
+extern enum LoadStates get_load_state() {
+    return load_state.state;
 }

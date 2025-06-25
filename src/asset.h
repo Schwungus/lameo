@@ -99,6 +99,8 @@ struct Track {
 void asset_init();
 void asset_teardown();
 
+inline void clear_assets(int);
+
 void load_shader(const char*);
 struct Shader* fetch_shader(const char*);
 ShaderID fetch_shader_hid(const char*);

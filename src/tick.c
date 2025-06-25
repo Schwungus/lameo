@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 
+#include "internal.h"
 #include "tick.h"
 
 static uint64_t last_time = 0;
@@ -14,10 +15,16 @@ void tick_init() {
 void tick_update() {
     const uint64_t current_time = SDL_GetTicks();
     ticks += (float)(current_time - last_time) * ((float)TICKRATE / 1000.);
-    while (ticks >= 1) {
-        // UI, game ...
-        ticks -= 1;
-    }
+
+    if (ticks >= 1)
+        if (get_load_state() == LOAD_NONE)
+            while (ticks >= 1) {
+                // UI, game ...
+                ticks -= 1;
+            }
+        else
+            ticks -= SDL_floorf(ticks);
+
     last_time = current_time;
 }
 
