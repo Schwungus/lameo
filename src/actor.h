@@ -6,6 +6,8 @@
 
 #define ACTOR_NAME_MAX 32
 
+#include "room.h" // room.h relies on ACTOR_NAME_MAX, so only include after that's defined
+
 typedef HandleID ActorID;
 
 enum ActorFlags {
@@ -37,19 +39,26 @@ struct ActorType {
     struct ActorType* parent;
 };
 
-struct CameraActor {
+struct ActorCamera {
     ActorID parent, child;
     float fov;
     enum CameraFlags flags;
+
+    struct CameraTarget* targets;
+    struct CameraPOI* pois;
 };
 
 struct CameraTarget {
+    struct CameraTarget *previous, *next;
+
     vec3 pos;
     ActorID target;
     float range;
 };
 
 struct CameraPOI {
+    struct CameraPOI *previous, *next;
+
     vec3 pos;
     ActorID target;
     float lerp;
@@ -57,14 +66,18 @@ struct CameraPOI {
 
 struct Actor {
     struct ActorType* type;
-    struct CameraActor* acamera;
+    struct ActorCamera* acamera;
+
+    struct Room* room;
+    struct RoomActor* aroom;
 
     struct Player* player;
-    ActorID *master, *target;
+    ActorID master, target;
 
     vec3 pos, angle, vel;
     float friction, gravity;
 
     SDL_PropertiesID properties;
     enum ActorFlags flags;
+    uint16_t tag;
 };
