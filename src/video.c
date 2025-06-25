@@ -131,6 +131,7 @@ void video_init_render() {
     // Fonts
     if ((default_font = fetch_font("main")) == NULL)
         FATAL("Main font \"main\" not found");
+    default_font->transient = true;
 
     INFO("Opened for rendering");
 }

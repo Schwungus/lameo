@@ -48,9 +48,11 @@ void audio_init() {
 static bool dummy = false;
 void audio_update() {
     if (!dummy) {
-        const struct Track* track = fetch_track("sample");
-        if (track != NULL)
+        struct Track* track = fetch_track("sample");
+        if (track != NULL) {
+            track->transient = true;
             FMOD_System_PlaySound(speaker, track->stream, music_group, false, NULL);
+        }
         dummy = true;
     }
     FMOD_System_Update(speaker);
