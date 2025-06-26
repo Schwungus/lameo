@@ -16,7 +16,7 @@ void tick_update() {
     const uint64_t current_time = SDL_GetTicks();
     ticks += (float)(current_time - last_time) * ((float)TICKRATE / 1000.);
 
-    if (ticks >= 1)
+    if (ticks >= 1) {
         if (get_load_state() == LOAD_NONE)
             while (ticks >= 1) {
                 // UI, game ...
@@ -24,6 +24,7 @@ void tick_update() {
             }
         else
             ticks -= SDL_floorf(ticks);
+    }
 
     last_time = current_time;
 }

@@ -1,7 +1,5 @@
-#include <SDL3/SDL_stdinc.h>
-
-#include "log.h"
 #include "mem.h"
+#include "log.h"
 
 void* _lame_alloc(size_t size, const char* filename, int line) {
     if (!size)
@@ -59,11 +57,11 @@ struct Fixture* _create_fixture(const char* filename, int line) {
     return fixture;
 }
 
-extern void _destroy_fixture(struct Fixture* fixture, const char* filename, int line) {
+void _destroy_fixture(struct Fixture* fixture, const char* filename, int line) {
     // log_generic(src_basename(filename), line, "Destroyed fixture %u", fixture);
     if (fixture->handles != NULL)
-        _lame_free(&fixture->handles, filename, line);
-    _lame_free(&fixture, filename, line);
+        _lame_free((void**)&fixture->handles, filename, line);
+    _lame_free((void**)&fixture, filename, line);
 }
 
 HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename, int line) {
@@ -83,7 +81,7 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
                 src_basename(filename), line, "!!! Out of handle capacity (%u <= %u)", new_capacity, old_capacity
             );
 
-        _lame_realloc(&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
+        _lame_realloc((void**)&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
         fixture->capacity = new_capacity;
 
         for (int i = old_capacity; i < new_capacity; i++) {

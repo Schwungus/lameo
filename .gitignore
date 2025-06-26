@@ -1,7 +1,6 @@
 /build
 /.cache
 *.bak
-/.vscode
 
 /include/fmod/windows
 /include/fmod/linux

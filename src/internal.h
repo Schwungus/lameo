@@ -22,4 +22,4 @@ void init(const char*, const char*);
 void loop();
 void cleanup();
 
-inline enum LoadStates get_load_state();
+enum LoadStates get_load_state();

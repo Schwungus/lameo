@@ -2,7 +2,7 @@
 
 #include "actor.h"
 #include "level.h"
-#include "math.h"
+#include "math.h" // IWYU pragma: keep
 
 enum RoomActorFlags {
     RAF_PERSISTENT, // Enables AF_PERSISTENT.
@@ -10,13 +10,9 @@ enum RoomActorFlags {
     RAF_DISPOSED,   // Won't be spawned upon activating the room.
 };
 
-struct RoomInfo {
-    uint16_t id;
-    struct RoomInfo *previous, *next;
-};
-
 struct Room {
-    struct RoomInfo* info;
+    struct Level* level;
+    uint16_t id;
     struct Room *previous, *next;
 
     struct Player *master, *players;

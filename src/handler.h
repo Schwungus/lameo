@@ -1,6 +1,6 @@
 #pragma once
 
-#include "script.h"
+#include "script.h" // IWYU pragma: keep
 
 #define HANDLER_NAME_MAX 32
 

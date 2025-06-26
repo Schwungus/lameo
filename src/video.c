@@ -1,7 +1,6 @@
 #include <SDL3/SDL_timer.h>
 
-#include "asset.h"
-#include "config.h"
+#include "SDL3/SDL_stdinc.h"
 #include "input.h"
 #include "log.h"
 #include "mem.h"
@@ -168,7 +167,7 @@ void video_update() {
     set_shader(NULL);
     for (size_t i = 0; i < VERB_SIZE; i++) {
         char str[128];
-        struct Verb* verb = get_verb(i);
+        const struct Verb* verb = get_verb(i);
         SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
         main_string(str, NULL, 16, 0, i * 16, 0);
     }
@@ -223,6 +222,7 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
 
     // MEMORY LEAK: In exclusive fullscreen, Windows will leak ~220 bytes every
     //              time you tab out and back in.
+    //              https://github.com/libsdl-org/SDL/issues/13233
     // Pattern: <C D D           > 43 00 44 00 44 00 00 00 00 00 00 00 00 00 00 00
     /*if (display.fullscreen == FSM_EXCLUSIVE_FULLSCREEN) {
         SDL_DisplayMode dm;
@@ -253,7 +253,6 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
 void set_framerate(uint16_t fps) {
     if (framerate == fps)
         return;
-
     if ((framerate = fps) > 0)
         INFO("Capped framerate to %d FPS", fps);
     else
@@ -263,7 +262,6 @@ void set_framerate(uint16_t fps) {
 // Shaders 'n' Uniforms
 void set_shader(struct Shader* shader) {
     struct Shader* target = (shader == NULL) ? default_shaders[render_stage] : shader;
-
     if (current_shader != target) {
         submit_batch();
         current_shader = target;
@@ -347,6 +345,8 @@ void set_render_stage(enum RenderTypes type) {
 
 void submit_batch() {
     switch (render_stage) {
+        default:
+            break;
         case RT_MAIN:
             submit_main_batch();
             break;
@@ -396,7 +396,6 @@ void submit_main_batch() {
 
 void set_main_texture(struct Texture* texture) {
     GLuint target = texture == NULL ? blank_texture : texture->texture;
-
     if (main_batch.texture != target) {
         submit_main_batch();
         main_batch.texture = target;
@@ -405,7 +404,7 @@ void set_main_texture(struct Texture* texture) {
 
 void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
     if (main_batch.vertex_count >= main_batch.vertex_capacity) {
-        // submit_main_batch();
+        submit_main_batch();
         main_batch.vertex_capacity *= 2;
         INFO("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
         lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
@@ -413,10 +412,9 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
     }
 
-    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){
-        x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
-        u, v
-    };
+    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex
+    ){x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
+      u, v};
 }
 
 void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
@@ -444,8 +442,11 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
     GLfloat scale = size / font->size;
     GLfloat cx = x;
     GLfloat cy = y;
-    for (size_t i = 0, n = SDL_strlen(str); i < n; i++) {
-        unsigned char gid = str[i];
+    size_t bytes = SDL_strlen(str);
+    while (bytes > 0) {
+        size_t gid = SDL_StepUTF8(&str, &bytes);
+
+        // Special/invalid characters
         if (gid == '\r')
             continue;
         if (gid == '\n') {
@@ -458,7 +459,11 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
         if (gid >= font->num_glyphs)
             continue;
 
-        struct Glyph* glyph = &font->glyphs[gid];
+        // Valid glyph
+        struct Glyph* glyph = font->glyphs[gid];
+        if (glyph == NULL)
+            continue;
+
         GLfloat x1 = cx + (glyph->offset[0] * scale);
         GLfloat y1 = cy + (glyph->offset[1] * scale);
         GLfloat x2 = x1 + (glyph->size[0] * scale);
@@ -477,7 +482,8 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
 void main_string_wrap(
     const char* str, struct Font* font, GLfloat size, GLfloat width, GLfloat x, GLfloat y, GLfloat z
 ) {
-    if (font == NULL)
+    main_string(str, font, size, x, y, z);
+    /*if (font == NULL)
         font = default_font;
     set_main_texture(hid_to_texture(font->texture));
 
@@ -492,6 +498,7 @@ void main_string_wrap(
 
     for (int i = 0; i < n; i++) {
         unsigned char gid = str[i];
+
         GLfloat gwidth = (gid >= font->num_glyphs || gid == '\n') ? 0 : (font->glyphs[gid].advance * scale);
 
         if (measure) {
@@ -543,7 +550,7 @@ void main_string_wrap(
 
         if (cx > x || !SDL_isspace(gid))
             cx += gwidth;
-    }
+    }*/
 }
 
 // World

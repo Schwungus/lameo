@@ -86,6 +86,9 @@ void loop() {
             break;
 
         switch (load_state.state) {
+            default:
+                break;
+
             case LOAD_START: {
                 load_state.state = LOAD_UNLOAD;
                 break;
@@ -143,6 +146,6 @@ void cleanup() {
     SDL_Quit();
 }
 
-extern enum LoadStates get_load_state() {
+enum LoadStates get_load_state() {
     return load_state.state;
 }

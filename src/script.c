@@ -76,7 +76,7 @@ SCRIPT_FUNCTION(get_flag_type) {
 }
 
 SCRIPT_FUNCTION(get_flag) {
-    enum FlagScope scope = lua_tointeger(L, -2);
+    enum FlagScopes scope = lua_tointeger(L, -2);
     const char* flag = lua_tostring(L, -1);
 
     switch (get_flag_type(scope, flag)) {
@@ -102,7 +102,7 @@ SCRIPT_FUNCTION(get_flag) {
 }
 
 SCRIPT_FUNCTION(set_flag) {
-    enum FlagScope scope = lua_tointeger(L, -3);
+    enum FlagScopes scope = lua_tointeger(L, -3);
     const char* flag = lua_tostring(L, -2);
 
     switch (lua_type(L, -1)) {
@@ -391,7 +391,7 @@ void _execute_buffer(void* buffer, size_t size, const char* name, const char* fi
         log_fatal(src_basename(filename), line, "Error in script \"%s\": %s", name, lua_tostring(context, -1));
 }
 
-extern void unreference(int* ref) {
+void unreference(int* ref) {
     luaL_unref(context, LUA_REGISTRYINDEX, *ref);
     *ref = LUA_NOREF;
 }

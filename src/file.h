@@ -2,8 +2,6 @@
 
 #include <yyjson.h>
 
-#include "log.h"
-
 #define FILE_NAME_MAX 128
 #define FILE_PATH_MAX 256
 

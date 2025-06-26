@@ -101,7 +101,7 @@ void assign_verb_to_key(struct Verb*, SDL_Scancode);
 void assign_verb_to_mouse_button(struct Verb*, enum MouseButtons);
 void assign_verb_to_gamepad_button(struct Verb*, SDL_GamepadButton);
 void assign_verb_to_gamepad_axis(struct Verb*, SDL_GamepadAxis);
-inline struct Verb* get_verb(enum Verbs);
+struct Verb* get_verb(enum Verbs);
 struct Verb* find_verb(const char*);
 
 void handle_keyboard(SDL_KeyboardDeviceEvent*);
@@ -118,4 +118,4 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent*);
 // void handle_gamepad_sensor(SDL_GamepadSensorEvent*);
 // void handle_gamepad_touchpad(SDL_GamepadTouchpadEvent*);
 
-inline int16_t input_value(enum Verbs, size_t);
+int16_t input_value(enum Verbs, size_t);

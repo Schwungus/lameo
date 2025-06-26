@@ -4,7 +4,6 @@
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_stdinc.h>
 
-#include "asset.h"
 #include "config.h"
 #include "log.h"
 #include "mod.h"

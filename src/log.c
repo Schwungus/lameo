@@ -7,10 +7,8 @@
 #include <SDL3/SDL_time.h>
 
 #include "file.h"
-#include "internal.h"
 #include "log.h"
 #include "mem.h"
-#include "mod.h"
 
 #define LOG_FILENAME "lameo.log"
 
@@ -100,11 +98,11 @@ void log_fatal(const char* filename, int line, const char* format, ...) {
     va_end(args);
     SDL_strlcat(message + msgpos, "\n", sizeof(message) - msgpos);
 
-    printf(message);
+    printf("%s", message);
     fflush(stdout);
 
     if (log_file != NULL) {
-        SDL_IOprintf(log_file, message);
+        SDL_IOprintf(log_file, "%s", message);
         SDL_CloseIO(log_file);
         log_file = NULL;
     }

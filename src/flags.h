@@ -26,18 +26,18 @@ enum FlagTypes {
 void flags_init();
 void flags_teardown();
 
-inline enum FlagTypes get_flag_type(enum FlagScopes, const char*);
-inline bool get_bool_flag(enum FlagScopes, const char*, bool);
-inline Sint64 get_int_flag(enum FlagScopes, const char*, Sint64);
-inline float get_float_flag(enum FlagScopes, const char*, float);
-inline const char* get_string_flag(enum FlagScopes, const char*, const char*);
+enum FlagTypes get_flag_type(enum FlagScopes, const char*);
+bool get_bool_flag(enum FlagScopes, const char*, bool);
+Sint64 get_int_flag(enum FlagScopes, const char*, Sint64);
+float get_float_flag(enum FlagScopes, const char*, float);
+const char* get_string_flag(enum FlagScopes, const char*, const char*);
 
-inline void set_bool_flag(enum FlagScopes, const char*, bool);
-inline void set_int_flag(enum FlagScopes, const char*, Sint64);
-inline void set_float_flag(enum FlagScopes, const char*, float);
-inline void set_string_flag(enum FlagScopes, const char*, const char*);
+void set_bool_flag(enum FlagScopes, const char*, bool);
+void set_int_flag(enum FlagScopes, const char*, Sint64);
+void set_float_flag(enum FlagScopes, const char*, float);
+void set_string_flag(enum FlagScopes, const char*, const char*);
 
-inline void reset_flag(enum FlagScopes, const char*);
-inline bool toggle_flag(enum FlagScopes, const char*);
-inline Sint64 increment_flag(enum FlagScopes, const char*);
-inline Sint64 decrement_flag(enum FlagScopes, const char*);
+void reset_flag(enum FlagScopes, const char*);
+bool toggle_flag(enum FlagScopes, const char*);
+Sint64 increment_flag(enum FlagScopes, const char*);
+Sint64 decrement_flag(enum FlagScopes, const char*);

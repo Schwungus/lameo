@@ -4,7 +4,7 @@
 #include <lua.h>
 #include <lualib.h>
 
-#include "log.h"
+#include "log.h" // IWYU pragma: keep
 
 #define SCRIPT_PREFIX(name) s_##name
 #define SCRIPT_PUSH(type) lua_push##type
@@ -57,5 +57,5 @@ void set_import_path(const char*);
 
 void _execute_buffer(void*, size_t, const char*, const char*, int);
 
-inline void unreference(int*);
+void unreference(int*);
 void _execute_ref(int, const char*, const char*, int);

@@ -7,13 +7,8 @@
 #include <SDL3/SDL_opengl.h>
 // clang-format on
 
-#include "math.h"
-
-struct Display {
-    int width, height;
-    enum FullscreenModes fullscreen;
-    bool vsync;
-};
+#include "asset.h"
+#include "math.h" // IWYU pragma: keep
 
 enum FullscreenModes {
     FSM_WINDOWED,
@@ -35,6 +30,12 @@ enum VertexAttributes {
     VATT_BONE_INDEX,
     VATT_BONE_WEIGHT,
     VATT_SIZE,
+};
+
+struct Display {
+    int width, height;
+    enum FullscreenModes fullscreen;
+    bool vsync;
 };
 
 struct MainVertex {

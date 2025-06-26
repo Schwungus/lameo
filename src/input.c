@@ -319,7 +319,7 @@ void assign_verb_to_gamepad_axis(struct Verb* verb, SDL_GamepadAxis gamepad_axis
     }
 }
 
-extern struct Verb* get_verb(enum Verbs verb) {
+struct Verb* get_verb(enum Verbs verb) {
     return &verbs[verb];
 }
 
@@ -469,6 +469,6 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
     }
 }
 
-extern int16_t input_value(enum Verbs verb, size_t slot) {
+int16_t input_value(enum Verbs verb, size_t slot) {
     return verbs[verb].value;
 }

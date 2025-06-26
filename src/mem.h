@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL_stdinc.h>
+
 void* _lame_alloc(size_t, const char*, int);
 void _lame_free(void**, const char*, int);
 void* _lame_copy(void*, const void*, size_t, const char*, int);
@@ -63,7 +65,7 @@ struct Handle {
 typedef HID_TYPE HandleID;
 
 struct Fixture* _create_fixture(const char*, int);
-inline void _destroy_fixture(struct Fixture*, const char*, int);
+void _destroy_fixture(struct Fixture*, const char*, int);
 HandleID _create_handle(struct Fixture*, void*, const char*, int);
 void _destroy_handle(struct Fixture*, HandleID, const char*, int);
 

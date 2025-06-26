@@ -4,7 +4,6 @@
 #include "audio.h"
 #include "log.h"
 #include "math.h"
-#include "mem.h"
 
 #define MAX_CHANNELS 256
 
@@ -76,7 +75,7 @@ audio_debug_callback(FMOD_DEBUG_FLAGS flags, const char* file, int line, const c
 }
 
 // Sound
-extern void load_sample(const char* filename, FMOD_SOUND** sample) {
+void load_sample(const char* filename, FMOD_SOUND** sample) {
     FMOD_RESULT result = FMOD_System_CreateSound(speaker, filename, FMOD_CREATESAMPLE, NULL, sample);
     if (result != FMOD_OK) {
         WTF("Sample fail: %s", FMOD_ErrorString(result));
@@ -84,7 +83,7 @@ extern void load_sample(const char* filename, FMOD_SOUND** sample) {
     }
 }
 
-extern void destroy_sample(FMOD_SOUND* sample) {
+void destroy_sample(FMOD_SOUND* sample) {
     FMOD_Sound_Release(sample);
 }
 
@@ -107,7 +106,7 @@ FMOD_CHANNEL* play_ui_sound(const struct Sound* sound, bool loop, uint32_t offse
 }
 
 // Music
-extern void load_stream(const char* filename, FMOD_SOUND** stream) {
+void load_stream(const char* filename, FMOD_SOUND** stream) {
     FMOD_RESULT result =
         FMOD_System_CreateSound(speaker, filename, FMOD_CREATESTREAM | FMOD_ACCURATETIME, NULL, stream);
     if (result != FMOD_OK) {
@@ -116,6 +115,6 @@ extern void load_stream(const char* filename, FMOD_SOUND** stream) {
     }
 }
 
-extern void destroy_stream(FMOD_SOUND* stream) {
+void destroy_stream(FMOD_SOUND* stream) {
     FMOD_Sound_Release(stream);
 }

@@ -5,6 +5,7 @@
 #include "audio.h"
 #include "file.h"
 #include "log.h"
+#include "mem.h"
 #include "mod.h"
 
 static struct Shader* shaders = NULL;
@@ -56,7 +57,7 @@ void asset_teardown() {
     INFO("Closed");
 }
 
-extern void clear_assets(int teardown) {
+void clear_assets(int teardown) {
     clear_shaders(teardown);
     clear_textures(teardown);
     clear_fonts(teardown);
@@ -81,10 +82,10 @@ void load_shader(const char* name) {
 
     GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
 
-    GLchar* code = (GLchar*)SDL_LoadFile(file, NULL);
+    GLchar* code = SDL_LoadFile(file, NULL);
     if (code == NULL)
         FATAL("Shader \"%s\" vertex load fail: %s", name, SDL_GetError());
-    glShaderSource(vertex, 1, &code, NULL);
+    glShaderSource(vertex, 1, (const GLchar* const*)&code, NULL);
     glCompileShader(vertex);
 
     GLint success;
@@ -110,7 +111,7 @@ void load_shader(const char* name) {
     code = (GLchar*)SDL_LoadFile(file, NULL);
     if (code == NULL)
         FATAL("Shader \"%s\" fragment load fail: %s", name, SDL_GetError());
-    glShaderSource(fragment, 1, &code, NULL);
+    glShaderSource(fragment, 1, (const GLchar* const*)&code, NULL);
     glCompileShader(fragment);
 
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
@@ -162,8 +163,8 @@ void load_shader(const char* name) {
     if ((shader->uniforms = SDL_CreateProperties()) == 0)
         FATAL("Shader \"%s\" uniforms fail: %s", name, SDL_GetError());
     GLsizei unum, ulen;
-    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &(GLint)unum);
-    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &(GLint)ulen);
+    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &unum);
+    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &ulen);
     for (GLsizei i = 0; i < unum; i++) {
         GLchar uname[ASSET_NAME_MAX];
         glGetActiveUniform(shader->program, i, ulen, NULL, NULL, NULL, uname);
@@ -330,7 +331,7 @@ TextureID get_texture_hid(const char* name) {
     return 0;
 }
 
-extern struct Texture* hid_to_texture(TextureID hid) {
+struct Texture* hid_to_texture(TextureID hid) {
     return (struct Texture*)hid_to_pointer(texture_handles, (TextureID)hid);
 }
 
@@ -437,6 +438,7 @@ void load_font(const char* name) {
     if (!yyjson_is_obj(value))
         FATAL("Expected \"glyphs\" as object in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
 
+    size_t gldef = 0;
     size_t i, n;
     yyjson_val *key, *val;
     yyjson_obj_foreach(value, i, n, key, val) {
@@ -446,20 +448,27 @@ void load_font(const char* name) {
                 yyjson_get_type_desc(value)
             );
 
-        unsigned char gid = yyjson_get_str(key)[0];
-        if (font->num_glyphs <= gid)
+        const char* character = yyjson_get_str(key);
+        size_t gid = SDL_StepUTF8(&character, NULL);
+        if (font->num_glyphs <= gid) {
             if (font->glyphs == NULL) {
                 font->num_glyphs = gid + 1;
-                font->glyphs = lame_alloc(font->num_glyphs * sizeof(struct Glyph));
-                lame_set(font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph));
+                font->glyphs = lame_alloc(font->num_glyphs * sizeof(struct Glyph*));
+                lame_set(font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph*));
             } else {
                 size_t old_num = font->num_glyphs;
                 font->num_glyphs = gid + 1;
-                lame_realloc(&font->glyphs, font->num_glyphs * sizeof(struct Glyph));
-                lame_set(font->glyphs + old_num, 0, (font->num_glyphs - old_num) * sizeof(struct Glyph));
+                lame_realloc(&font->glyphs, font->num_glyphs * sizeof(struct Glyph*));
+                lame_set(font->glyphs + old_num, 0, (font->num_glyphs - old_num) * sizeof(struct Glyph*));
             }
+        }
 
-        struct Glyph* glyph = &font->glyphs[gid];
+        struct Glyph* glyph = font->glyphs[gid];
+        if (glyph == NULL) {
+            glyph = font->glyphs[gid] = lame_alloc(sizeof(struct Glyph));
+            ++gldef;
+        } else
+            WARN("Font \"%s\" overwriting glyph \"%c\"", name, gid);
         glyph->size[0] = (GLfloat)yyjson_get_uint(yyjson_obj_get(val, "width"));
         glyph->size[1] = (GLfloat)yyjson_get_uint(yyjson_obj_get(val, "height"));
         glyph->offset[0] = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "x_offset"));
@@ -473,7 +482,7 @@ void load_font(const char* name) {
 
     yyjson_doc_free(json);
 
-    INFO("Loaded font \"%s\" (%u)", name, font->hid);
+    INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font->hid, gldef, font->num_glyphs);
 }
 
 struct Font* fetch_font(const char* name) {
@@ -500,7 +509,7 @@ FontID get_font_hid(const char* name) {
     return 0;
 }
 
-extern struct Font* hid_to_font(FontID hid) {
+struct Font* hid_to_font(FontID hid) {
     return (struct Font*)hid_to_pointer(font_handles, (FontID)hid);
 }
 
@@ -512,8 +521,12 @@ void destroy_font(struct Font* font) {
     if (font->next != NULL)
         font->next->previous = font->previous;
 
-    if (font->glyphs != NULL)
+    if (font->glyphs != NULL) {
+        for (size_t i = 0; i < font->num_glyphs; i++)
+            if (font->glyphs[i] != NULL)
+                lame_free(&font->glyphs[i]);
         lame_free(&font->glyphs);
+    }
 
     INFO("Freed font \"%s\" (%u)", font->name, font->hid);
     destroy_handle(font_handles, font->hid);
@@ -686,7 +699,7 @@ SoundID get_sound_hid(const char* name) {
     return 0;
 }
 
-extern struct Sound* hid_to_sound(SoundID hid) {
+struct Sound* hid_to_sound(SoundID hid) {
     return (struct Sound*)hid_to_pointer(sound_handles, (HandleID)hid);
 }
 
@@ -781,7 +794,7 @@ TrackID get_track_hid(const char* name) {
     return 0;
 }
 
-extern struct Track* hid_to_track(TrackID hid) {
+struct Track* hid_to_track(TrackID hid) {
     return (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
 }
 

@@ -2,6 +2,7 @@
 #include <SDL3/SDL_filesystem.h>
 
 #include "file.h"
+#include "log.h"
 #include "mem.h"
 
 static char* pref_path = NULL;

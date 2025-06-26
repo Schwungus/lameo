@@ -52,27 +52,27 @@ void player_teardown();
 int activate_player(int);
 int deactivate_player(int);
 
-inline struct Player* get_player(int);
+struct Player* get_player(int);
 
-inline int next_ready_player(int);
-inline int next_active_player(int);
-inline int next_neighbor_player(int);
+int next_ready_player(int);
+int next_active_player(int);
+int next_neighbor_player(int);
 
 #define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
 #define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
 
-inline enum FlagTypes get_pflag_type(int, const char*);
-inline bool get_bool_pflag(int, const char*, bool);
-inline Sint64 get_int_pflag(int, const char*, Sint64);
-inline float get_float_pflag(int, const char*, float);
-inline const char* get_string_pflag(int, const char*, const char*);
+enum FlagTypes get_pflag_type(int, const char*);
+bool get_bool_pflag(int, const char*, bool);
+Sint64 get_int_pflag(int, const char*, Sint64);
+float get_float_pflag(int, const char*, float);
+const char* get_string_pflag(int, const char*, const char*);
 
-inline void set_bool_pflag(int, const char*, bool);
-inline void set_int_pflag(int, const char*, Sint64);
-inline void set_float_pflag(int, const char*, float);
-inline void set_string_pflag(int, const char*, const char*);
+void set_bool_pflag(int, const char*, bool);
+void set_int_pflag(int, const char*, Sint64);
+void set_float_pflag(int, const char*, float);
+void set_string_pflag(int, const char*, const char*);
 
-inline void reset_pflag(int, const char*);
-inline bool toggle_pflag(int, const char*);
-inline Sint64 increment_pflag(int, const char*);
-inline Sint64 decrement_pflag(int, const char*);
+void reset_pflag(int, const char*);
+bool toggle_pflag(int, const char*);
+Sint64 increment_pflag(int, const char*);
+Sint64 decrement_pflag(int, const char*);

@@ -5,10 +5,10 @@
 void config_init(const char*, const char*);
 void config_teardown();
 
-inline bool get_bool_cvar(const char*);
-inline Sint64 get_int_cvar(const char*);
-inline float get_float_cvar(const char*);
-inline const char* get_string_cvar(const char*);
+bool get_bool_cvar(const char*);
+Sint64 get_int_cvar(const char*);
+float get_float_cvar(const char*);
+const char* get_string_cvar(const char*);
 
 void set_bool_cvar(const char*, bool);
 void set_int_cvar(const char*, Sint64);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "math.h"
+#include "math.h" // IWYU pragma: keep
 #include "mem.h"
 #include "player.h"
 

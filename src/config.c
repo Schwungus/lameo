@@ -1,5 +1,4 @@
 #include "config.h"
-#include "asset.h"
 #include "file.h"
 #include "input.h"
 #include "log.h"
@@ -39,19 +38,19 @@ void config_teardown() {
     INFO("Closed");
 }
 
-extern bool get_bool_cvar(const char* name) {
+bool get_bool_cvar(const char* name) {
     return SDL_GetBooleanProperty(cvars, name, SDL_GetBooleanProperty(default_cvars, name, false));
 }
 
-extern Sint64 get_int_cvar(const char* name) {
+Sint64 get_int_cvar(const char* name) {
     return SDL_GetNumberProperty(cvars, name, SDL_GetNumberProperty(default_cvars, name, 0));
 }
 
-extern float get_float_cvar(const char* name) {
+float get_float_cvar(const char* name) {
     return SDL_GetFloatProperty(cvars, name, SDL_GetFloatProperty(default_cvars, name, 0));
 }
 
-extern const char* get_string_cvar(const char* name) {
+const char* get_string_cvar(const char* name) {
     return SDL_GetStringProperty(cvars, name, SDL_GetStringProperty(default_cvars, name, ""));
 }
 
@@ -113,6 +112,8 @@ bool reset_cvar(const char* name) {
     }
 
     switch (SDL_GetPropertyType(default_cvars, name)) {
+        default:
+            return false;
         case SDL_PROPERTY_TYPE_BOOLEAN:
             return SDL_SetBooleanProperty(cvars, name, SDL_GetBooleanProperty(default_cvars, name, false));
         case SDL_PROPERTY_TYPE_NUMBER:

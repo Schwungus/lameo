@@ -2,7 +2,7 @@
 
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #define CGLM_FORCE_LEFT_HANDED
-#include "cglm/cglm.h"
+#include "cglm/cglm.h" // IWYU pragma: keep
 
 #include "log.h"
 
@@ -13,4 +13,4 @@
         matrix[2][2], matrix[2][3], matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]                             \
     );
 
-inline float lerp(float, float, float);
+float lerp(float, float, float);
