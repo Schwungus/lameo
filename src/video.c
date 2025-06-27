@@ -2,6 +2,7 @@
 
 #include "SDL3/SDL_stdinc.h"
 #include "input.h"
+#include "internal.h"
 #include "log.h"
 #include "mem.h"
 #include "video.h"
@@ -224,37 +225,43 @@ void video_update() {
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-
-    // World
     glViewport(0, 0, display.width, display.height);
-    // render_stage = RT_WORLD;
-    //  set_shader(NULL);
-    //  submit_world_batch();
 
     // Main
-    const float scale = SDL_min(
-        (float)display.width / (float)(DEFAULT_DISPLAY_WIDTH), (float)display.height / (float)(DEFAULT_DISPLAY_HEIGHT)
-    );
+    const float scalew = (float)display.width / (float)(DEFAULT_DISPLAY_WIDTH);
+    const float scaleh = (float)display.height / (float)(DEFAULT_DISPLAY_HEIGHT);
+    const float scale = SDL_min(scalew, scaleh);
+
     const float width = (float)(DEFAULT_DISPLAY_WIDTH)*scale;
     const float height = (float)(DEFAULT_DISPLAY_HEIGHT)*scale;
     glViewport(((float)display.width - width) / 2, ((float)display.height - height) / 2, width, height);
 
-    render_stage = RT_MAIN;
+    set_render_stage(RT_MAIN);
     set_shader(NULL);
-    for (size_t i = 0; i < VERB_SIZE; i++) {
-        char str[128];
-        const struct Verb* verb = get_verb(i);
-        SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
-        main_string(str, NULL, 16, 0, i * 16, 0);
+
+    if (get_load_state() != LOAD_NONE) {
+        const char loading[] = "Loading";
+        main_string(
+            loading, NULL, 16, ((GLfloat)DEFAULT_DISPLAY_WIDTH - string_width(loading, NULL, 16)) / 2,
+            ((GLfloat)DEFAULT_DISPLAY_HEIGHT - string_height(loading, 16)) / 2, 0
+        );
+    } else {
+        for (size_t i = 0; i < VERB_SIZE; i++) {
+            char str[128];
+            const struct Verb* verb = get_verb(i);
+            SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
+            main_string(str, NULL, 16, 0, i * 16, 0);
+        }
+
+        main_string_wrap(
+            "Stern süß rennen frisch, Stein schließen Weg ausruhen Berg Stuhl, Tee leicht!\nHimmel Tee Stuhl sauber "
+            "Berg, "
+            "Tisch Sonne verstehen Buch Stern? Blatt schnell!",
+            NULL, 32, 320, 320, 0, 0
+        );
     }
 
-    main_string_wrap(
-        "Stern süß rennen frisch, Stein schließen Weg ausruhen Berg Stuhl, Tee leicht!\nHimmel Tee Stuhl sauber Berg, "
-        "Tisch Sonne verstehen Buch Stern? Blatt schnell!",
-        NULL, 32, 320, 320, 0, 0
-    );
-
-    submit_main_batch();
+    submit_batch();
 
     // Present
     SDL_GL_SwapWindow(window);
@@ -527,8 +534,7 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
     set_main_texture(hid_to_texture(font->texture));
 
     GLfloat scale = size / font->size;
-    GLfloat cx = x;
-    GLfloat cy = y;
+    GLfloat cx = x, cy = y;
     size_t bytes = SDL_strlen(str);
     while (bytes > 0) {
         size_t gid = SDL_StepUTF8(&str, &bytes);
@@ -647,3 +653,51 @@ void main_string_wrap(
 
 // World
 void submit_world_batch() {}
+
+// Fonts
+GLfloat string_width(const char* str, struct Font* font, GLfloat size) {
+    if (font == NULL)
+        font = default_font;
+
+    GLfloat scale = size / font->size;
+    GLfloat cx = 0, cy = 0;
+    GLfloat width = 0;
+    size_t bytes = SDL_strlen(str);
+    while (bytes > 0) {
+        size_t gid = SDL_StepUTF8(&str, &bytes);
+
+        // Special/invalid characters
+        if (gid == '\r')
+            continue;
+        if (gid == '\n') {
+            cx = 0;
+            cy += size;
+            continue;
+        }
+        if (SDL_isspace(gid))
+            gid = ' ';
+        if (gid >= font->num_glyphs)
+            continue;
+
+        // Valid glyph
+        struct Glyph* glyph = font->glyphs[gid];
+        if (glyph == NULL)
+            continue;
+
+        cx += glyph->advance * scale;
+        if (width < cx)
+            width = cx;
+    }
+
+    return width;
+}
+
+GLfloat string_height(const char* str, GLfloat size) {
+    GLfloat height = size;
+    size_t bytes = SDL_strlen(str);
+    while (bytes > 0)
+        if (SDL_StepUTF8(&str, &bytes) == '\n')
+            height += size;
+
+    return height;
+}
