@@ -27,6 +27,6 @@ void mod_teardown();
 
 struct Mod* get_mod(const char*);
 ModID get_mod_hid(const char*);
-inline struct Mod* hid_to_mod(ModID);
+struct Mod* hid_to_mod(ModID);
 
 const char* get_mod_file(const char*, const char*);

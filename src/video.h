@@ -91,24 +91,24 @@ void set_framerate(uint16_t);
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);
 
-inline void set_uint_uniform(const char*, GLuint);
-inline void set_uvec2_uniform(const char*, GLuint, GLuint);
-inline void set_uvec3_uniform(const char*, GLuint, GLuint, GLuint);
-inline void set_uvec4_uniform(const char*, GLuint, GLuint, GLuint, GLuint);
+void set_uint_uniform(const char*, GLuint);
+void set_uvec2_uniform(const char*, GLuint, GLuint);
+void set_uvec3_uniform(const char*, GLuint, GLuint, GLuint);
+void set_uvec4_uniform(const char*, GLuint, GLuint, GLuint, GLuint);
 
-inline void set_int_uniform(const char*, GLint);
-inline void set_ivec2_uniform(const char*, GLint, GLint);
-inline void set_ivec3_uniform(const char*, GLint, GLint, GLint);
-inline void set_ivec4_uniform(const char*, GLint, GLint, GLint, GLint);
+void set_int_uniform(const char*, GLint);
+void set_ivec2_uniform(const char*, GLint, GLint);
+void set_ivec3_uniform(const char*, GLint, GLint, GLint);
+void set_ivec4_uniform(const char*, GLint, GLint, GLint, GLint);
 
-inline void set_float_uniform(const char*, GLfloat);
-inline void set_vec2_uniform(const char*, GLfloat, GLfloat);
-inline void set_vec3_uniform(const char*, GLfloat, GLfloat, GLfloat);
-inline void set_vec4_uniform(const char*, GLfloat, GLfloat, GLfloat, GLfloat);
+void set_float_uniform(const char*, GLfloat);
+void set_vec2_uniform(const char*, GLfloat, GLfloat);
+void set_vec3_uniform(const char*, GLfloat, GLfloat, GLfloat);
+void set_vec4_uniform(const char*, GLfloat, GLfloat, GLfloat, GLfloat);
 
-inline void set_mat2_uniform(const char*, mat2*);
-inline void set_mat3_uniform(const char*, mat3*);
-inline void set_mat4_uniform(const char*, mat4*);
+void set_mat2_uniform(const char*, mat2*);
+void set_mat3_uniform(const char*, mat3*);
+void set_mat4_uniform(const char*, mat4*);
 
 // Render stages
 void set_render_stage(enum RenderTypes);
@@ -123,7 +123,7 @@ void set_main_stencil_alpha(GLfloat);
 void set_main_alpha_test(GLfloat);
 void set_main_texture(struct Texture*);
 void set_main_filter(bool);
-inline void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, bool);
+void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, bool);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);

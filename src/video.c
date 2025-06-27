@@ -276,67 +276,67 @@ void set_shader(struct Shader* shader) {
     }
 }
 
-extern void set_uint_uniform(const char* name, GLuint value) {
+void set_uint_uniform(const char* name, GLuint value) {
     glUniform1ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-extern void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
+void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
     glUniform2ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-extern void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
+void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
     glUniform3ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-extern void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
+void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
     glUniform4ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-extern void set_int_uniform(const char* name, GLint value) {
+void set_int_uniform(const char* name, GLint value) {
     glUniform1i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-extern void set_ivec2_uniform(const char* name, GLint x, GLint y) {
+void set_ivec2_uniform(const char* name, GLint x, GLint y) {
     glUniform2i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-extern void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
+void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
     glUniform3i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-extern void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
+void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
     glUniform4i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-extern void set_float_uniform(const char* name, GLfloat value) {
+void set_float_uniform(const char* name, GLfloat value) {
     glUniform1f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-extern void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
+void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
     glUniform2f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
 }
 
-extern void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
+void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
     glUniform3f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
 }
 
-extern void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
+void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
     glUniform4f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
 }
 
-extern void set_mat2_uniform(const char* name, mat2* matrix) {
+void set_mat2_uniform(const char* name, mat2* matrix) {
     glUniformMatrix2fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );
 }
 
-extern void set_mat3_uniform(const char* name, mat3* matrix) {
+void set_mat3_uniform(const char* name, mat3* matrix) {
     glUniformMatrix3fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );
 }
 
-extern void set_mat4_uniform(const char* name, mat4* matrix) {
+void set_mat4_uniform(const char* name, mat4* matrix) {
     glUniformMatrix4fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );

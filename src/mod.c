@@ -184,7 +184,7 @@ ModID get_mod_hid(const char* name) {
     return 0;
 }
 
-extern struct Mod* hid_to_mod(ModID hid) {
+struct Mod* hid_to_mod(ModID hid) {
     return (struct Mod*)hid_to_pointer(mod_handles, (HandleID)hid);
 }
 
