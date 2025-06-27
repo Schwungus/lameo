@@ -171,6 +171,13 @@ void video_update() {
         SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
         main_string(str, NULL, 16, 0, i * 16, 0);
     }
+
+    main_string_wrap(
+        "Stern süß rennen frisch, Stein schließen Weg ausruhen Berg Stuhl, Tee leicht!\nHimmel Tee Stuhl sauber Berg, "
+        "Tisch Sonne verstehen Buch Stern? Blatt schnell!",
+        NULL, 32, 320, 320, 0, 0
+    );
+
     submit_main_batch();
 
     // Present
@@ -422,8 +429,8 @@ void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
         return;
     set_main_texture(texture);
 
-    GLfloat x1 = x;
-    GLfloat y1 = y;
+    GLfloat x1 = x - texture->offset[0];
+    GLfloat y1 = y - texture->offset[1];
     GLfloat x2 = x1 + texture->size[0];
     GLfloat y2 = y1 + texture->size[1];
     main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
@@ -464,8 +471,8 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
         if (glyph == NULL)
             continue;
 
-        GLfloat x1 = cx + (glyph->offset[0] * scale);
-        GLfloat y1 = cy + (glyph->offset[1] * scale);
+        GLfloat x1 = cx - (glyph->offset[0] * scale);
+        GLfloat y1 = cy - (glyph->offset[1] * scale);
         GLfloat x2 = x1 + (glyph->size[0] * scale);
         GLfloat y2 = y1 + (glyph->size[1] * scale);
         main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
@@ -482,41 +489,47 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
 void main_string_wrap(
     const char* str, struct Font* font, GLfloat size, GLfloat width, GLfloat x, GLfloat y, GLfloat z
 ) {
-    main_string(str, font, size, x, y, z);
-    /*if (font == NULL)
+    if (font == NULL)
         font = default_font;
     set_main_texture(hid_to_texture(font->texture));
 
     GLfloat scale = size / font->size;
-    GLfloat cx = x;
-    GLfloat cy = y;
+    GLfloat cx = x, cy = y;
 
     // https://github.com/raysan5/raylib/blob/master/examples/text/text_rectangle_bounds.c
-    size_t n = SDL_strlen(str);
+    size_t bytes = SDL_strlen(str);
     bool measure = true;
     int start_pos = -1, end_pos = -1;
 
-    for (int i = 0; i < n; i++) {
-        unsigned char gid = str[i];
+    for (int i = 0; i < bytes; i++) {
+        const char* adv = &str[i];
+        size_t advbytes = bytes - i;
+        size_t last_advbytes = advbytes;
 
-        GLfloat gwidth = (gid >= font->num_glyphs || gid == '\n') ? 0 : (font->glyphs[gid].advance * scale);
+        size_t gid = SDL_StepUTF8(&adv, &advbytes);
+        bool space = SDL_isspace(gid);
+        struct Glyph* glyph = (gid >= font->num_glyphs || gid == '\n') ? NULL : font->glyphs[space ? (gid = ' ') : gid];
+        GLfloat gwidth = glyph == NULL ? 0 : (glyph->advance * scale);
+
+        i += (last_advbytes - advbytes) - 1;
 
         if (measure) {
-            if (SDL_isspace(gid))
+            if (space)
                 end_pos = i;
 
             if (((cx + gwidth) - x) > width) {
-                end_pos = (end_pos < 1) ? i : end_pos;
+                if (end_pos <= 0)
+                    end_pos = i;
                 if (i == end_pos)
                     end_pos -= 1;
                 if ((start_pos + 1) == end_pos)
                     end_pos = i - 1;
-                measure = !measure;
-            } else if ((i + 1) == n) {
+                measure = false;
+            } else if ((i + 1) == bytes) {
                 end_pos = i;
-                measure = !measure;
+                measure = false;
             } else if (gid == '\n') {
-                measure = !measure;
+                measure = false;
             }
 
             if (!measure) {
@@ -525,10 +538,9 @@ void main_string_wrap(
                 gwidth = 0;
             }
         } else {
-            if (gid != '\n' && gid < font->num_glyphs) {
-                struct Glyph* glyph = &font->glyphs[gid];
-                GLfloat x1 = cx + (glyph->offset[0] * scale);
-                GLfloat y1 = cy + (glyph->offset[1] * scale);
+            if (glyph != NULL) {
+                GLfloat x1 = cx - (glyph->offset[0] * scale);
+                GLfloat y1 = cy - (glyph->offset[1] * scale);
                 GLfloat x2 = x1 + (glyph->size[0] * scale);
                 GLfloat y2 = y1 + (glyph->size[1] * scale);
                 main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
@@ -540,17 +552,17 @@ void main_string_wrap(
             }
 
             if (i == end_pos) {
-                cy += size;
                 cx = x;
+                cy += size;
                 start_pos = end_pos;
                 end_pos = 0;
-                measure = !measure;
+                measure = true;
             }
         }
 
-        if (cx > x || !SDL_isspace(gid))
+        if (cx > x || !space)
             cx += gwidth;
-    }*/
+    }
 }
 
 // World
