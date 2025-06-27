@@ -4,7 +4,7 @@
 #include "mem.h"
 #include "player.h"
 
-#define ACTOR_NAME_MAX 32
+#define ACTOR_NAME_MAX 128
 
 #include "room.h" // room.h relies on ACTOR_NAME_MAX, so only include after that's defined
 
@@ -65,6 +65,7 @@ struct CameraPOI {
 };
 
 struct Actor {
+    ActorID hid;
     struct ActorType* type;
     struct ActorCamera* acamera;
 

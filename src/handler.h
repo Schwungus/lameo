@@ -2,7 +2,7 @@
 
 #include "script.h" // IWYU pragma: keep
 
-#define HANDLER_NAME_MAX 32
+#define HANDLER_NAME_MAX 128
 
 #define HANDLER_HOOK_FUNCTION(funcname)                                                                                \
     lua_getfield(L, -1, #funcname);                                                                                    \

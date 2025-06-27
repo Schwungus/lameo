@@ -12,6 +12,7 @@
 #include "mod.h"
 #include "player.h"
 #include "tick.h"
+#include "ui.h"
 #include "video.h"
 
 static struct LoadState load_state = {0};
@@ -31,6 +32,7 @@ void init(const char* config_path, const char* controls_path) {
     asset_init();
     script_init();
     handler_init();
+    ui_init();
     tick_init();
 
     // Default level is "main"
@@ -108,6 +110,12 @@ void loop() {
                 INFO("\n\nENTERING \"%s\" (room %d, tag %d)\n", load_state.level, load_state.room, load_state.tag);
 
                 // Load level
+                char level_file_helper[FILE_PATH_MAX];
+                SDL_snprintf(level_file_helper, sizeof(level_file_helper), "levels/%s.json", load_state.level);
+                yyjson_doc* json = load_json(get_mod_file(level_file_helper, NULL));
+                if (json == NULL)
+                    FATAL("Invalid level \"%s\"", load_state.level);
+                yyjson_doc_free(json);
 
                 load_state.state = LOAD_END;
                 break;
@@ -131,6 +139,7 @@ void loop() {
 
 void cleanup() {
     tick_teardown();
+    ui_teardown();
     handler_teardown();
     script_teardown();
     asset_teardown();
