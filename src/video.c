@@ -102,25 +102,101 @@ void video_init_render() {
     glVertexAttribPointer(
         VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, position)
     );
+
     glEnableVertexAttribArray(VATT_COLOR);
     glVertexAttribPointer(
         VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, color)
     );
+
     glEnableVertexAttribArray(VATT_UV);
     glVertexAttribPointer(
         VATT_UV, 2, GL_FLOAT, GL_FALSE, sizeof(struct MainVertex), (void*)offsetof(struct MainVertex, uv)
     );
 
     main_batch.color[0] = main_batch.color[1] = main_batch.color[2] = main_batch.color[3] = 1;
+
     main_batch.stencil[0] = main_batch.stencil[1] = main_batch.stencil[2] = 1;
     main_batch.stencil[3] = 0;
+
     main_batch.texture = blank_texture;
     main_batch.alpha_test = 0;
-    main_batch.blend_src[0] = GL_SRC_ALPHA;
-    main_batch.blend_src[1] = GL_SRC_ALPHA;
+
+    main_batch.blend_src[0] = main_batch.blend_src[1] = GL_SRC_ALPHA;
     main_batch.blend_dest[0] = GL_ONE_MINUS_SRC_ALPHA;
     main_batch.blend_dest[1] = GL_ONE;
+
     main_batch.filter = false;
+
+    // World batch
+    glGenVertexArrays(1, &world_batch.vao);
+    glBindVertexArray(world_batch.vao);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_POSITION);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_NORMAL);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_COLOR);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLubyte) * 4);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_UV);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_BONE_INDEX);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(GLubyte) * 4);
+    glEnableVertexArrayAttrib(world_batch.vao, VATT_BONE_WEIGHT);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
+
+    world_batch.vertex_count = 0;
+    world_batch.vertex_capacity = 3;
+    world_batch.vertices = lame_alloc(world_batch.vertex_capacity * sizeof(struct WorldVertex));
+
+    glGenBuffers(1, &world_batch.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * world_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+
+    glEnableVertexAttribArray(VATT_POSITION);
+    glVertexAttribPointer(
+        VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex), (void*)offsetof(struct WorldVertex, position)
+    );
+
+    glEnableVertexAttribArray(VATT_NORMAL);
+    glVertexAttribPointer(
+        VATT_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex), (void*)offsetof(struct WorldVertex, normal)
+    );
+
+    glEnableVertexAttribArray(VATT_COLOR);
+    glVertexAttribPointer(
+        VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct WorldVertex), (void*)offsetof(struct WorldVertex, color)
+    );
+
+    glEnableVertexAttribArray(VATT_UV);
+    glVertexAttribPointer(
+        VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex), (void*)offsetof(struct WorldVertex, uv)
+    );
+
+    glEnableVertexAttribArray(VATT_BONE_INDEX);
+    glVertexAttribPointer(
+        VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(struct WorldVertex),
+        (void*)offsetof(struct WorldVertex, bone_index)
+    );
+
+    glEnableVertexAttribArray(VATT_BONE_WEIGHT);
+    glVertexAttribPointer(
+        VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
+        (void*)offsetof(struct WorldVertex, bone_weight)
+    );
+
+    world_batch.color[0] = world_batch.color[1] = world_batch.color[2] = world_batch.color[3] = 1;
+
+    world_batch.stencil[0] = world_batch.stencil[1] = world_batch.stencil[2] = 1;
+    world_batch.stencil[3] = 0;
+
+    world_batch.texture = blank_texture;
+    world_batch.alpha_test = 0;
+
+    world_batch.blend_src[0] = world_batch.blend_src[1] = GL_SRC_ALPHA;
+    world_batch.blend_dest[0] = GL_ONE_MINUS_SRC_ALPHA;
+    world_batch.blend_dest[1] = GL_ONE;
+
+    world_batch.filter = true;
+
     glEnable(GL_BLEND);
 
     // Shaders
@@ -190,6 +266,10 @@ void video_teardown() {
     glDeleteVertexArrays(1, &main_batch.vao);
     glDeleteBuffers(1, &main_batch.vbo);
     lame_free(&main_batch.vertices);
+
+    glDeleteVertexArrays(1, &world_batch.vao);
+    glDeleteBuffers(1, &world_batch.vbo);
+    lame_free(&world_batch.vertices);
 
     SDL_GL_DestroyContext(gpu);
     SDL_DestroyWindow(window);

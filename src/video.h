@@ -58,8 +58,7 @@ struct MainBatch {
     size_t vertex_count, vertex_capacity;
     struct MainVertex* vertices;
 
-    GLfloat color[4];
-    GLfloat stencil[4];
+    GLfloat color[4], stencil[4];
     GLuint texture;
     GLfloat alpha_test;
     GLenum blend_src[2], blend_dest[2];
@@ -71,8 +70,7 @@ struct WorldBatch {
     size_t vertex_count, vertex_capacity;
     struct WorldVertex* vertices;
 
-    GLfloat color[4];
-    GLfloat stencil[4];
+    GLfloat color[4], stencil[4];
     GLuint texture;
     GLfloat alpha_test, bright;
     GLenum blend_src[2], blend_dest[2];
