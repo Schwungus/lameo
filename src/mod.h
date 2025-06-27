@@ -23,6 +23,7 @@ struct Mod {
 
 void mod_init();
 void mod_init_script();
+void mod_init_language();
 void mod_teardown();
 
 struct Mod* get_mod(const char*);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_iostream.h>
 #include <yyjson.h>
 
 #define FILE_NAME_MAX 128

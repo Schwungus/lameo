@@ -8,6 +8,7 @@
 #include "handler.h"
 #include "input.h"
 #include "internal.h"
+#include "localize.h"
 #include "log.h"
 #include "mod.h"
 #include "player.h"
@@ -29,6 +30,7 @@ void init(const char* config_path, const char* controls_path) {
     flags_init();
     player_init();
     mod_init();
+    localize_init();
     asset_init();
     script_init();
     handler_init();
@@ -134,6 +136,9 @@ void loop() {
         video_update();
         audio_update();
         input_update();
+
+        if (load_state.state != LOAD_NONE && load_state.level[0] == '\0')
+            running = false;
     }
 }
 
@@ -143,6 +148,7 @@ void cleanup() {
     handler_teardown();
     script_teardown();
     asset_teardown();
+    localize_teardown();
     mod_teardown();
     player_teardown();
     flags_teardown();

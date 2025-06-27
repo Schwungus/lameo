@@ -1,16 +1,16 @@
-#include <stdio.h>
-
-#include <SDL3/SDL_filesystem.h>
-#include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_stdinc.h>
 
 #include "config.h"
+#include "file.h"
+#include "localize.h"
 #include "log.h"
 #include "mod.h"
 #include "script.h"
 
 static struct Mod* mods = NULL;
 static struct Fixture* mod_handles = NULL;
+
+static char mod_file_helper[FILE_PATH_MAX];
 
 static SDL_EnumerationResult iterate_crc32(void* userdata, const char* dirname, const char* fname) {
     char path[FILE_PATH_MAX];
@@ -137,14 +137,13 @@ void mod_init_script() {
         while (mod->previous != NULL)
             mod = mod->previous;
 
-        char path[FILE_PATH_MAX];
         void* buffer;
         size_t size;
         while (mod != NULL) {
-            SDL_snprintf(path, FILE_PATH_MAX, "%sscript.lua", mod->path);
-            if ((buffer = SDL_LoadFile(path, &size)) != NULL) {
-                SDL_snprintf(path, FILE_PATH_MAX, "%s?.lua", mod->path);
-                set_import_path(path);
+            SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%sscript.lua", mod->path);
+            if ((buffer = SDL_LoadFile(mod_file_helper, &size)) != NULL) {
+                SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%s?.lua", mod->path);
+                set_import_path(mod_file_helper);
                 execute_buffer(buffer, size, mod->name);
                 lame_free(&buffer);
             }
@@ -154,6 +153,48 @@ void mod_init_script() {
     }
 
     INFO("Opened for scripting");
+}
+
+void mod_init_language() {
+    // Load languages from first to last mod
+    struct Mod* mod = mods;
+    if (mod != NULL) {
+        while (mod->previous != NULL)
+            mod = mod->previous;
+
+        while (mod != NULL) {
+            SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%slanguages.json", mod->path);
+
+            yyjson_doc* json = load_json(mod_file_helper);
+            if (json != NULL) {
+                yyjson_val* root = yyjson_doc_get_root(json);
+                if (yyjson_is_obj(root)) {
+                    size_t i, n;
+                    yyjson_val *key, *val;
+                    yyjson_obj_foreach(root, i, n, key, val) {
+                        const char* name = yyjson_get_str(key);
+                        if (!yyjson_is_obj(val)) {
+                            WTF("Expected %s language \"%s\" as object, got %s", mod->name, name,
+                                yyjson_get_type_desc(val));
+                            continue;
+                        }
+
+                        struct Language* language = fetch_language(name);
+                        if (SDL_strcmp(name, "English") == 0)
+                            set_default_language(language);
+                    }
+                } else {
+                    WTF("Expected %s languages root as object, got %s", mod->name, yyjson_get_type_desc(root));
+                }
+
+                yyjson_doc_free(json);
+            }
+
+            mod = mod->next;
+        }
+    }
+
+    INFO("Opened for languages");
 }
 
 void mod_teardown() {
@@ -188,7 +229,6 @@ struct Mod* hid_to_mod(ModID hid) {
     return (struct Mod*)hid_to_pointer(mod_handles, (HandleID)hid);
 }
 
-static char mod_file_helper[FILE_PATH_MAX];
 const char* get_mod_file(const char* filename, const char* exclude_ext) {
     for (struct Mod* mod = mods; mod != NULL; mod = mod->previous) {
         int count;
