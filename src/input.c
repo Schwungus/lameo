@@ -110,21 +110,17 @@ void input_update() {
 }
 
 void input_teardown() {
-    SDL_DestroyProperties(verb_map);
+    CLOSE_HANDLE(verb_map, SDL_DestroyProperties);
 
     size_t i;
     for (i = 0; i < KEY_COUNT; i++)
-        if (key_map[i].list != NULL)
-            lame_free(&key_map[i].list);
+        FREE_POINTER(key_map[i].list);
     for (i = 0; i < MOUSE_BUTTON_COUNT; i++)
-        if (mouse_button_map[i].list != NULL)
-            lame_free(&mouse_button_map[i].list);
+        FREE_POINTER(mouse_button_map[i].list);
     for (i = 0; i < GAMEPAD_BUTTON_COUNT; i++)
-        if (gamepad_button_map[i].list != NULL)
-            lame_free(&gamepad_button_map[i].list);
+        FREE_POINTER(gamepad_button_map[i].list);
     for (i = 0; i < GAMEPAD_AXIS_COUNT; i++)
-        if (gamepad_axis_map[i].list != NULL)
-            lame_free(&gamepad_axis_map[i].list);
+        FREE_POINTER(gamepad_axis_map[i].list);
 
     INFO("Closed");
 }

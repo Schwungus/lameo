@@ -14,6 +14,10 @@ void _lame_set(void*, char, size_t, const char*, int);
 #define lame_realloc(ptr, size) _lame_realloc((void**)ptr, size, __FILE__, __LINE__)
 #define lame_set(dest, val, size) _lame_set(dest, val, size, __FILE__, __LINE__)
 
+#define FREE_POINTER(varname)                                                                                          \
+    if (varname != NULL)                                                                                               \
+        lame_free(&varname);
+
 #define CLOSE_POINTER(varname, callback)                                                                               \
     if (varname != NULL) {                                                                                             \
         callback(varname);                                                                                             \

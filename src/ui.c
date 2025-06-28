@@ -13,7 +13,7 @@ void ui_init() {
 }
 
 void ui_teardown() {
-    destroy_fixture(ui_handles);
+    CLOSE_POINTER(ui_handles, destroy_fixture);
 
     INFO("Closed");
 }

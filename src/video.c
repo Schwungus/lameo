@@ -273,8 +273,8 @@ void video_teardown() {
     glDeleteBuffers(1, &world_batch.vbo);
     lame_free(&world_batch.vertices);
 
-    SDL_GL_DestroyContext(gpu);
-    SDL_DestroyWindow(window);
+    CLOSE_POINTER(gpu, SDL_GL_DestroyContext);
+    CLOSE_POINTER(window, SDL_DestroyWindow);
 
     INFO("Closed");
 }

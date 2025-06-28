@@ -1,12 +1,9 @@
-#include <SDL3/SDL_iostream.h>
-
+#include "script.h"
 #include "flags.h"
 #include "handler.h"
-#include "log.h"
 #include "mem.h"
 #include "mod.h"
 #include "player.h"
-#include "script.h"
 
 static lua_State* context = NULL;
 static lua_Debug debug = {0};
@@ -284,8 +281,7 @@ SCRIPT_GETTER_FLAG(decrement_pflag, integer);
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
     if (nsize <= 0) {
-        if (ptr != NULL)
-            lame_free(&ptr);
+        FREE_POINTER(ptr);
         return NULL;
     }
 

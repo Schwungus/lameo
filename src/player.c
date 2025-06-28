@@ -1,6 +1,6 @@
 #include "player.h"
-#include "flags.h"
 #include "log.h"
+#include "mem.h"
 
 static FlagsID default_pflags = 0;
 
@@ -37,12 +37,11 @@ void player_init() {
 }
 
 void player_teardown() {
-    for (int i = 0; i < MAX_PLAYERS; i++) {
-        SDL_DestroyProperties((SDL_PropertiesID)players[i].flags);
-    }
+    for (int i = 0; i < MAX_PLAYERS; i++)
+        CLOSE_HANDLE(players[i].flags, SDL_DestroyProperties);
     ready_players = active_players = NULL;
 
-    SDL_DestroyProperties((SDL_PropertiesID)default_pflags);
+    CLOSE_HANDLE(default_pflags, SDL_DestroyProperties);
 
     INFO("Closed");
 }

@@ -1,7 +1,6 @@
 #include "handler.h"
 #include "log.h"
 #include "mem.h"
-#include "script.h"
 
 static struct Handler* handlers = NULL;
 

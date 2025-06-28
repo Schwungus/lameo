@@ -1,4 +1,5 @@
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_timer.h>
 
 #include "internal.h"
 #include "tick.h"

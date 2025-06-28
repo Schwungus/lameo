@@ -1,5 +1,3 @@
-#include <SDL3/SDL_stdinc.h>
-
 #include "localize.h"
 #include "log.h"
 #include "mem.h"
@@ -15,21 +13,19 @@ void localize_init() {
 }
 
 void localize_teardown() {
-    struct Language* language = languages;
-    while (language != NULL) {
-        struct Language* temp = language->previous;
+    struct Language* lang = languages;
+    while (lang != NULL) {
+        struct Language* temp = lang->previous;
 
-        for (size_t i = 0; i < language->string_capacity; i++) {
-            struct LocalString* string = &language->strings[i];
-            if (string->key != NULL)
-                lame_free(&string->key);
-            if (string->string != NULL)
-                lame_free(&string->string);
+        for (size_t i = 0; i < lang->string_capacity; i++) {
+            struct LocalString* string = &lang->strings[i];
+            FREE_POINTER(string->key);
+            FREE_POINTER(string->string);
         }
-        lame_free(&language->strings);
-        lame_free(&language);
+        lame_free(&lang->strings);
+        lame_free(&lang);
 
-        language = temp;
+        lang = temp;
     }
 
     INFO("Closed");

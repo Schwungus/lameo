@@ -1,10 +1,8 @@
-#include <SDL3/SDL_stdinc.h>
-
+#include "mod.h"
 #include "config.h"
 #include "file.h"
 #include "localize.h"
 #include "log.h"
-#include "mod.h"
 #include "script.h"
 
 static struct Mod* mods = NULL;

@@ -1,4 +1,3 @@
-#include <SDL3/SDL_stdinc.h>
 #include <fmod_errors.h>
 
 #include "audio.h"
@@ -49,12 +48,12 @@ void audio_update() {
 }
 
 void audio_teardown() {
-    FMOD_ChannelGroup_Release(ui_group);
-    FMOD_ChannelGroup_Release(world_group);
-    FMOD_ChannelGroup_Release(sound_group);
-    FMOD_ChannelGroup_Release(music_group);
+    CLOSE_POINTER(ui_group, FMOD_ChannelGroup_Release);
+    CLOSE_POINTER(world_group, FMOD_ChannelGroup_Release);
+    CLOSE_POINTER(sound_group, FMOD_ChannelGroup_Release);
+    CLOSE_POINTER(music_group, FMOD_ChannelGroup_Release);
 
-    FMOD_System_Release(speaker);
+    CLOSE_POINTER(speaker, FMOD_System_Release);
 
     INFO("Closed");
 }

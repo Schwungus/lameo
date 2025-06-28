@@ -1,10 +1,9 @@
 #pragma once
 
-#include <fmod.h>
-#include <yyjson.h>
-
 #include "mem.h"
 #include "video.h" // IWYU pragma: keep
+
+#include "audio.h" // IWYU pragma: keep
 
 #define ASSET_NAME_MAX 128
 

@@ -32,8 +32,8 @@ void config_init(const char* confpath, const char* contpath) {
 }
 
 void config_teardown() {
-    SDL_DestroyProperties(cvars);
-    SDL_DestroyProperties(default_cvars);
+    CLOSE_HANDLE(cvars, SDL_DestroyProperties);
+    CLOSE_HANDLE(default_cvars, SDL_DestroyProperties);
 
     INFO("Closed");
 }

@@ -1,5 +1,6 @@
 #include "flags.h"
 #include "log.h"
+#include "mem.h"
 
 static FlagsID flags[FS_SIZE] = {0};
 
@@ -13,7 +14,7 @@ void flags_init() {
 
 void flags_teardown() {
     for (int i = 0; i < FS_SIZE; i++)
-        SDL_DestroyProperties(flags[i]);
+        CLOSE_HANDLE(flags[i], SDL_DestroyProperties);
 
     INFO("Closed");
 }

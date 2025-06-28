@@ -1,11 +1,8 @@
-#include <SDL3/SDL_stdinc.h>
 #include <SDL3_image/SDL_image.h>
 
 #include "asset.h"
-#include "audio.h"
 #include "file.h"
 #include "log.h"
-#include "mem.h"
 #include "mod.h"
 
 static struct Shader* shaders = NULL;
@@ -46,13 +43,13 @@ void asset_init() {
 void asset_teardown() {
     clear_assets(1);
 
-    destroy_fixture(shader_handles);
-    destroy_fixture(texture_handles);
-    destroy_fixture(material_handles);
-    destroy_fixture(model_handles);
-    destroy_fixture(font_handles);
-    destroy_fixture(sound_handles);
-    destroy_fixture(track_handles);
+    CLOSE_POINTER(shader_handles, destroy_fixture);
+    CLOSE_POINTER(texture_handles, destroy_fixture);
+    CLOSE_POINTER(material_handles, destroy_fixture);
+    CLOSE_POINTER(model_handles, destroy_fixture);
+    CLOSE_POINTER(font_handles, destroy_fixture);
+    CLOSE_POINTER(sound_handles, destroy_fixture);
+    CLOSE_POINTER(track_handles, destroy_fixture);
 
     INFO("Closed");
 }
@@ -523,8 +520,7 @@ void destroy_font(struct Font* font) {
 
     if (font->glyphs != NULL) {
         for (size_t i = 0; i < font->num_glyphs; i++)
-            if (font->glyphs[i] != NULL)
-                lame_free(&font->glyphs[i]);
+            FREE_POINTER(font->glyphs[i]);
         lame_free(&font->glyphs);
     }
 

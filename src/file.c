@@ -14,7 +14,7 @@ void file_init() {
 }
 
 void file_teardown() {
-    lame_free(&pref_path);
+    FREE_POINTER(pref_path);
 
     INFO("Closed");
 }

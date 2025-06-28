@@ -1,9 +1,5 @@
-#include <stdio.h>
-
-#include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_messagebox.h>
 #include <SDL3/SDL_platform.h>
-#include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_time.h>
 
 #include "file.h"

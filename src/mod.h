@@ -1,7 +1,5 @@
 #pragma once
 
-#include <SDL3/SDL_filesystem.h>
-
 #include "file.h"
 #include "mem.h"
 
