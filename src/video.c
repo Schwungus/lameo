@@ -1,8 +1,8 @@
 #include <SDL3/SDL_timer.h>
 
-#include "SDL3/SDL_stdinc.h"
 #include "input.h"
 #include "internal.h"
+#include "localize.h"
 #include "log.h"
 #include "mem.h"
 #include "video.h"
@@ -240,7 +240,7 @@ void video_update() {
     set_shader(NULL);
 
     if (get_load_state() != LOAD_NONE) {
-        const char loading[] = "Loading";
+        const char* loading = localized("loading");
         main_string(
             loading, NULL, 16, ((GLfloat)DEFAULT_DISPLAY_WIDTH - string_width(loading, NULL, 16)) / 2,
             ((GLfloat)DEFAULT_DISPLAY_HEIGHT - string_height(loading, 16)) / 2, 0
@@ -253,12 +253,7 @@ void video_update() {
             main_string(str, NULL, 16, 0, i * 16, 0);
         }
 
-        main_string_wrap(
-            "Stern süß rennen frisch, Stein schließen Weg ausruhen Berg Stuhl, Tee leicht!\nHimmel Tee Stuhl sauber "
-            "Berg, "
-            "Tisch Sonne verstehen Buch Stern? Blatt schnell!",
-            NULL, 32, 320, 320, 0, 0
-        );
+        main_string_wrap(localized("test"), NULL, 32, 320, 320, 0, 0);
     }
 
     submit_batch();

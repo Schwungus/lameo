@@ -182,6 +182,19 @@ void mod_init_language() {
                         struct Language* language = fetch_language(name);
                         if (SDL_strcmp(name, "English") == 0)
                             set_default_language(language);
+
+                        size_t j, o;
+                        yyjson_val *key2, *val2;
+                        yyjson_obj_foreach(val, j, o, key2, val2) {
+                            const char* keyc = yyjson_get_str(key2);
+                            if (!yyjson_is_str(val2)) {
+                                WTF("Expected %s language \"%s\" key \"%s\" as string, got %s", mod->name, name, keyc,
+                                    yyjson_get_type_desc(val2));
+                                continue;
+                            }
+
+                            set_local_string(language, keyc, yyjson_get_str(val2));
+                        }
                     }
                 } else {
                     WTF("Expected %s languages root as object, got %s", mod->name, yyjson_get_type_desc(root));
