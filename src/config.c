@@ -1,7 +1,9 @@
 #include "config.h"
 #include "file.h"
 #include "input.h"
+#include "localize.h"
 #include "log.h"
+#include "mem.h"
 #include "video.h"
 
 static char config_path[FILE_PATH_MAX], controls_path[FILE_PATH_MAX];
@@ -14,6 +16,8 @@ void config_init(const char* confpath, const char* contpath) {
         FATAL("Default CVars fail: %s", SDL_GetError());
 
     SDL_SetStringProperty(default_cvars, "data_path", get_base_path("data"));
+
+    SDL_SetStringProperty(default_cvars, "language", "English");
 
     SDL_SetNumberProperty(default_cvars, "vid_width", 0);
     SDL_SetNumberProperty(default_cvars, "vid_height", 0);
@@ -138,6 +142,9 @@ void apply_cvar(const char* name) {
         Sint64 vid_maxfps = get_int_cvar("vid_maxfps");
         set_framerate((int16_t)SDL_max(vid_maxfps, 0));
     }
+
+    if (name == NULL || SDL_strcmp(name, "language") == 0)
+        set_language(get_string_cvar("language"));
 }
 
 static void iterate_save_config(void* userdata, SDL_PropertiesID props, const char* name) {
