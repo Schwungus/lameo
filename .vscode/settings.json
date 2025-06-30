@@ -15,5 +15,8 @@
     },
     "[cmake]": {
         "editor.defaultFormatter": "cheshirekow.cmake-format"
-    }
+    },
+    "clangd.arguments": [
+        "--header-insertion=never"
+    ]
 }

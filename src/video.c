@@ -1,6 +1,5 @@
 #include <SDL3/SDL_timer.h>
 
-#include "asset.h"
 #include "input.h"
 #include "internal.h"
 #include "localize.h"
