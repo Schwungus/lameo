@@ -1,10 +1,8 @@
 #include "steam.h"
 #include "log.h"
 
-static bool on_steam = false;
-
 void steam_init() {
-    if (!(on_steam = caulk_Init()))
+    if (!caulk_Init())
         WARN("Failed to initialize Steam");
 
     INFO("Opened");
@@ -17,5 +15,6 @@ void steam_teardown() {
 }
 
 CSteamID get_steam_id() {
-    return on_steam ? caulk_ISteamUser_GetSteamID(caulk_SteamUser()) : 0;
+    ISteamUser* user = caulk_SteamUser();
+    return user == NULL ? 0 : caulk_ISteamUser_GetSteamID(user);
 }
