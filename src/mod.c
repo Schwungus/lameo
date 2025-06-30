@@ -3,6 +3,7 @@
 #include "file.h"
 #include "localize.h"
 #include "log.h"
+#include "mem.h"
 #include "script.h"
 
 static struct Mod* mods = NULL;
@@ -190,8 +191,7 @@ void mod_init_language() {
                                     yyjson_get_type_desc(val2));
                                 continue;
                             }
-
-                            set_local_string(language, keyc, yyjson_get_str(val2));
+                            to_hash_map(language->map, keyc, SDL_strdup(yyjson_get_str(val2)));
                         }
                     }
                 } else {

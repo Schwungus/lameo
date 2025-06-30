@@ -169,3 +169,89 @@ void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
     struct Handle* handle = &fixture->handles[index];
     return (handle->generation != generation) ? NULL : handle->ptr; // God-knows-what
 }
+
+// Hasj mappps%0w
+// https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
+#define HASH_CAPACITY 2
+#define FNV_OFFSET 0x811c9dc5
+#define FNV_PRIME 0x01000193
+
+static uint32_t hash_key(const char* key) {
+    uint32_t hash = FNV_OFFSET;
+    for (const char* p = key; *p; p++) {
+        hash ^= (uint32_t)(unsigned char)(*p);
+        hash *= FNV_PRIME;
+    }
+    return hash;
+}
+
+struct HashMap* _create_hash_map(const char* filename, int line) {
+    struct HashMap* map = _lame_alloc(sizeof(struct HashMap), filename, line);
+    map->count = 0;
+    map->capacity = HASH_CAPACITY;
+
+    const size_t size = HASH_CAPACITY * sizeof(struct KeyValuePair);
+    map->items = _lame_alloc(size, filename, line);
+    _lame_set(map->items, 0, size, filename, line);
+
+    return map;
+}
+
+void _destroy_hash_map(struct HashMap* map, const char* filename, int line) {
+    for (size_t i = 0; i < map->capacity; i++) {
+        struct KeyValuePair* kvp = &map->items[i];
+        if (kvp->key != NULL)
+            _lame_free((void**)&kvp->key, filename, line);
+        if (kvp->value != NULL)
+            _lame_free(&kvp->value, filename, line);
+    }
+
+    _lame_free((void**)&map->items, filename, line);
+    _lame_free((void**)&map, filename, line);
+}
+
+void _to_hash_map(struct HashMap* map, const char* key, void* value, const char* filename, int line) {
+    if (map->count >= map->capacity / 2) {
+        size_t new_capacity = map->capacity * 2;
+        if (new_capacity < map->capacity)
+            log_fatal(filename, line, "Capacity overflow in hash table");
+
+        size_t old_capacity = map->capacity;
+        _lame_realloc((void**)&map->items, new_capacity, filename, line);
+        _lame_set(
+            map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct KeyValuePair), filename, line
+        );
+        map->capacity = new_capacity;
+    }
+
+    size_t index = (size_t)hash_key(key) % map->capacity;
+    struct KeyValuePair* kvp = &map->items[index];
+    while (kvp->key != NULL) {
+        if (SDL_strcmp(key, kvp->key) == 0) {
+            if (kvp->value != NULL)
+                _lame_free(&kvp->value, filename, line);
+            kvp->value = value;
+            return;
+        }
+
+        index = (index + 1) % map->capacity;
+        kvp = &map->items[index];
+    }
+
+    map->items[index].key = SDL_strdup(key);
+    map->items[index].value = value;
+}
+
+void* _from_hash_map(struct HashMap* map, const char* key, const char* filename, int line) {
+    size_t index = (size_t)hash_key(key) % map->capacity;
+    struct KeyValuePair* kvp = &map->items[index];
+    while (kvp->key != NULL) {
+        if (SDL_strcmp(key, kvp->key) == 0)
+            return kvp->value;
+
+        index = (index + 1) % map->capacity;
+        kvp = &map->items[index];
+    }
+
+    return NULL;
+}

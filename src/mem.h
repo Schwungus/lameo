@@ -80,3 +80,24 @@ void _destroy_handle(struct Fixture*, HandleID, const char*, int);
 
 struct Handle* hid_to_handle(struct Fixture*, HandleID);
 void* hid_to_pointer(struct Fixture*, HandleID);
+
+// Hash maps
+struct KeyValuePair {
+    char* key;
+    void* value;
+};
+
+struct HashMap {
+    struct KeyValuePair* items;
+    size_t count, capacity;
+};
+
+struct HashMap* _create_hash_map(const char*, int);
+void _destroy_hash_map(struct HashMap*, const char*, int);
+void _to_hash_map(struct HashMap*, const char*, void*, const char*, int);
+void* _from_hash_map(struct HashMap*, const char*, const char*, int);
+
+#define create_hash_map() _create_hash_map(__FILE__, __LINE__)
+#define destroy_hash_map(map) _destroy_hash_map(map, __FILE__, __LINE__)
+#define to_hash_map(map, key, value) _to_hash_map(map, key, value, __FILE__, __LINE__)
+#define from_hash_map(map, key) _from_hash_map(map, key, __FILE__, __LINE__)
