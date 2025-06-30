@@ -1,6 +1,7 @@
 #include "file.h"
 #include "log.h"
 #include "mem.h"
+#include "steam.h"
 
 static char* pref_path = NULL;
 static char user_path[FILE_PATH_MAX];
@@ -8,7 +9,7 @@ static char user_path[FILE_PATH_MAX];
 void file_init() {
     if ((pref_path = SDL_GetPrefPath("Schwungus", "lameo")) == NULL)
         FATAL("Pref path fail: %s", SDL_GetError());
-    SDL_snprintf(user_path, sizeof(user_path), "%s%s", pref_path, "users/local/");
+    SDL_snprintf(user_path, sizeof(user_path), "%susers/%llu/", pref_path, get_steam_id());
 
     INFO("Opened");
 }

@@ -1,5 +1,6 @@
 #include <SDL3/SDL_timer.h>
 
+#include "asset.h"
 #include "input.h"
 #include "internal.h"
 #include "localize.h"
@@ -207,7 +208,11 @@ void video_init_render() {
     // Fonts
     if ((default_font = fetch_font("main")) == NULL)
         FATAL("Main font \"main\" not found");
+    // GROSS HACK: Font texture has to be manually made transient
     default_font->transient = true;
+    struct Texture* fontex = hid_to_texture(default_font->texture);
+    if (fontex != NULL)
+        fontex->transient = true;
 
     INFO("Opened for rendering");
 }
@@ -258,7 +263,8 @@ void video_update() {
 
     submit_batch();
 
-    // Present
+    // If Steam Overlay hooks on to the application, MSVC debugger may cause a
+    // breakpoint here. Otherwise the program itself runs without a problem.
     SDL_GL_SwapWindow(window);
 }
 

@@ -90,7 +90,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua)
 
-set(LIBS SDL3::SDL3-static SDL3_image::SDL3_image-static ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_static)
+# caulk
+set(STEAMWORKS_SDK_ZIP ${CMAKE_SOURCE_DIR}/include/steam/steamworks_sdk_162.zip)
+set(STEAM_APPID ${CMAKE_SOURCE_DIR}/include/steam/steam_appid.txt)
+
+FetchContent_Declare(
+    caulk
+    GIT_REPOSITORY https://github.com/Schwungus/caulk.git
+    GIT_TAG 1b125d191d1cd4a792828d2015b3e8e6d6206334
+)
+FetchContent_MakeAvailable(caulk)
+
+set(LIBS SDL3::SDL3-static SDL3_image::SDL3_image-static ${OPENGL_gl_LIBRARY} glad_gl_core_33 cglm fmod yyjson lua_static caulk)
 
 # Build
 set(SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
@@ -101,21 +112,52 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBS})
 target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS=1)
+caulk_register(${PROJECT_NAME})
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND_EXPAND_LISTS
 )
 
+# Temporary fix to include Steam API DLLs
+set(STEAM_SOURCE_DIR ${CMAKE_SOURCE_DIR}/include/steam)
+file(ARCHIVE_EXTRACT INPUT ${STEAMWORKS_SDK_ZIP} DESTINATION ${STEAM_SOURCE_DIR})
+set(STEAM_BINARY_DIR ${CMAKE_SOURCE_DIR}/include/steam/sdk/redistributable_bin)
+
+if(WIN32)
+    if(${CMAKE_SIZEOF_VOID_P} STREQUAL 4)
+        set(STEAM_LIB "steam_api")
+    else()
+        set(STEAM_LIB "win64/steam_api64")
+    endif()
+    set(STEAM_DLL ${STEAM_BINARY_DIR}/${STEAM_LIB}.dll)
+elseif(LINUX)
+    if(${CMAKE_SIZEOF_VOID_P} STREQUAL 4)
+        set(STEAM_LIB "linux32")
+    else()
+        set(STEAM_LIB "linux64")
+    endif()
+    set(STEAM_DLL ${STEAM_BINARY_DIR}/${STEAM_LIB}/libsteam_api.so)
+endif()
+
+if (DEFINED STEAM_DLL)
+    message(STATUS "Steam API library at ${STEAM_DLL}")
+    add_custom_command(
+        TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy ${STEAM_DLL} $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    )
+endif()
+
 # Download controller database
 set(GCDB_SOURCE_DIR ${CMAKE_SOURCE_DIR}/include/gamecontrollerdb.txt)
-file(DOWNLOAD "https://github.com/mdqinc/SDL_GameControllerDB/raw/refs/heads/master/gamecontrollerdb.txt" GCDB_SOURCE_DIR)
+file(DOWNLOAD "https://github.com/mdqinc/SDL_GameControllerDB/raw/refs/heads/master/gamecontrollerdb.txt" ${GCDB_SOURCE_DIR})
 
 # Copy assets
 set(MOD_SOURCE_DIR ${CMAKE_SOURCE_DIR}/modsrc)
 add_custom_command(
     TARGET ${PROJECT_NAME}
     POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy GCDB_SOURCE_DIR $<TARGET_FILE_DIR:${PROJECT_NAME}>/gamecontrollerdb.txt
+    COMMAND ${CMAKE_COMMAND} -E copy ${GCDB_SOURCE_DIR} $<TARGET_FILE_DIR:${PROJECT_NAME}>/gamecontrollerdb.txt
     COMMAND ${CMAKE_COMMAND} -E remove_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${MOD_SOURCE_DIR} $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
 )

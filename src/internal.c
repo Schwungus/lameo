@@ -12,6 +12,7 @@
 #include "log.h"
 #include "mod.h"
 #include "player.h"
+#include "steam.h"
 #include "tick.h"
 #include "ui.h"
 #include "video.h"
@@ -22,6 +23,7 @@ void init(const char* config_path, const char* controls_path) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         FATAL("SDL fail: %s", SDL_GetError());
+    steam_init();
     file_init();
     video_init();
     audio_init();
@@ -157,6 +159,7 @@ void cleanup() {
     audio_teardown();
     video_teardown();
     file_teardown();
+    steam_teardown();
     log_teardown();
     SDL_Quit();
 }
