@@ -7,22 +7,103 @@
 
 #define ASSET_NAME_MAX 128
 
-typedef HandleID ShaderID;
-typedef HandleID TextureID;
-typedef HandleID MaterialID;
-typedef HandleID ModelID;
-typedef HandleID FontID;
-typedef HandleID SoundID;
-typedef HandleID TrackID;
+#define HEADER_ASSET(mapname, assetname, assettype, hidtype)                                                           \
+    typedef HandleID hidtype;                                                                                          \
+                                                                                                                       \
+    void mapname##_init();                                                                                             \
+    void mapname##_teardown();                                                                                         \
+    void load_##assetname(const char*);                                                                                \
+    assettype fetch_##assetname(const char*);                                                                          \
+    hidtype fetch_##assetname##_hid(const char*);                                                                      \
+    assettype get_##assetname(const char*);                                                                            \
+    hidtype get_##assetname##_hid(const char*);                                                                        \
+    assettype hid_to_##assetname(hidtype);                                                                             \
+    void destroy_##assetname(assettype);                                                                               \
+    void destroy_##assetname##_hid(hidtype);                                                                           \
+    void clear_##mapname(bool);
 
-typedef FMOD_SOUND Sample;
-typedef FMOD_SOUND Stream;
+#define SOURCE_ASSET(mapname, assetname, assettype, hidtype)                                                           \
+    static struct HashMap* mapname = NULL;                                                                             \
+    static struct Fixture* assetname##_handles = NULL;                                                                 \
+                                                                                                                       \
+    void mapname##_init() {                                                                                            \
+        mapname = create_hash_map();                                                                                   \
+        assetname##_handles = create_fixture();                                                                        \
+    }                                                                                                                  \
+                                                                                                                       \
+    void mapname##_teardown() {                                                                                        \
+        destroy_hash_map(mapname, true);                                                                               \
+        CLOSE_POINTER(assetname##_handles, destroy_fixture);                                                           \
+    }                                                                                                                  \
+                                                                                                                       \
+    assettype get_##assetname(const char* name) {                                                                      \
+        return (assettype)from_hash_map(mapname, name);                                                                \
+    }                                                                                                                  \
+                                                                                                                       \
+    hidtype get_##assetname##_hid(const char* name) {                                                                  \
+        assettype asset = get_##assetname(name);                                                                       \
+        return asset == NULL ? 0 : asset->hid;                                                                         \
+    }                                                                                                                  \
+                                                                                                                       \
+    assettype fetch_##assetname(const char* name) {                                                                    \
+        load_##assetname(name);                                                                                        \
+        return get_##assetname(name);                                                                                  \
+    }                                                                                                                  \
+                                                                                                                       \
+    hidtype fetch_##assetname##_hid(const char* name) {                                                                \
+        load_##assetname(name);                                                                                        \
+        return get_##assetname##_hid(name);                                                                            \
+    }                                                                                                                  \
+                                                                                                                       \
+    assettype hid_to_##assetname(hidtype hid) {                                                                        \
+        return (assettype)hid_to_pointer(assetname##_handles, (HandleID)hid);                                          \
+    }                                                                                                                  \
+                                                                                                                       \
+    void destroy_##assetname##_hid(hidtype hid) {                                                                      \
+        assettype asset = (assettype)hid_to_pointer(assetname##_handles, (HandleID)hid);                               \
+        if (asset != NULL)                                                                                             \
+            destroy_##assetname(asset);                                                                                \
+    }                                                                                                                  \
+                                                                                                                       \
+    void clear_##mapname(bool teardown) {                                                                              \
+        for (size_t i = 0; i < mapname->capacity; i++) {                                                               \
+            struct KeyValuePair* kvp = &mapname->items[i];                                                             \
+            if (kvp->key == NULL)                                                                                      \
+                continue;                                                                                              \
+            assettype asset = kvp->value;                                                                              \
+            if (asset != NULL && (!asset->transient || teardown)) {                                                    \
+                destroy_##assetname(asset);                                                                            \
+                kvp->value = NULL;                                                                                     \
+                lame_free(&kvp->key);                                                                                  \
+            }                                                                                                          \
+        }                                                                                                              \
+    }
+
+#define ASSET_SANITY_PUSH(varname, map)                                                                                \
+    if (!to_hash_map(map, varname->name, varname, false))                                                              \
+        FATAL(#varname " \"%s\" already in HashMap", varname->name);
+
+#define ASSET_SANITY_POP(varname, map)                                                                                 \
+    if (varname != pop_hash_map(map, varname->name, false))                                                            \
+        FATAL("Pointer mismatch when destroying " #varname " \"%s\"", varname->name);
+
+void asset_init();
+void asset_teardown();
+
+void clear_assets(bool);
+
+HEADER_ASSET(shaders, shader, struct Shader*, ShaderID);
+HEADER_ASSET(textures, texture, struct Texture*, TextureID);
+HEADER_ASSET(materials, material, struct Material*, MaterialID);
+HEADER_ASSET(models, model, struct Model*, ModelID);
+HEADER_ASSET(fonts, font, struct Font*, FontID);
+HEADER_ASSET(sounds, sound, struct Sound*, SoundID);
+HEADER_ASSET(music, track, struct Track*, TrackID);
 
 struct Shader {
     ShaderID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Shader *previous, *next;
 
     GLuint program;
     SDL_PropertiesID uniforms;
@@ -30,7 +111,7 @@ struct Shader {
 
 struct Texture {
     TextureID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
 
     struct Texture* parent;
@@ -44,16 +125,14 @@ struct Texture {
 
 struct Material {
     MaterialID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Material *previous, *next;
 };
 
 struct Model {
     ModelID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Model *previous, *next;
 };
 
 struct Glyph {
@@ -62,9 +141,8 @@ struct Glyph {
 
 struct Font {
     FontID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Font *previous, *next;
 
     TextureID texture;
     float size;
@@ -72,11 +150,13 @@ struct Font {
     size_t num_glyphs;
 };
 
+typedef FMOD_SOUND Sample;
+typedef FMOD_SOUND Stream;
+
 struct Sound {
     SoundID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Sound *previous, *next;
 
     Sample** samples;
     size_t num_samples;
@@ -87,65 +167,8 @@ struct Sound {
 
 struct Track {
     TrackID hid;
-    char name[ASSET_NAME_MAX];
+    const char* name;
     bool transient;
-    struct Track *previous, *next;
 
     Stream* stream;
 };
-
-void asset_init();
-void asset_teardown();
-
-void clear_assets(bool);
-
-void load_shader(const char*);
-struct Shader* fetch_shader(const char*);
-ShaderID fetch_shader_hid(const char*);
-struct Shader* get_shader(const char*);
-ShaderID get_shader_hid(const char*);
-struct Shader* hid_to_shader(ShaderID);
-void destroy_shader(struct Shader*);
-void destroy_shader_hid(ShaderID);
-void clear_shaders(bool);
-
-void load_texture(const char*);
-struct Texture* fetch_texture(const char*);
-TextureID fetch_texture_hid(const char*);
-struct Texture* get_texture(const char*);
-TextureID get_texture_hid(const char*);
-struct Texture* hid_to_texture(TextureID);
-void destroy_texture(struct Texture*);
-void destroy_texture_hid(TextureID);
-void clear_textures(bool);
-
-void load_font(const char*);
-struct Font* fetch_font(const char*);
-FontID fetch_font_hid(const char*);
-struct Font* get_font(const char*);
-FontID get_font_hid(const char*);
-struct Font* hid_to_font(FontID);
-void destroy_font(struct Font*);
-void destroy_font_hid(FontID);
-void clear_fonts(bool);
-
-struct Sound* create_sound(const char*);
-void load_sound(const char*);
-struct Sound* fetch_sound(const char*);
-SoundID fetch_sound_hid(const char*);
-struct Sound* get_sound(const char*);
-SoundID get_sound_hid(const char*);
-struct Sound* hid_to_sound(SoundID);
-void destroy_sound(struct Sound*);
-void destroy_sound_hid(SoundID);
-void clear_sounds(bool);
-
-void load_track(const char*);
-struct Track* fetch_track(const char*);
-TrackID fetch_track_hid(const char*);
-struct Track* get_track(const char*);
-TrackID get_track_hid(const char*);
-struct Track* hid_to_track(TrackID);
-void destroy_track(struct Track*);
-void destroy_track_hid(TrackID);
-void clear_music(bool);

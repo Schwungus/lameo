@@ -6,72 +6,11 @@
 #include "L_memory.h"
 #include "L_mod.h"
 
-static struct Shader* shaders = NULL;
-static struct Fixture* shader_handles = NULL;
-
-static struct HashMap* textures = NULL;
-static struct Fixture* texture_handles = NULL;
-
-static struct Material* materials = NULL;
-static struct Fixture* material_handles = NULL;
-
-static struct Model* models = NULL;
-static struct Fixture* model_handles = NULL;
-
-static struct Font* fonts = NULL;
-static struct Fixture* font_handles = NULL;
-
-static struct Sound* sounds = NULL;
-static struct Fixture* sound_handles = NULL;
-
-static struct Track* music = NULL;
-static struct Fixture* track_handles = NULL;
-
-void asset_init() {
-    shader_handles = create_fixture();
-
-    textures = create_hash_map();
-    texture_handles = create_fixture();
-
-    material_handles = create_fixture();
-    model_handles = create_fixture();
-    font_handles = create_fixture();
-    sound_handles = create_fixture();
-    track_handles = create_fixture();
-
-    video_init_render();
-
-    INFO("Opened");
-}
-
-void asset_teardown() {
-    clear_assets(1);
-
-    CLOSE_POINTER(shader_handles, destroy_fixture);
-
-    destroy_hash_map(textures, true);
-    CLOSE_POINTER(texture_handles, destroy_fixture);
-
-    CLOSE_POINTER(material_handles, destroy_fixture);
-    CLOSE_POINTER(model_handles, destroy_fixture);
-    CLOSE_POINTER(font_handles, destroy_fixture);
-    CLOSE_POINTER(sound_handles, destroy_fixture);
-    CLOSE_POINTER(track_handles, destroy_fixture);
-
-    INFO("Closed");
-}
-
-void clear_assets(bool teardown) {
-    clear_shaders(teardown);
-    clear_textures(teardown);
-    clear_fonts(teardown);
-    clear_sounds(teardown);
-    clear_music(teardown);
-}
-
 static char asset_file_helper[FILE_PATH_MAX];
 
 // Shaders
+SOURCE_ASSET(shaders, shader, struct Shader*, ShaderID);
+
 void load_shader(const char* name) {
     if (get_shader(name) != NULL)
         return;
@@ -132,13 +71,8 @@ void load_shader(const char* name) {
 
     // General
     shader->hid = (ShaderID)create_handle(shader_handles, shader);
-    SDL_strlcpy(shader->name, name, sizeof(shader->name));
+    shader->name = SDL_strdup(name);
     shader->transient = true; // No sense in unloading shaders
-    if (shaders != NULL)
-        shaders->next = shader;
-    shader->previous = shaders;
-    shader->next = NULL;
-    shaders = shader;
 
     // Program
     shader->program = glCreateProgram();
@@ -176,49 +110,25 @@ void load_shader(const char* name) {
             FATAL("Shader \"%s\" uniform \"%s\" fail: %s", name, uname, SDL_GetError());
     }
 
+    ASSET_SANITY_PUSH(shader, shaders);
     INFO("Loaded shader \"%s\" (%u)", name, shader->hid);
 }
 
-struct Shader* get_shader(const char* name) {
-    for (struct Shader* shader = shaders; shader != NULL; shader = shader->previous)
-        if (SDL_strcmp(shader->name, name) == 0)
-            return shader;
-    return NULL;
-}
-
-struct Shader* fetch_shader(const char* name) {
-    load_shader(name);
-    return get_shader(name);
-}
-
 void destroy_shader(struct Shader* shader) {
-    if (shaders == shader)
-        shaders = shader->previous;
-    if (shader->previous != NULL)
-        shader->previous->next = shader->next;
-    if (shader->next != NULL)
-        shader->next->previous = shader->previous;
+    ASSET_SANITY_POP(shader, shaders);
 
     glDeleteProgram(shader->program);
     SDL_DestroyProperties(shader->uniforms);
 
     INFO("Freed shader \"%s\" (%u)", shader->name, shader->hid);
     destroy_handle(shader_handles, shader->hid);
+    lame_free(&shader->name);
     lame_free(&shader);
 }
 
-void clear_shaders(bool teardown) {
-    struct Shader* shader = shaders;
-
-    while (shader != NULL) {
-        struct Shader* it = shader->previous;
-        if (!shader->transient || teardown)
-            destroy_shader(shader);
-        shader = it;
-    }
-}
-
 // Textures
+SOURCE_ASSET(textures, texture, struct Texture*, TextureID);
+
 void load_texture(const char* name) {
     if (get_texture(name) != NULL)
         return;
@@ -241,7 +151,7 @@ void load_texture(const char* name) {
 
     // General
     texture->hid = (TextureID)create_handle(texture_handles, texture);
-    SDL_strlcpy(texture->name, name, sizeof(texture->name));
+    texture->name = SDL_strdup(name);
     texture->transient = false;
 
     // Inheritance
@@ -304,38 +214,12 @@ void load_texture(const char* name) {
     glTexImage2D(GL_TEXTURE_2D, 0, format, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_DestroySurface(surface);
 
-    if (!to_hash_map(textures, name, texture, false))
-        FATAL("Texture \"%s\" already in HashMap", name);
+    ASSET_SANITY_PUSH(texture, textures);
     INFO("Loaded texture \"%s\" (%u)", name, texture->hid);
 }
 
-struct Texture* fetch_texture(const char* name) {
-    load_texture(name);
-    return get_texture(name);
-}
-
-TextureID fetch_texture_hid(const char* name) {
-    load_texture(name);
-    return get_texture_hid(name);
-}
-
-struct Texture* get_texture(const char* name) {
-    return (struct Texture*)from_hash_map(textures, name);
-}
-
-TextureID get_texture_hid(const char* name) {
-    struct Texture* texture = get_texture(name);
-    return texture == NULL ? 0 : texture->hid;
-}
-
-struct Texture* hid_to_texture(TextureID hid) {
-    return (struct Texture*)hid_to_pointer(texture_handles, (TextureID)hid);
-}
-
 void destroy_texture(struct Texture* texture) {
-    // Sanity check
-    if (texture != pop_hash_map(textures, texture->name, false))
-        FATAL("Pointer mismatch when destroying texture \"%s\"", texture->name);
+    ASSET_SANITY_POP(texture, textures);
 
     if (texture->children != NULL) {
         for (int i = 0; i < texture->num_children; i++)
@@ -347,30 +231,23 @@ void destroy_texture(struct Texture* texture) {
 
     INFO("Freed texture \"%s\" (%u)", texture->name, texture->hid);
     destroy_handle(texture_handles, texture->hid);
+    lame_free(&texture->name);
     lame_free(&texture);
 }
 
-void destroy_texture_hid(TextureID hid) {
-    struct Texture* texture = (struct Texture*)hid_to_pointer(texture_handles, (HandleID)hid);
-    if (texture != NULL)
-        destroy_texture(texture);
-}
+// Materials
+SOURCE_ASSET(materials, material, struct Material*, MaterialID);
+void load_material(const char* name) {}
+void destroy_material(struct Material* material) {}
 
-void clear_textures(bool teardown) {
-    for (size_t i = 0; i < textures->capacity; i++) {
-        struct KeyValuePair* kvp = &textures->items[i];
-        if (kvp->key == NULL)
-            continue;
-        struct Texture* texture = kvp->value;
-        if (texture != NULL && (!texture->transient || teardown)) {
-            destroy_texture(texture);
-            kvp->value = NULL;
-            lame_free(&kvp->key);
-        }
-    }
-}
+// Models
+SOURCE_ASSET(models, model, struct Model*, ModelID);
+void load_model(const char* name) {}
+void destroy_model(struct Model* model) {}
 
 // Fonts
+SOURCE_ASSET(fonts, font, struct Font*, FontID);
+
 void load_font(const char* name) {
     if (get_font(name) != NULL)
         return;
@@ -399,13 +276,8 @@ void load_font(const char* name) {
 
     // General
     font->hid = (FontID)create_handle(font_handles, font);
-    SDL_strlcpy(font->name, name, sizeof(font->name));
+    font->name = SDL_strdup(name);
     font->transient = false;
-    if (fonts != NULL)
-        fonts->next = font;
-    font->previous = fonts;
-    font->next = NULL;
-    fonts = font;
 
     // Data
     font->texture = 0;
@@ -479,44 +351,12 @@ void load_font(const char* name) {
 
     yyjson_doc_free(json);
 
+    ASSET_SANITY_PUSH(font, fonts);
     INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font->hid, gldef, font->num_glyphs);
 }
 
-struct Font* fetch_font(const char* name) {
-    load_font(name);
-    return get_font(name);
-}
-
-FontID fetch_font_hid(const char* name) {
-    load_font(name);
-    return get_font_hid(name);
-}
-
-struct Font* get_font(const char* name) {
-    for (struct Font* font = fonts; font != NULL; font = font->previous)
-        if (SDL_strcmp(font->name, name) == 0)
-            return font;
-    return NULL;
-}
-
-FontID get_font_hid(const char* name) {
-    for (struct Font* font = fonts; font != NULL; font = font->previous)
-        if (SDL_strcmp(font->name, name) == 0)
-            return font->hid;
-    return 0;
-}
-
-struct Font* hid_to_font(FontID hid) {
-    return (struct Font*)hid_to_pointer(font_handles, (FontID)hid);
-}
-
 void destroy_font(struct Font* font) {
-    if (fonts == font)
-        fonts = font->previous;
-    if (font->previous != NULL)
-        font->previous->next = font->next;
-    if (font->next != NULL)
-        font->next->previous = font->previous;
+    ASSET_SANITY_POP(font, fonts);
 
     if (font->glyphs != NULL) {
         for (size_t i = 0; i < font->num_glyphs; i++)
@@ -526,38 +366,20 @@ void destroy_font(struct Font* font) {
 
     INFO("Freed font \"%s\" (%u)", font->name, font->hid);
     destroy_handle(font_handles, font->hid);
+    lame_free(&font->name);
     lame_free(&font);
 }
 
-void destroy_font_hid(FontID hid) {
-    struct Font* font = (struct Font*)hid_to_pointer(font_handles, (HandleID)hid);
-    if (font != NULL)
-        destroy_font(font);
-}
-
-void clear_fonts(bool teardown) {
-    struct Font* font = fonts;
-    while (font != NULL) {
-        struct Font* it = font->previous;
-        if (!font->transient || teardown)
-            destroy_font(font);
-        font = it;
-    }
-}
-
 // Sounds
+SOURCE_ASSET(sounds, sound, struct Sound*, SoundID);
+
 struct Sound* create_sound(const char* name) {
     struct Sound* sound = lame_alloc(sizeof(struct Sound));
 
     // General
     sound->hid = (SoundID)create_handle(sound_handles, sound);
-    SDL_strlcpy(sound->name, name, sizeof(sound->name));
+    sound->name = SDL_strdup(name);
     sound->transient = false;
-    if (sounds != NULL)
-        sounds->next = sound;
-    sound->previous = sounds;
-    sound->next = NULL;
-    sounds = sound;
 
     // Data
     sound->samples = NULL;
@@ -572,6 +394,8 @@ void load_sound(const char* name) {
     if (get_sound(name) != NULL)
         return;
 
+    struct Sound* sound = NULL;
+
     // Find a JSON for definitions
     SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.json", name);
     const char* file = get_mod_file(asset_file_helper, NULL);
@@ -583,15 +407,14 @@ void load_sound(const char* name) {
             return;
         }
 
-        struct Sound* sound = create_sound(name);
+        sound = create_sound(name);
 
         // Data
         sound->samples = lame_alloc(sizeof(struct Sample*));
         sound->num_samples = 1;
         load_sample(file, &sound->samples[0]);
 
-        INFO("Loaded sound \"%s\" (%u)", name, sound->hid);
-        return;
+        goto sound_loaded;
     }
 
     yyjson_doc* json = load_json(file);
@@ -608,7 +431,7 @@ void load_sound(const char* name) {
     }
 
     // Allocate empty sound at this point
-    struct Sound* sound = create_sound(name);
+    sound = create_sound(name);
 
     // Samples
     yyjson_val* value = yyjson_obj_get(root, "sample");
@@ -668,44 +491,13 @@ void load_sound(const char* name) {
 
     yyjson_doc_free(json);
 
+sound_loaded:
+    ASSET_SANITY_PUSH(sound, sounds);
     INFO("Loaded sound \"%s\" (%u)", name, sound->hid);
 }
 
-struct Sound* fetch_sound(const char* name) {
-    load_sound(name);
-    return get_sound(name);
-}
-
-SoundID fetch_sound_hid(const char* name) {
-    load_sound(name);
-    return get_sound_hid(name);
-}
-
-struct Sound* get_sound(const char* name) {
-    for (struct Sound* sound = sounds; sound != NULL; sound = sound->previous)
-        if (SDL_strcmp(sound->name, name) == 0)
-            return sound;
-    return NULL;
-}
-
-SoundID get_sound_hid(const char* name) {
-    for (struct Sound* sound = sounds; sound != NULL; sound = sound->previous)
-        if (SDL_strcmp(sound->name, name) == 0)
-            return sound->hid;
-    return 0;
-}
-
-struct Sound* hid_to_sound(SoundID hid) {
-    return (struct Sound*)hid_to_pointer(sound_handles, (HandleID)hid);
-}
-
 void destroy_sound(struct Sound* sound) {
-    if (sounds == sound)
-        sounds = sound->previous;
-    if (sound->previous != NULL)
-        sound->previous->next = sound->next;
-    if (sound->next != NULL)
-        sound->next->previous = sound->previous;
+    ASSET_SANITY_POP(sound, sounds);
 
     if (sound->samples != NULL) {
         for (size_t i = 0; i < sound->num_samples; i++)
@@ -716,27 +508,13 @@ void destroy_sound(struct Sound* sound) {
 
     INFO("Freed sound \"%s\" (%u)", sound->name, sound->hid);
     destroy_handle(sound_handles, sound->hid);
+    lame_free(&sound->name);
     lame_free(&sound);
 }
 
-void destroy_sound_hid(SoundID hid) {
-    struct Sound* sound = (struct Sound*)hid_to_pointer(sound_handles, (HandleID)hid);
-    if (sound != NULL)
-        destroy_sound(sound);
-}
-
-void clear_sounds(bool teardown) {
-    struct Sound* sound = sounds;
-
-    while (sound != NULL) {
-        struct Sound* it = sound->previous;
-        if (!sound->transient || teardown)
-            destroy_sound(sound);
-        sound = it;
-    }
-}
-
 // Music
+SOURCE_ASSET(music, track, struct Track*, TrackID);
+
 void load_track(const char* name) {
     if (get_track(name) != NULL)
         return;
@@ -752,75 +530,60 @@ void load_track(const char* name) {
 
     // General
     track->hid = (TrackID)create_handle(track_handles, track);
-    SDL_strlcpy(track->name, name, sizeof(track->name));
+    track->name = SDL_strdup(name);
     track->transient = false;
-    if (music != NULL)
-        music->next = track;
-    track->previous = music;
-    track->next = NULL;
-    music = track;
 
     // Data
     load_stream(track_file, &track->stream);
 
+    ASSET_SANITY_PUSH(track, music);
     INFO("Loaded track \"%s\" (%u)", name, track->hid);
 }
 
-struct Track* fetch_track(const char* name) {
-    load_track(name);
-    return get_track(name);
-}
-
-TrackID fetch_track_hid(const char* name) {
-    load_track(name);
-    return get_track_hid(name);
-}
-
-struct Track* get_track(const char* name) {
-    for (struct Track* track = music; track != NULL; track = track->previous)
-        if (SDL_strcmp(track->name, name) == 0)
-            return track;
-    return NULL;
-}
-
-TrackID get_track_hid(const char* name) {
-    for (struct Track* track = music; track != NULL; track = track->previous)
-        if (SDL_strcmp(track->name, name) == 0)
-            return track->hid;
-    return 0;
-}
-
-struct Track* hid_to_track(TrackID hid) {
-    return (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
-}
-
 void destroy_track(struct Track* track) {
-    if (music == track)
-        music = track->previous;
-    if (track->previous != NULL)
-        track->previous->next = track->next;
-    if (track->next != NULL)
-        track->next->previous = track->previous;
+    ASSET_SANITY_POP(track, music);
 
     destroy_stream(track->stream);
     INFO("Freed track \"%s\" (%u)", track->name, track->hid);
     destroy_handle(track_handles, track->hid);
+    lame_free(&track->name);
     lame_free(&track);
 }
 
-void destroy_track_hid(TrackID hid) {
-    struct Track* track = (struct Track*)hid_to_pointer(track_handles, (HandleID)hid);
-    if (track != NULL)
-        destroy_track(track);
+void asset_init() {
+    shaders_init();
+    textures_init();
+    materials_init();
+    models_init();
+    fonts_init();
+    sounds_init();
+    music_init();
+
+    video_init_render();
+
+    INFO("Opened");
 }
 
-void clear_music(bool teardown) {
-    struct Track* track = music;
+void asset_teardown() {
+    clear_assets(true);
 
-    while (track != NULL) {
-        struct Track* it = track->previous;
-        if (!track->transient || teardown)
-            destroy_track(track);
-        track = it;
-    }
+    shaders_teardown();
+    textures_teardown();
+    materials_teardown();
+    models_teardown();
+    fonts_teardown();
+    sounds_teardown();
+    music_teardown();
+
+    INFO("Closed");
+}
+
+void clear_assets(bool teardown) {
+    clear_shaders(teardown);
+    clear_textures(teardown);
+    clear_materials(teardown);
+    clear_models(teardown);
+    clear_fonts(teardown);
+    clear_sounds(teardown);
+    clear_music(teardown);
 }

@@ -173,7 +173,7 @@ void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
 // Abstract hash maps
 // You can either free values manually or nuke them alongside the maps.
 // https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
-#define HASH_CAPACITY 4
+#define HASH_CAPACITY 8
 #define FNV_OFFSET 0x811c9dc5
 #define FNV_PRIME 0x01000193
 

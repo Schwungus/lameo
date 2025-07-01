@@ -213,9 +213,6 @@ void video_init_render() {
     if (fontex != NULL)
         fontex->transient = true;
 
-    load_texture("dumdum");
-    load_texture("dummy");
-
     INFO("Opened for rendering");
 }
 
