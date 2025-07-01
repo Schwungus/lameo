@@ -16,7 +16,7 @@ void localize_teardown() {
     while (lang != NULL) {
         struct Language* temp = lang->previous;
 
-        destroy_hash_map(lang->map);
+        destroy_hash_map(lang->map, true);
         lame_free(&lang);
 
         lang = temp;

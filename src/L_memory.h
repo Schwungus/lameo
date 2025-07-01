@@ -93,14 +93,16 @@ struct HashMap {
 };
 
 struct HashMap* _create_hash_map(const char*, int);
-void _destroy_hash_map(struct HashMap*, const char*, int);
-void _to_hash_map(struct HashMap*, const char*, void*, const char*, int);
-void* _from_hash_map(struct HashMap*, const char*, const char*, int);
+void _destroy_hash_map(struct HashMap*, bool, const char*, int);
+bool _to_hash_map(struct HashMap*, const char*, void*, bool, const char*, int);
+void* from_hash_map(struct HashMap*, const char*);
+void* _pop_hash_map(struct HashMap*, const char*, bool, const char*, int);
 
 #define create_hash_map() _create_hash_map(__FILE__, __LINE__)
-#define destroy_hash_map(map) _destroy_hash_map(map, __FILE__, __LINE__)
-#define to_hash_map(map, key, value) _to_hash_map(map, key, value, __FILE__, __LINE__)
-#define from_hash_map(map, key) _from_hash_map(map, key, __FILE__, __LINE__)
+#define destroy_hash_map(map, nuke) _destroy_hash_map(map, nuke, __FILE__, __LINE__)
+#define to_hash_map(map, key, value, nuke) _to_hash_map(map, key, value, nuke, __FILE__, __LINE__)
+// #define from_hash_map(map, key) _from_hash_map(map, key, __FILE__, __LINE__)
+#define pop_hash_map(map, key, nuke) _pop_hash_map(map, key, nuke, __FILE__, __LINE__)
 
 struct IKeyValuePair {
     uint32_t key;
@@ -113,11 +115,13 @@ struct IntMap {
 };
 
 struct IntMap* _create_int_map(const char*, int);
-void _destroy_int_map(struct IntMap*, const char*, int);
-void _to_int_map(struct IntMap*, uint32_t, void*, const char*, int);
-void* _from_int_map(struct IntMap*, uint32_t, const char*, int);
+void _destroy_int_map(struct IntMap*, bool, const char*, int);
+bool _to_int_map(struct IntMap*, uint32_t, void*, bool, const char*, int);
+void* from_int_map(struct IntMap*, uint32_t);
+void* pop_int_map(struct IntMap*, uint32_t, bool, const char*, int);
 
 #define create_int_map() _create_int_map(__FILE__, __LINE__)
-#define destroy_int_map(map) _destroy_int_map(map, __FILE__, __LINE__)
-#define to_int_map(map, key, value) _to_int_map(map, key, value, __FILE__, __LINE__)
-#define from_int_map(map, key) _from_int_map(map, key, __FILE__, __LINE__)
+#define destroy_int_map(map, nuke) _destroy_int_map(map, nuke, __FILE__, __LINE__)
+#define to_int_map(map, key, value, nuke) _to_int_map(map, key, value, nuke, __FILE__, __LINE__)
+// #define from_int_map(map, key) _from_int_map(map, key, __FILE__, __LINE__)
+#define pop_int_map(map, key, nuke) _pop_int_map(map, key, nuke, __FILE__, __LINE__)

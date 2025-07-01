@@ -191,7 +191,7 @@ void mod_init_language() {
                                     yyjson_get_type_desc(val2));
                                 continue;
                             }
-                            to_hash_map(language->map, keyc, SDL_strdup(yyjson_get_str(val2)));
+                            to_hash_map(language->map, keyc, SDL_strdup(yyjson_get_str(val2)), true);
                         }
                     }
                 } else {

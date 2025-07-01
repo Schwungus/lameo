@@ -32,7 +32,6 @@ struct Texture {
     TextureID hid;
     char name[ASSET_NAME_MAX];
     bool transient;
-    struct Texture *previous, *next;
 
     struct Texture* parent;
     TextureID* children;
@@ -98,7 +97,7 @@ struct Track {
 void asset_init();
 void asset_teardown();
 
-void clear_assets(int);
+void clear_assets(bool);
 
 void load_shader(const char*);
 struct Shader* fetch_shader(const char*);
@@ -108,7 +107,7 @@ ShaderID get_shader_hid(const char*);
 struct Shader* hid_to_shader(ShaderID);
 void destroy_shader(struct Shader*);
 void destroy_shader_hid(ShaderID);
-void clear_shaders(int);
+void clear_shaders(bool);
 
 void load_texture(const char*);
 struct Texture* fetch_texture(const char*);
@@ -118,7 +117,7 @@ TextureID get_texture_hid(const char*);
 struct Texture* hid_to_texture(TextureID);
 void destroy_texture(struct Texture*);
 void destroy_texture_hid(TextureID);
-void clear_textures(int);
+void clear_textures(bool);
 
 void load_font(const char*);
 struct Font* fetch_font(const char*);
@@ -128,7 +127,7 @@ FontID get_font_hid(const char*);
 struct Font* hid_to_font(FontID);
 void destroy_font(struct Font*);
 void destroy_font_hid(FontID);
-void clear_fonts(int);
+void clear_fonts(bool);
 
 struct Sound* create_sound(const char*);
 void load_sound(const char*);
@@ -139,7 +138,7 @@ SoundID get_sound_hid(const char*);
 struct Sound* hid_to_sound(SoundID);
 void destroy_sound(struct Sound*);
 void destroy_sound_hid(SoundID);
-void clear_sounds(int);
+void clear_sounds(bool);
 
 void load_track(const char*);
 struct Track* fetch_track(const char*);
@@ -149,4 +148,4 @@ TrackID get_track_hid(const char*);
 struct Track* hid_to_track(TrackID);
 void destroy_track(struct Track*);
 void destroy_track_hid(TrackID);
-void clear_music(int);
+void clear_music(bool);

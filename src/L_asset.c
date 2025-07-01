@@ -9,7 +9,7 @@
 static struct Shader* shaders = NULL;
 static struct Fixture* shader_handles = NULL;
 
-static struct Texture* textures = NULL;
+static struct HashMap* textures = NULL;
 static struct Fixture* texture_handles = NULL;
 
 static struct Material* materials = NULL;
@@ -29,7 +29,10 @@ static struct Fixture* track_handles = NULL;
 
 void asset_init() {
     shader_handles = create_fixture();
+
+    textures = create_hash_map();
     texture_handles = create_fixture();
+
     material_handles = create_fixture();
     model_handles = create_fixture();
     font_handles = create_fixture();
@@ -45,7 +48,10 @@ void asset_teardown() {
     clear_assets(1);
 
     CLOSE_POINTER(shader_handles, destroy_fixture);
+
+    destroy_hash_map(textures, true);
     CLOSE_POINTER(texture_handles, destroy_fixture);
+
     CLOSE_POINTER(material_handles, destroy_fixture);
     CLOSE_POINTER(model_handles, destroy_fixture);
     CLOSE_POINTER(font_handles, destroy_fixture);
@@ -55,7 +61,7 @@ void asset_teardown() {
     INFO("Closed");
 }
 
-void clear_assets(int teardown) {
+void clear_assets(bool teardown) {
     clear_shaders(teardown);
     clear_textures(teardown);
     clear_fonts(teardown);
@@ -127,7 +133,7 @@ void load_shader(const char* name) {
     // General
     shader->hid = (ShaderID)create_handle(shader_handles, shader);
     SDL_strlcpy(shader->name, name, sizeof(shader->name));
-    shader->transient = 1; // No sense in unloading shaders
+    shader->transient = true; // No sense in unloading shaders
     if (shaders != NULL)
         shaders->next = shader;
     shader->previous = shaders;
@@ -201,7 +207,7 @@ void destroy_shader(struct Shader* shader) {
     lame_free(&shader);
 }
 
-void clear_shaders(int teardown) {
+void clear_shaders(bool teardown) {
     struct Shader* shader = shaders;
 
     while (shader != NULL) {
@@ -236,11 +242,7 @@ void load_texture(const char* name) {
     // General
     texture->hid = (TextureID)create_handle(texture_handles, texture);
     SDL_strlcpy(texture->name, name, sizeof(texture->name));
-    if (textures != NULL)
-        textures->next = texture;
-    texture->previous = textures;
-    texture->next = NULL;
-    textures = texture;
+    texture->transient = false;
 
     // Inheritance
     texture->parent = NULL;
@@ -302,6 +304,8 @@ void load_texture(const char* name) {
     glTexImage2D(GL_TEXTURE_2D, 0, format, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_DestroySurface(surface);
 
+    if (!to_hash_map(textures, name, texture, false))
+        FATAL("Texture \"%s\" already in HashMap", name);
     INFO("Loaded texture \"%s\" (%u)", name, texture->hid);
 }
 
@@ -316,17 +320,12 @@ TextureID fetch_texture_hid(const char* name) {
 }
 
 struct Texture* get_texture(const char* name) {
-    for (struct Texture* texture = textures; texture != NULL; texture = texture->previous)
-        if (SDL_strcmp(texture->name, name) == 0)
-            return texture;
-    return NULL;
+    return (struct Texture*)from_hash_map(textures, name);
 }
 
 TextureID get_texture_hid(const char* name) {
-    for (struct Texture* texture = textures; texture != NULL; texture = texture->previous)
-        if (SDL_strcmp(texture->name, name) == 0)
-            return texture->hid;
-    return 0;
+    struct Texture* texture = get_texture(name);
+    return texture == NULL ? 0 : texture->hid;
 }
 
 struct Texture* hid_to_texture(TextureID hid) {
@@ -334,12 +333,9 @@ struct Texture* hid_to_texture(TextureID hid) {
 }
 
 void destroy_texture(struct Texture* texture) {
-    if (textures == texture)
-        textures = texture->previous;
-    if (texture->previous != NULL)
-        texture->previous->next = texture->next;
-    if (texture->next != NULL)
-        texture->next->previous = texture->previous;
+    // Sanity check
+    if (texture != pop_hash_map(textures, texture->name, false))
+        FATAL("Pointer mismatch when destroying texture \"%s\"", texture->name);
 
     if (texture->children != NULL) {
         for (int i = 0; i < texture->num_children; i++)
@@ -360,14 +356,17 @@ void destroy_texture_hid(TextureID hid) {
         destroy_texture(texture);
 }
 
-void clear_textures(int teardown) {
-    struct Texture* texture = textures;
-
-    while (texture != NULL) {
-        struct Texture* it = texture->previous;
-        if (!texture->transient || teardown)
+void clear_textures(bool teardown) {
+    for (size_t i = 0; i < textures->capacity; i++) {
+        struct KeyValuePair* kvp = &textures->items[i];
+        if (kvp->key == NULL)
+            continue;
+        struct Texture* texture = kvp->value;
+        if (texture != NULL && (!texture->transient || teardown)) {
             destroy_texture(texture);
-        texture = it;
+            kvp->value = NULL;
+            lame_free(&kvp->key);
+        }
     }
 }
 
@@ -401,7 +400,7 @@ void load_font(const char* name) {
     // General
     font->hid = (FontID)create_handle(font_handles, font);
     SDL_strlcpy(font->name, name, sizeof(font->name));
-    font->transient = 0;
+    font->transient = false;
     if (fonts != NULL)
         fonts->next = font;
     font->previous = fonts;
@@ -536,7 +535,7 @@ void destroy_font_hid(FontID hid) {
         destroy_font(font);
 }
 
-void clear_fonts(int teardown) {
+void clear_fonts(bool teardown) {
     struct Font* font = fonts;
     while (font != NULL) {
         struct Font* it = font->previous;
@@ -553,7 +552,7 @@ struct Sound* create_sound(const char* name) {
     // General
     sound->hid = (SoundID)create_handle(sound_handles, sound);
     SDL_strlcpy(sound->name, name, sizeof(sound->name));
-    sound->transient = 0;
+    sound->transient = false;
     if (sounds != NULL)
         sounds->next = sound;
     sound->previous = sounds;
@@ -726,7 +725,7 @@ void destroy_sound_hid(SoundID hid) {
         destroy_sound(sound);
 }
 
-void clear_sounds(int teardown) {
+void clear_sounds(bool teardown) {
     struct Sound* sound = sounds;
 
     while (sound != NULL) {
@@ -754,7 +753,7 @@ void load_track(const char* name) {
     // General
     track->hid = (TrackID)create_handle(track_handles, track);
     SDL_strlcpy(track->name, name, sizeof(track->name));
-    track->transient = 0;
+    track->transient = false;
     if (music != NULL)
         music->next = track;
     track->previous = music;
@@ -815,7 +814,7 @@ void destroy_track_hid(TrackID hid) {
         destroy_track(track);
 }
 
-void clear_music(int teardown) {
+void clear_music(bool teardown) {
     struct Track* track = music;
 
     while (track != NULL) {
