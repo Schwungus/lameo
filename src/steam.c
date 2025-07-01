@@ -8,6 +8,8 @@ void steam_init() {
     INFO("Opened");
 }
 
+void steam_update() {}
+
 void steam_teardown() {
     caulk_Shutdown();
 

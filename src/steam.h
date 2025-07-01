@@ -3,6 +3,7 @@
 #include <caulk.h>
 
 void steam_init();
+void steam_update();
 void steam_teardown();
 
 CSteamID get_steam_id();

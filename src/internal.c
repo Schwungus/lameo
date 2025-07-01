@@ -134,6 +134,7 @@ void loop() {
             }
         }
 
+        steam_update();
         tick_update();
         video_update();
         audio_update();
