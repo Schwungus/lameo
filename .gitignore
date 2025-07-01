@@ -5,8 +5,7 @@
 /include/fmod/windows
 /include/fmod/linux
 /include/steam/*
-/include/discord/*
 /include/gamecontrollerdb.txt
 
 /modsrc/1extra
-modsrc/disabled.json
+/modsrc/disabled.json
