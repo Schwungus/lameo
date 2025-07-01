@@ -125,6 +125,7 @@ void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloa
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
+void main_material_sprite(struct Material*, GLfloat, GLfloat, GLfloat);
 void main_string(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat);
 void main_string_wrap(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat);
 

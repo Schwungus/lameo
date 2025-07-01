@@ -127,6 +127,20 @@ struct Material {
     MaterialID hid;
     const char* name;
     bool transient;
+
+    TextureID* textures[2]; // (0) Base and (1) blend textures
+    size_t num_textures[2]; // (0) Base and (1) blend texture count
+    float texture_speed[2]; // Cycle factor between (0) base and (1) blend textures per millisecond
+
+    GLfloat color[4];       // Multiply texture by this color
+    GLfloat alpha_test;     // Test texture alpha with this threshold
+    GLfloat bright;         // Ineffectiveness of light on material
+    GLfloat scroll[2];      // Full texture scrolls per millisecond
+    GLfloat specular[2];    // (0) Specular factor and (1) exponent
+    GLfloat rimlight[2];    // (0) Rimlight factor and (1) exponent
+    GLboolean half_lambert; // Enable half-lambert shading on this material
+    GLfloat cel;            // Cel-shading factor
+    GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin
 };
 
 struct Model {

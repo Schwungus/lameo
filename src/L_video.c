@@ -17,6 +17,7 @@ static struct Display display = {-1, -1, 0};
 static uint16_t framerate = 0;
 static uint64_t last_cap_time = 0;
 static float cap_wait = 0;
+static uint64_t draw_time = 0;
 
 static GLuint blank_texture = 0;
 
@@ -217,15 +218,15 @@ void video_init_render() {
 }
 
 void video_update() {
-    const uint64_t current_cap_time = SDL_GetTicks();
+    draw_time = SDL_GetTicks();
     if (framerate > 0) {
-        cap_wait += (float)(current_cap_time - last_cap_time) * ((float)framerate / 1000.);
-        last_cap_time = current_cap_time;
+        cap_wait += (float)(draw_time - last_cap_time) * ((float)framerate / 1000.);
+        last_cap_time = draw_time;
         if (cap_wait < 1)
             return;
         cap_wait -= SDL_floorf(cap_wait);
     } else {
-        last_cap_time = current_cap_time;
+        last_cap_time = draw_time;
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -526,6 +527,17 @@ void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
     main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
     main_vertex(x1, y1, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[1]);
     main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
+}
+
+void main_material_sprite(struct Material* material, GLfloat x, GLfloat y, GLfloat z) {
+    if (material == NULL || material->textures[0] == NULL)
+        return;
+    main_sprite(
+        hid_to_texture(
+            material->textures[0][(size_t)((float)draw_time * material->texture_speed[0]) % material->num_textures[0]]
+        ),
+        x, y, z
+    );
 }
 
 void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GLfloat y, GLfloat z) {
