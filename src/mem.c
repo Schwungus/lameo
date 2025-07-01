@@ -170,7 +170,8 @@ void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
     return (handle->generation != generation) ? NULL : handle->ptr; // God-knows-what
 }
 
-// Hasj mappps%0w
+// Abstract hash maps
+// These are destructive (frees pointers themselves).
 // https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
 #define HASH_CAPACITY 2
 #define FNV_OFFSET 0x811c9dc5
