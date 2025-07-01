@@ -101,3 +101,23 @@ void* _from_hash_map(struct HashMap*, const char*, const char*, int);
 #define destroy_hash_map(map) _destroy_hash_map(map, __FILE__, __LINE__)
 #define to_hash_map(map, key, value) _to_hash_map(map, key, value, __FILE__, __LINE__)
 #define from_hash_map(map, key) _from_hash_map(map, key, __FILE__, __LINE__)
+
+struct IKeyValuePair {
+    uint32_t key;
+    void* value;
+};
+
+struct IntMap {
+    struct IKeyValuePair* items;
+    size_t count, capacity;
+};
+
+struct IntMap* _create_int_map(const char*, int);
+void _destroy_int_map(struct IntMap*, const char*, int);
+void _to_int_map(struct IntMap*, uint32_t, void*, const char*, int);
+void* _from_int_map(struct IntMap*, uint32_t, const char*, int);
+
+#define create_int_map() _create_int_map(__FILE__, __LINE__)
+#define destroy_int_map(map) _destroy_int_map(map, __FILE__, __LINE__)
+#define to_int_map(map, key, value) _to_int_map(map, key, value, __FILE__, __LINE__)
+#define from_int_map(map, key) _from_int_map(map, key, __FILE__, __LINE__)
