@@ -6,7 +6,6 @@ project(
     LANGUAGES C
 )
 
-#set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -68,7 +67,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cglm)
 
-# FMOD Core API (2.03)
+# FMOD Core API (2.03.08)
 add_subdirectory(${CMAKE_SOURCE_DIR}/include/fmod)
 
 # yyjson (0.11.1)
@@ -90,14 +89,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua)
 
-# caulk
+# caulk (01.07.2025)
 set(STEAMWORKS_SDK_ZIP ${CMAKE_SOURCE_DIR}/include/steam/steamworks_sdk_162.zip)
 set(STEAM_APPID ${CMAKE_SOURCE_DIR}/include/steam/steam_appid.txt)
+set(CAULK_BUILD_TEST OFF)
 
 FetchContent_Declare(
     caulk
     GIT_REPOSITORY https://github.com/Schwungus/caulk.git
-    GIT_TAG 1b125d191d1cd4a792828d2015b3e8e6d6206334
+    GIT_TAG 5174bf845d4ad561f5e8e340b5867c3146d7304d
 )
 FetchContent_MakeAvailable(caulk)
 
