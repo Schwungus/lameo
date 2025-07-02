@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 
+#include "L_actor.h"
 #include "L_asset.h"
 #include "L_audio.h"
 #include "L_config.h"
@@ -34,9 +35,10 @@ void init(const char* config_path, const char* controls_path) {
     mod_init();
     localize_init();
     asset_init();
+    actor_init();
+    ui_init();
     script_init();
     handler_init();
-    ui_init();
     tick_init();
 
     // Default level is "main"
@@ -102,6 +104,9 @@ void loop() {
 
             case LOAD_UNLOAD: {
                 // Unload level
+                struct UI* ui_root = get_ui_root();
+                if (ui_root != NULL)
+                    destroy_ui(ui_root);
 
                 // Unload assets
                 clear_assets(0);
@@ -128,6 +133,7 @@ void loop() {
             case LOAD_END: {
                 // Ready players to active
                 // Assign players to room ID "load_state.room"
+                create_ui(NULL, "Pause");
 
                 load_state.state = LOAD_NONE;
                 break;
@@ -147,9 +153,10 @@ void loop() {
 
 void cleanup() {
     tick_teardown();
-    ui_teardown();
     handler_teardown();
     script_teardown();
+    ui_teardown();
+    actor_teardown();
     asset_teardown();
     localize_teardown();
     mod_teardown();
