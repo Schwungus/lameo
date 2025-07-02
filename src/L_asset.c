@@ -104,7 +104,7 @@ void load_shader(const char* name) {
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &unum);
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &ulen);
     for (GLsizei i = 0; i < unum; i++) {
-        GLchar uname[ASSET_NAME_MAX];
+        GLchar uname[128];
         glGetActiveUniform(shader->program, i, ulen, NULL, NULL, NULL, uname);
         if (!SDL_SetNumberProperty(shader->uniforms, uname, (Sint64)glGetUniformLocation(shader->program, uname)))
             FATAL("Shader \"%s\" uniform \"%s\" fail: %s", name, uname, SDL_GetError());

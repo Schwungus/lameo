@@ -60,8 +60,8 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
 
     // Data
     mod->hid = (ModID)create_handle(mod_handles, mod);
-    SDL_strlcpy(mod->name, fname, FILE_NAME_MAX);
-    SDL_strlcpy(mod->path, path, FILE_PATH_MAX);
+    mod->name = SDL_strdup(fname);
+    mod->path = SDL_strdup(path);
     mod->crc32 = 0;
     if (!SDL_EnumerateDirectory(path, iterate_crc32, &mod->crc32))
         FATAL("CRC32 fail: %s", SDL_GetError());
@@ -71,13 +71,13 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
     yyjson_doc* json = load_json(path);
     if (json == NULL) {
         WARN("Failed to open \"mod.json\" for \"%s\"", fname);
-        SDL_strlcpy(mod->title, fname, MOD_NAME_MAX);
+        mod->title = SDL_strdup(fname);
         mod->version = 0;
     } else {
         yyjson_val* root = yyjson_doc_get_root(json);
         if (yyjson_is_obj(root)) {
             const char* title = yyjson_get_str(yyjson_obj_get(root, "title"));
-            SDL_strlcpy(mod->title, title == NULL ? fname : title, MOD_NAME_MAX);
+            mod->title = SDL_strdup(title == NULL ? fname : title);
             mod->version = (uint16_t)yyjson_get_uint(yyjson_obj_get(root, "version"));
         } else {
             WTF("Expected root object in \"%s/mod.json\", got %s", fname, yyjson_get_type_desc(root));
@@ -213,7 +213,9 @@ void mod_teardown() {
         const struct Mod* mod = mods;
         mods = mod->previous;
         INFO("Removed mod \"%s\" (%s)", mod->title, mod->name);
-        // destroy_handle(mod_handles, mod->hid);
+        lame_free(&mod->name);
+        lame_free(&mod->title);
+        lame_free(&mod->path);
         lame_free(&mod);
     }
 

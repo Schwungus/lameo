@@ -4,8 +4,6 @@
 #include "L_memory.h"
 #include "L_player.h"
 
-#define ACTOR_NAME_MAX 128
-
 #include "L_room.h" // L_room.h relies on ACTOR_NAME_MAX, so only include after that's defined
 
 typedef HandleID ActorID;

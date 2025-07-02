@@ -1,6 +1,6 @@
 #pragma once
 
-#include "L_level.h"
+#include <SDL3/SDL.h>
 
 enum LoadStates {
     LOAD_NONE,
@@ -13,7 +13,7 @@ enum LoadStates {
 struct LoadState {
     enum LoadStates state;
 
-    char level[LEVEL_NAME_MAX];
+    char level[128];
     uint16_t room;
     uint16_t tag;
 };

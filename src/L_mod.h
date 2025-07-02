@@ -1,19 +1,14 @@
 #pragma once
 
-#include "L_file.h"
 #include "L_memory.h"
-
-#define MOD_NAME_MAX 128
 
 typedef HandleID ModID;
 
 struct Mod {
     ModID hid;
-    char name[FILE_NAME_MAX];
-    char path[FILE_PATH_MAX];
+    const char *name, *title;
+    const char* path;
     uint32_t crc32;
-
-    char title[MOD_NAME_MAX];
     uint16_t version;
 
     struct Mod *previous, *next;

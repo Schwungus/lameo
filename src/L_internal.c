@@ -1,5 +1,4 @@
-#include <SDL3/SDL.h>
-
+#include "L_internal.h"
 #include "L_actor.h"
 #include "L_asset.h"
 #include "L_audio.h"
@@ -8,7 +7,7 @@
 #include "L_flags.h"
 #include "L_handler.h"
 #include "L_input.h"
-#include "L_internal.h"
+#include "L_level.h"
 #include "L_localize.h"
 #include "L_log.h"
 #include "L_mod.h"
@@ -45,7 +44,7 @@ void init(const char* config_path, const char* controls_path) {
     tick_init();
 
     // Default level is "main"
-    SDL_strlcpy(load_state.level, "main", LEVEL_NAME_MAX);
+    SDL_strlcpy(load_state.level, "main", sizeof(load_state.level));
     load_state.state = LOAD_START;
 }
 

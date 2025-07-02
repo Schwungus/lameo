@@ -5,8 +5,6 @@
 
 #include "L_audio.h" // IWYU pragma: keep
 
-#define ASSET_NAME_MAX 128
-
 #define HEADER_ASSET(mapname, assetname, assettype, hidtype)                                                           \
     typedef HandleID hidtype;                                                                                          \
                                                                                                                        \

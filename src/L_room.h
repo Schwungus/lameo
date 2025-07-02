@@ -13,14 +13,13 @@ enum RoomActorFlags {
 struct Room {
     struct Level* level;
     uint16_t id;
-    struct Room *previous, *next;
 
     struct Player *master, *players;
     struct Actor* actors;
 };
 
 struct RoomActor {
-    char type[ACTOR_NAME_MAX];
+    struct ActorType* type;
     struct RoomActor *previous, *next;
 
     vec3 pos, angle;

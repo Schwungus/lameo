@@ -2,10 +2,8 @@
 
 #include "L_memory.h"
 
-#define LANGUAGE_NAME_MAX 128
-
 struct Language {
-    char name[LANGUAGE_NAME_MAX];
+    const char* name;
     struct Language *previous, *next;
     struct HashMap* map;
 };

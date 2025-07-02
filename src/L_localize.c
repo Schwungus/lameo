@@ -17,6 +17,7 @@ void localize_teardown() {
         struct Language* temp = lang->previous;
 
         destroy_hash_map(lang->map, true);
+        lame_free(&lang->name);
         lame_free(&lang);
 
         lang = temp;
@@ -32,7 +33,7 @@ struct Language* fetch_language(const char* name) {
             return lang;
 
     lang = lame_alloc(sizeof(struct Language));
-    SDL_strlcpy(lang->name, name, LANGUAGE_NAME_MAX);
+    lang->name = SDL_strdup(name);
     lang->map = create_hash_map();
 
     if (languages != NULL)

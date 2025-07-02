@@ -2,8 +2,6 @@
 
 #include "L_script.h" // IWYU pragma: keep
 
-#define HANDLER_NAME_MAX 128
-
 struct Handler {
     const char* name;
     struct Handler *previous, *next;
