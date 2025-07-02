@@ -59,7 +59,8 @@ plain C!
 ## Safety
 
 - In some cases such as assets, actors, etc., pointers may be destroyed by other sources and as such may lead to dangling pointers in external code. `Fixture`s and `HandleID`s are built **specifically** for this situation, so that you may use handles for safer pointing. Invalid handles will always resolve into `NULL`.
-- Do **not** allow lameo to cause segfaults. Make use of the `FATAL()` macro so you can catch critical errors outside of debugging.
+- Do **not** allow lameo to cause segfaults. Make use of the `FATAL()` macro so you can catch fatal errors outside of debugging.
+  - In sanity checks/assertions, it's recommended to end the fatal error message with a `?` to indicate that the error occured during a sanity check/assertion.
   - **EXCEPTION:** In rare cases, some segfaults may be out of lameo's control (i.e. Steam overlay injection).
 - All allocated memory **must** be freed when closing lameo.
   - Some memory leaks may be out of lameo's control. Search for `MEMORY LEAK` in the repository for comments on possible cases.
