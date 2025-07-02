@@ -18,6 +18,10 @@
     lua_pushinteger(context, name);                                                                                    \
     lua_setglobal(context, #name);
 
+#define EXPOSE_NUMBER(name)                                                                                            \
+    lua_pushnumber(context, name);                                                                                     \
+    lua_setglobal(context, #name);
+
 #define EXPOSE_FUNCTION(name)                                                                                          \
     lua_pushcfunction(context, SCRIPT_PREFIX(name));                                                                   \
     lua_setglobal(context, #name);

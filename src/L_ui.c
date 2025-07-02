@@ -109,9 +109,10 @@ struct UI* create_ui(struct UI* parent, const char* name) {
     ui_top = ui;
 
     ui->table = create_table_ref();
+    ui->flags = UIF_DEFAULT;
+
     if (type->create != LUA_NOREF)
         execute_ref_in(type->create, ui->hid, name);
-
     return hid_to_ui(hid) != NULL ? ui : NULL;
 }
 

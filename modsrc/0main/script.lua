@@ -4,18 +4,24 @@ local functions = {}
 functions.load = function ()
 end
 
-functions.create = function (self)
+functions.create = function (this)
+    ui_table(this).dummy = get_draw_time()
     print("Paused")
 end
 
-functions.cleanup = function (self)
+functions.cleanup = function (this)
     print("Unpaused")
 end
 
-functions.draw = function (self)
-    main_rectangle(0, 0, 640, 480, 1, 0, 0, 0, 128)
+functions.tick = function (this)
+    ui_table(this).dummy = get_draw_time()
+end
+
+functions.draw = function (this)
+    main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
     local paused = localized("paused")
-    main_string(paused, 0, 16, 320 + math.cos(math.rad(get_draw_time() * 0.25)) * 128, 240, 1)
+    main_string(paused, 0, 16, 320 + math.cos(math.rad(get_draw_time() * 0.2)) * 128, 240 + math.sin(math.rad(ui_table(this).dummy * 0.175)) * 128, UI_Z)
+    main_string(localized("loading"), 0, 16, 64, 64, UI_Z)
 end
 
 define_ui("Pause", nil, functions)

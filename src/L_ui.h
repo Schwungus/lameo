@@ -3,18 +3,19 @@
 #include "L_memory.h"
 #include "L_script.h" // IWYU pragma: keep
 
-#define UI_NAME_MAX 128
-
-#define UI_HOOK_FUNCTION(funcname)                                                                                     \
-    lua_getfield(L, -1, #funcname);                                                                                    \
-    if (lua_isfunction(L, -1)) {                                                                                       \
-        type->funcname = luaL_ref(L, LUA_REGISTRYINDEX);                                                               \
-    } else {                                                                                                           \
-        type->funcname = LUA_NOREF;                                                                                    \
-        lua_pop(L, 1);                                                                                                 \
-    }
+#define UI_Z 50
 
 typedef HandleID UIID;
+
+enum UIFlags { // These flags only apply while the target UI is active.
+    UIF_NONE = 0,
+
+    UIF_BLOCKING = 1 << 0,    // Freeze world
+    UIF_BLOCK_INPUT = 1 << 1, // Block player input
+    UIF_DRAW_SCREEN = 1 << 2, // Draw cameras
+
+    UIF_DEFAULT = UIF_BLOCKING | UIF_DRAW_SCREEN,
+};
 
 struct UIType {
     const char* name;
@@ -33,6 +34,7 @@ struct UI {
 
     struct UI *parent, *child;
     int table;
+    enum UIFlags flags;
 };
 
 void ui_init();

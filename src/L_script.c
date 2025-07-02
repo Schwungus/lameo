@@ -324,6 +324,16 @@ SCRIPT_FUNCTION(main_string) {
     return 0;
 }
 
+// UI
+SCRIPT_FUNCTION(ui_table) {
+    struct UI* ui = hid_to_ui(luaL_checkinteger(L, 1));
+    if (ui == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, ui->table);
+    return 1;
+}
+
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
     if (nsize <= 0) {
@@ -412,11 +422,15 @@ void script_init() {
     // Video
     EXPOSE_INTEGER(DEFAULT_DISPLAY_WIDTH);
     EXPOSE_INTEGER(DEFAULT_DISPLAY_HEIGHT);
+    EXPOSE_NUMBER(UI_Z);
 
     EXPOSE_FUNCTION(get_draw_time);
 
     EXPOSE_FUNCTION(main_rectangle);
     EXPOSE_FUNCTION(main_string);
+
+    // UI
+    EXPOSE_FUNCTION(ui_table);
 
     mod_init_script();
 

@@ -2,7 +2,9 @@
 #include <SDL3/SDL_timer.h>
 
 #include "L_internal.h"
+#include "L_log.h"
 #include "L_tick.h"
+#include "L_ui.h"
 
 static uint64_t last_time = 0;
 static float ticks = 0;
@@ -20,7 +22,18 @@ void tick_update() {
     if (ticks >= 1) {
         if (get_load_state() == LOAD_NONE)
             while (ticks >= 1) {
-                // UI, game ...
+                bool tick_world = true;
+
+                // UI
+                struct UI* ui_top = get_ui_top();
+                if (ui_top != NULL && ui_top->type->tick != LUA_NOREF)
+                    execute_ref_in(ui_top->type->tick, ui_top->hid, ui_top->type->name);
+                if ((ui_top = get_ui_top()) != NULL && (ui_top->flags & UIF_BLOCKING))
+                    tick_world = false;
+
+                // World
+                if (tick_world) {}
+
                 ticks -= 1;
             }
         else
