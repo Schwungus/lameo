@@ -57,5 +57,6 @@ void set_import_path(const char*);
 
 void _execute_buffer(void*, size_t, const char*, const char*, int);
 
+int create_table_ref();
 void unreference(int*);
 void _execute_ref(int, const char*, const char*, int);

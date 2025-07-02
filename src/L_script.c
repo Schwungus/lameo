@@ -387,6 +387,11 @@ void _execute_buffer(void* buffer, size_t size, const char* name, const char* fi
         log_fatal(src_basename(filename), line, "Error in script \"%s\": %s", name, lua_tostring(context, -1));
 }
 
+int create_table_ref() {
+    lua_newtable(context);
+    return luaL_ref(context, LUA_REGISTRYINDEX);
+}
+
 void unreference(int* ref) {
     luaL_unref(context, LUA_REGISTRYINDEX, *ref);
     *ref = LUA_NOREF;

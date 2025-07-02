@@ -35,7 +35,7 @@ enum CameraFlags {
 };
 
 struct ActorType {
-    char name[ACTOR_NAME_MAX];
+    const char* name;
     struct ActorType* parent;
 };
 
@@ -78,7 +78,10 @@ struct Actor {
     vec3 pos, angle, vel;
     float friction, gravity;
 
-    SDL_PropertiesID properties;
+    int table;
     enum ActorFlags flags;
     uint16_t tag;
 };
+
+void actor_init();
+void actor_teardown();
