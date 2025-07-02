@@ -14,7 +14,7 @@
     }
 
 struct Handler {
-    char name[HANDLER_NAME_MAX];
+    const char* name;
     struct Handler *previous, *next;
 
     int on_register, on_start;

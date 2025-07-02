@@ -34,6 +34,7 @@ void handler_teardown() {
         unreference(&handler->ui_signalled);
 
         struct Handler* temp = handler->next;
+        lame_free(&handler->name);
         lame_free(&handler);
         handler = temp;
     }
@@ -46,7 +47,7 @@ int define_handler(lua_State* L) {
     luaL_checktype(L, -1, LUA_TTABLE);
 
     struct Handler* handler = lame_alloc(sizeof(struct Handler));
-    SDL_strlcpy(handler->name, lua_tostring(L, -2), HANDLER_NAME_MAX);
+    handler->name = SDL_strdup(lua_tostring(L, -2));
 
     // Get virtual functions
     HANDLER_HOOK_FUNCTION(on_register);
