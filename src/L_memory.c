@@ -215,7 +215,7 @@ bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, 
     if (map->count >= map->capacity / 2) {
         const size_t new_capacity = map->capacity * 2;
         if (new_capacity < map->capacity)
-            log_fatal(filename, line, "Capacity overflow in HashMap");
+            log_fatal(src_basename(filename), line, "Capacity overflow in HashMap");
 
         const size_t old_capacity = map->capacity;
         _lame_realloc((void**)&map->items, new_capacity * sizeof(struct KeyValuePair), filename, line);
@@ -223,7 +223,7 @@ bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, 
             map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct KeyValuePair), filename, line
         );
         map->capacity = new_capacity;
-        log_generic(filename, line, "Increased HashMap capacity to %u", new_capacity);
+        log_generic(src_basename(filename), line, "Increased HashMap capacity to %u", new_capacity);
     }
 
     size_t index = (size_t)hash_key(key) % map->capacity;
@@ -321,7 +321,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
     if (map->count >= map->capacity / 2) {
         const size_t new_capacity = map->capacity * 2;
         if (new_capacity < map->capacity)
-            log_fatal(filename, line, "Capacity overflow in IntMap");
+            log_fatal(src_basename(filename), line, "Capacity overflow in IntMap");
 
         const size_t old_capacity = map->capacity;
         _lame_realloc((void**)&map->items, new_capacity * sizeof(struct IKeyValuePair), filename, line);
@@ -329,7 +329,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
             map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct IKeyValuePair), filename, line
         );
         map->capacity = new_capacity;
-        log_generic(filename, line, "Increased IntMap capacity to %u", new_capacity);
+        log_generic(src_basename(filename), line, "Increased IntMap capacity to %u", new_capacity);
     }
 
     size_t index = (size_t)int_hash_key(key) % map->capacity;
