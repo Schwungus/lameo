@@ -66,16 +66,13 @@
     }                                                                                                                  \
                                                                                                                        \
     void clear_##mapname(bool teardown) {                                                                              \
-        for (size_t i = 0; i < mapname->capacity; i++) {                                                               \
+        for (size_t i = 0; mapname->count > 0 && i < mapname->capacity; i++) {                                         \
             struct KeyValuePair* kvp = &mapname->items[i];                                                             \
             if (kvp->key == NULL)                                                                                      \
                 continue;                                                                                              \
             assettype asset = kvp->value;                                                                              \
-            if (asset != NULL && (!asset->transient || teardown)) {                                                    \
+            if (asset != NULL && (!asset->transient || teardown))                                                      \
                 destroy_##assetname(asset);                                                                            \
-                kvp->value = NULL;                                                                                     \
-                lame_free(&kvp->key);                                                                                  \
-            }                                                                                                          \
         }                                                                                                              \
     }
 

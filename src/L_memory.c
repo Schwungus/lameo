@@ -173,7 +173,7 @@ void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
 // Abstract hash maps
 // You can either free values manually or nuke them alongside the maps.
 // https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
-#define HASH_CAPACITY 8
+#define HASH_CAPACITY 2
 #define FNV_OFFSET 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
@@ -203,7 +203,7 @@ void _destroy_hash_map(struct HashMap* map, bool nuke, const char* filename, int
         struct KeyValuePair* kvp = &map->items[i];
         if (kvp->key != NULL)
             _lame_free((void**)&kvp->key, filename, line);
-        if (kvp->value != NULL && nuke)
+        if (nuke && kvp->value != NULL)
             _lame_free(&kvp->value, filename, line);
     }
 
@@ -218,7 +218,7 @@ bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, 
             log_fatal(filename, line, "Capacity overflow in HashMap");
 
         const size_t old_capacity = map->capacity;
-        _lame_realloc((void**)&map->items, new_capacity, filename, line);
+        _lame_realloc((void**)&map->items, new_capacity * sizeof(struct KeyValuePair), filename, line);
         _lame_set(
             map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct KeyValuePair), filename, line
         );
@@ -246,6 +246,7 @@ bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, 
 
     map->items[index].key = SDL_strdup(key);
     map->items[index].value = value;
+    map->count++;
     return true;
 }
 
@@ -268,12 +269,13 @@ void* _pop_hash_map(struct HashMap* map, const char* key, bool nuke, const char*
     struct KeyValuePair* kvp = &map->items[index];
     while (kvp->key != NULL) {
         if (SDL_strcmp(key, kvp->key) == 0) {
-            if (nuke) {
-                _lame_free((void**)&kvp->key, filename, line);
-                if (kvp->value != NULL)
-                    _lame_free(&kvp->value, filename, line);
-            }
-            return kvp->value;
+            _lame_free((void**)&kvp->key, filename, line);
+            void* value = kvp->value;
+            kvp->value = NULL;
+            if (nuke && value != NULL)
+                _lame_free(&value, filename, line);
+            map->count--;
+            return value;
         }
 
         index = (index + 1) % map->capacity;
@@ -307,7 +309,7 @@ struct IntMap* _create_int_map(const char* filename, int line) {
 void _destroy_int_map(struct IntMap* map, bool nuke, const char* filename, int line) {
     for (size_t i = 0; i < map->capacity; i++) {
         struct IKeyValuePair* kvp = &map->items[i];
-        if (kvp->value != NULL && nuke)
+        if (nuke && kvp->value != NULL)
             _lame_free(&kvp->value, filename, line);
     }
 
@@ -322,7 +324,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
             log_fatal(filename, line, "Capacity overflow in IntMap");
 
         const size_t old_capacity = map->capacity;
-        _lame_realloc((void**)&map->items, new_capacity, filename, line);
+        _lame_realloc((void**)&map->items, new_capacity * sizeof(struct IKeyValuePair), filename, line);
         _lame_set(
             map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct IKeyValuePair), filename, line
         );
@@ -350,6 +352,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
 
     map->items[index].key = key;
     map->items[index].value = value;
+    map->count++;
     return true;
 }
 
@@ -372,12 +375,13 @@ void* _pop_int_map(struct IntMap* map, uint32_t key, bool nuke, const char* file
     struct IKeyValuePair* kvp = &map->items[index];
     while (kvp->key != 0) {
         if (key == kvp->key) {
-            if (nuke) {
-                kvp->key = 0;
-                if (kvp->value != NULL)
-                    _lame_free(&kvp->value, filename, line);
-            }
-            return kvp->value;
+            kvp->key = 0;
+            void* value = kvp->value;
+            kvp->value = NULL;
+            if (nuke && value != NULL)
+                _lame_free(&value, filename, line);
+            map->count--;
+            return value;
         }
 
         index = (index + 1) % map->capacity;
