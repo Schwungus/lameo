@@ -10,6 +10,9 @@
 #include "L_asset.h"
 #include "L_math.h" // IWYU pragma: keep
 
+#define DEFAULT_DISPLAY_WIDTH 640
+#define DEFAULT_DISPLAY_HEIGHT 480
+
 enum FullscreenModes {
     FSM_WINDOWED,
     FSM_FULLSCREEN,
@@ -85,6 +88,8 @@ void video_teardown();
 // Display
 void set_display(int, int, enum FullscreenModes, bool);
 void set_framerate(uint16_t);
+
+uint64_t get_draw_time();
 
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);

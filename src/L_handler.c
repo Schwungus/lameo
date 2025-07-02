@@ -43,27 +43,27 @@ void handler_teardown() {
 }
 
 int define_handler(lua_State* L) {
-    luaL_checkstring(L, -2);
-    luaL_checktype(L, -1, LUA_TTABLE);
+    const char* name = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TTABLE);
 
     struct Handler* handler = lame_alloc(sizeof(struct Handler));
-    handler->name = SDL_strdup(lua_tostring(L, -2));
+    handler->name = SDL_strdup(name);
 
     // Get virtual functions
-    HANDLER_HOOK_FUNCTION(on_register);
-    HANDLER_HOOK_FUNCTION(on_start);
+    handler->on_register = function_ref(-1, "on_register");
+    handler->on_start = function_ref(-1, "on_start");
 
-    HANDLER_HOOK_FUNCTION(player_activated);
-    HANDLER_HOOK_FUNCTION(player_deactivated);
+    handler->player_activated = function_ref(-1, "player_activated");
+    handler->player_deactivated = function_ref(-1, "player_deactivated");
 
-    HANDLER_HOOK_FUNCTION(level_loading);
-    HANDLER_HOOK_FUNCTION(level_started);
+    handler->level_loading = function_ref(-1, "level_loading");
+    handler->level_started = function_ref(-1, "level_started");
 
-    HANDLER_HOOK_FUNCTION(room_activated);
-    HANDLER_HOOK_FUNCTION(room_deactivated);
-    HANDLER_HOOK_FUNCTION(room_changed);
+    handler->room_activated = function_ref(-1, "room_activated");
+    handler->room_deactivated = function_ref(-1, "room_deactivated");
+    handler->room_changed = function_ref(-1, "room_changed");
 
-    HANDLER_HOOK_FUNCTION(ui_signalled);
+    handler->ui_signalled = function_ref(-1, "ui_signalled");
 
     // Link handler
     if (handlers == NULL) {
@@ -78,11 +78,11 @@ int define_handler(lua_State* L) {
     }
     handler->next = NULL;
 
-    INFO("Defined handler \"%s\"", handler->name);
+    INFO("Defined handler \"%s\"", name);
 
     // Register handler
     if (handler->on_register != LUA_NOREF)
-        execute_ref(handler->on_register, handler->name);
+        execute_ref(handler->on_register, name);
 
     return 0;
 }

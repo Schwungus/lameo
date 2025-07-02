@@ -1,9 +1,13 @@
 #include "L_script.h"
 #include "L_flags.h"
 #include "L_handler.h"
+#include "L_localize.h"
+#include "L_log.h"
 #include "L_memory.h"
 #include "L_mod.h"
 #include "L_player.h"
+#include "L_ui.h"
+#include "L_video.h"
 
 static lua_State* context = NULL;
 static lua_Debug debug = {0};
@@ -21,20 +25,10 @@ SCRIPT_FUNCTION(define_handler) {
 }
 
 SCRIPT_FUNCTION(define_ui) {
-    luaL_checkstring(L, -2);
-    luaL_checktype(L, -1, LUA_TTABLE);
-
-    SCRIPT_LOG("Defined UI \"%s\"", lua_tostring(L, -2));
-
-    return 0;
+    return define_ui(L);
 }
 
 SCRIPT_FUNCTION(define_actor) {
-    luaL_checkstring(L, -2);
-    luaL_checktype(L, -1, LUA_TTABLE);
-
-    SCRIPT_LOG("Defined Actor \"%s\"", lua_tostring(L, -2));
-
     return 0;
 }
 
@@ -52,7 +46,10 @@ SCRIPT_FUNCTION(error) {
 
 // Flags
 SCRIPT_FUNCTION(get_flag_type) {
-    switch (get_flag_type(lua_tointeger(L, -2), lua_tostring(L, -1))) {
+    enum FlagScopes scope = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
+
+    switch (get_flag_type(scope, flag)) {
         default:
         case FT_NULL:
             lua_pushstring(L, lua_typename(L, LUA_TNIL));
@@ -73,8 +70,8 @@ SCRIPT_FUNCTION(get_flag_type) {
 }
 
 SCRIPT_FUNCTION(get_flag) {
-    enum FlagScopes scope = lua_tointeger(L, -2);
-    const char* flag = lua_tostring(L, -1);
+    enum FlagScopes scope = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
 
     switch (get_flag_type(scope, flag)) {
         default:
@@ -99,8 +96,8 @@ SCRIPT_FUNCTION(get_flag) {
 }
 
 SCRIPT_FUNCTION(set_flag) {
-    enum FlagScopes scope = lua_tointeger(L, -3);
-    const char* flag = lua_tostring(L, -2);
+    enum FlagScopes scope = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
 
     switch (lua_type(L, -1)) {
         default:
@@ -131,13 +128,13 @@ SCRIPT_GETTER_FLAG(decrement_flag, integer);
 
 // Players
 SCRIPT_FUNCTION(get_player_status) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     lua_pushinteger(L, player == NULL ? PS_INACTIVE : player->status);
     return 1;
 }
 
 SCRIPT_FUNCTION(get_player_move) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     if (player == NULL) {
         lua_pushinteger(L, 0);
         lua_pushinteger(L, 0);
@@ -149,7 +146,7 @@ SCRIPT_FUNCTION(get_player_move) {
 }
 
 SCRIPT_FUNCTION(get_player_aim) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     if (player == NULL) {
         lua_pushinteger(L, 0);
         lua_pushinteger(L, 0);
@@ -161,13 +158,13 @@ SCRIPT_FUNCTION(get_player_aim) {
 }
 
 SCRIPT_FUNCTION(get_player_buttons) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     lua_pushinteger(L, player == NULL ? PB_NONE : player->input.buttons);
     return 1;
 }
 
 SCRIPT_FUNCTION(get_player_last_move) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     if (player == NULL) {
         lua_pushinteger(L, 0);
         lua_pushinteger(L, 0);
@@ -179,7 +176,7 @@ SCRIPT_FUNCTION(get_player_last_move) {
 }
 
 SCRIPT_FUNCTION(get_player_last_aim) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     if (player == NULL) {
         lua_pushinteger(L, 0);
         lua_pushinteger(L, 0);
@@ -191,7 +188,7 @@ SCRIPT_FUNCTION(get_player_last_aim) {
 }
 
 SCRIPT_FUNCTION(get_player_last_buttons) {
-    struct Player* player = get_player(lua_tointeger(L, -1));
+    struct Player* player = get_player(luaL_checkinteger(L, 1));
     lua_pushinteger(L, player == NULL ? PB_NONE : player->last_input.buttons);
     return 1;
 }
@@ -201,7 +198,10 @@ SCRIPT_GETTER_SLOT(next_active_player, integer);
 SCRIPT_GETTER_SLOT(next_neighbor_player, integer);
 
 SCRIPT_FUNCTION(get_pflag_type) {
-    switch (get_pflag_type(lua_tointeger(L, -2), lua_tostring(L, -1))) {
+    int slot = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
+
+    switch (get_pflag_type(slot, flag)) {
         default:
         case FT_NULL:
             lua_pushstring(L, lua_typename(L, LUA_TNIL));
@@ -222,8 +222,8 @@ SCRIPT_FUNCTION(get_pflag_type) {
 }
 
 SCRIPT_FUNCTION(get_pflag) {
-    int slot = lua_tointeger(L, -2);
-    const char* flag = lua_tostring(L, -1);
+    int slot = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
 
     switch (get_pflag_type(slot, flag)) {
         default:
@@ -248,8 +248,8 @@ SCRIPT_FUNCTION(get_pflag) {
 }
 
 SCRIPT_FUNCTION(set_pflag) {
-    int slot = lua_tointeger(L, -3);
-    const char* flag = lua_tostring(L, -2);
+    int slot = luaL_checkinteger(L, 1);
+    const char* flag = luaL_checkstring(L, 2);
 
     switch (lua_type(L, -1)) {
         default:
@@ -277,6 +277,52 @@ SCRIPT_FUNCTION(set_pflag) {
 SCRIPT_GETTER_FLAG(toggle_pflag, boolean);
 SCRIPT_GETTER_FLAG(increment_pflag, integer);
 SCRIPT_GETTER_FLAG(decrement_pflag, integer);
+
+// Localization
+SCRIPT_FUNCTION(localized) {
+    const char* key = luaL_checkstring(L, 1);
+    lua_pushstring(L, localized(key));
+    return 1;
+}
+
+// Video
+SCRIPT_GETTER(get_draw_time, integer);
+
+SCRIPT_FUNCTION(main_rectangle) {
+    set_main_texture(NULL);
+
+    const GLfloat x1 = luaL_checknumber(L, 1);
+    const GLfloat y1 = luaL_checknumber(L, 2);
+    const GLfloat x2 = luaL_checknumber(L, 3);
+    const GLfloat y2 = luaL_checknumber(L, 4);
+    const GLfloat z = luaL_checknumber(L, 5);
+    const GLfloat r = luaL_checkinteger(L, 6);
+    const GLfloat g = luaL_checkinteger(L, 7);
+    const GLfloat b = luaL_checkinteger(L, 8);
+    const GLfloat a = luaL_checkinteger(L, 9);
+
+    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
+    main_vertex(x2, y2, z, r, g, b, a, 1, 1);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
+    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
+    main_vertex(x1, y1, z, r, g, b, a, 0, 0);
+
+    return 0;
+}
+
+SCRIPT_FUNCTION(main_string) {
+    const char* str = luaL_checkstring(L, 1);
+    const FontID font = luaL_checknumber(L, 2);
+    const GLfloat size = luaL_checknumber(L, 3);
+    const GLfloat x = luaL_checknumber(L, 4);
+    const GLfloat y = luaL_checknumber(L, 5);
+    const GLfloat z = luaL_checknumber(L, 6);
+
+    main_string(str, NULL, size, x, y, z);
+
+    return 0;
+}
 
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
@@ -360,6 +406,18 @@ void script_init() {
     EXPOSE_FUNCTION(increment_pflag);
     EXPOSE_FUNCTION(decrement_pflag);
 
+    // Localize
+    EXPOSE_FUNCTION(localized);
+
+    // Video
+    EXPOSE_INTEGER(DEFAULT_DISPLAY_WIDTH);
+    EXPOSE_INTEGER(DEFAULT_DISPLAY_HEIGHT);
+
+    EXPOSE_FUNCTION(get_draw_time);
+
+    EXPOSE_FUNCTION(main_rectangle);
+    EXPOSE_FUNCTION(main_string);
+
     mod_init_script();
 
     INFO("Opened");
@@ -392,6 +450,14 @@ int create_table_ref() {
     return luaL_ref(context, LUA_REGISTRYINDEX);
 }
 
+int function_ref(int idx, const char* name) {
+    lua_getfield(context, idx, name);
+    if (lua_isfunction(context, idx))
+        return luaL_ref(context, LUA_REGISTRYINDEX);
+    lua_pop(context, 1);
+    return LUA_NOREF;
+}
+
 void unreference(int* ref) {
     luaL_unref(context, LUA_REGISTRYINDEX, *ref);
     *ref = LUA_NOREF;
@@ -400,5 +466,12 @@ void unreference(int* ref) {
 void _execute_ref(int ref, const char* name, const char* filename, int line) {
     lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
     if (lua_pcall(context, 0, 0, 0) != LUA_OK)
+        log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
+}
+
+void _execute_ref_in(int ref, HandleID scope, const char* name, const char* filename, int line) {
+    lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
+    lua_pushinteger(context, scope);
+    if (lua_pcall(context, 1, 0, 0) != LUA_OK)
         log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
 }

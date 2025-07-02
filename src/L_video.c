@@ -5,10 +5,8 @@
 #include "L_localize.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_ui.h"
 #include "L_video.h"
-
-#define DEFAULT_DISPLAY_WIDTH 640
-#define DEFAULT_DISPLAY_HEIGHT 480
 
 static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
@@ -259,6 +257,10 @@ void video_update() {
         }
 
         main_string_wrap(localized("test"), NULL, 32, 320, 320, 0, 0);
+
+        const struct UI* ui_top = get_ui_top();
+        if (ui_top != NULL && ui_top->type->draw != LUA_NOREF)
+            execute_ref_in(ui_top->type->draw, ui_top->hid, ui_top->type->name);
     }
 
     submit_batch();
@@ -352,6 +354,10 @@ void set_framerate(uint16_t fps) {
         INFO("Capped framerate to %d FPS", fps);
     else
         INFO("Uncapped framerate");
+}
+
+uint64_t get_draw_time() {
+    return draw_time;
 }
 
 // Shaders 'n' Uniforms

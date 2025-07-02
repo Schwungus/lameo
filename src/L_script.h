@@ -4,7 +4,7 @@
 #include <lua.h>
 #include <lualib.h>
 
-#include "L_log.h" // IWYU pragma: keep
+#include "L_memory.h"
 
 #define SCRIPT_PREFIX(name) s_##name
 #define SCRIPT_PUSH(type) lua_push##type
@@ -32,13 +32,15 @@
 
 #define SCRIPT_GETTER_SLOT(name, type)                                                                                 \
     static int SCRIPT_PREFIX(name)(lua_State * L) {                                                                    \
-        SCRIPT_PUSH(type)(L, name(lua_tointeger(L, -1)));                                                              \
+        SCRIPT_PUSH(type)(L, name(luaL_checkinteger(L, 1)));                                                           \
         return 1;                                                                                                      \
     }
 
 #define SCRIPT_GETTER_FLAG(name, type)                                                                                 \
     static int SCRIPT_PREFIX(name)(lua_State * L) {                                                                    \
-        SCRIPT_PUSH(type)(L, name(lua_tointeger(L, -2), lua_tostring(L, -1)));                                         \
+        int slot = luaL_checkinteger(L, 1);                                                                            \
+        const char* flag = luaL_checkstring(L, 2);                                                                     \
+        SCRIPT_PUSH(type)(L, name(slot, flag));                                                                        \
         return 1;                                                                                                      \
     }
 
@@ -49,6 +51,7 @@
 
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
 #define execute_ref(ref, name) _execute_ref(ref, name, __FILE__, __LINE__)
+#define execute_ref_in(ref, hid, name) _execute_ref_in(ref, hid, name, __FILE__, __LINE__)
 
 void script_init();
 void script_teardown();
@@ -58,5 +61,7 @@ void set_import_path(const char*);
 void _execute_buffer(void*, size_t, const char*, const char*, int);
 
 int create_table_ref();
+int function_ref(int, const char*);
 void unreference(int*);
 void _execute_ref(int, const char*, const char*, int);
+void _execute_ref_in(int, HandleID, const char*, const char*, int);

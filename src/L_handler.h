@@ -4,15 +4,6 @@
 
 #define HANDLER_NAME_MAX 128
 
-#define HANDLER_HOOK_FUNCTION(funcname)                                                                                \
-    lua_getfield(L, -1, #funcname);                                                                                    \
-    if (lua_isfunction(L, -1)) {                                                                                       \
-        handler->funcname = luaL_ref(L, LUA_REGISTRYINDEX);                                                            \
-    } else {                                                                                                           \
-        handler->funcname = LUA_NOREF;                                                                                 \
-        lua_pop(L, 1);                                                                                                 \
-    }
-
 struct Handler {
     const char* name;
     struct Handler *previous, *next;
