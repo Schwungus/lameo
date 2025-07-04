@@ -193,10 +193,6 @@ SCRIPT_FUNCTION(get_player_last_buttons) {
     return 1;
 }
 
-SCRIPT_GETTER_SLOT(next_ready_player, integer);
-SCRIPT_GETTER_SLOT(next_active_player, integer);
-SCRIPT_GETTER_SLOT(next_neighbor_player, integer);
-
 SCRIPT_FUNCTION(get_pflag_type) {
     int slot = luaL_checkinteger(L, 1);
     const char* flag = luaL_checkstring(L, 2);
@@ -484,10 +480,6 @@ void script_init() {
     EXPOSE_FUNCTION(get_player_last_move);
     EXPOSE_FUNCTION(get_player_last_aim);
     EXPOSE_FUNCTION(get_player_last_buttons);
-
-    EXPOSE_FUNCTION(next_ready_player);
-    EXPOSE_FUNCTION(next_active_player);
-    EXPOSE_FUNCTION(next_neighbor_player);
 
     EXPOSE_FUNCTION(get_pflag_type);
     EXPOSE_FUNCTION(get_pflag);
