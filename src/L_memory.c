@@ -334,7 +334,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
 
     size_t index = (size_t)int_hash_key(key) % map->capacity;
     struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->key != 0) {
+    while (kvp->occupied) {
         if (key == kvp->key) {
             if (kvp->value != NULL) {
                 if (nuke)
@@ -350,6 +350,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
         kvp = &map->items[index];
     }
 
+    map->items[index].occupied = true;
     map->items[index].key = key;
     map->items[index].value = value;
     map->count++;
@@ -359,7 +360,7 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
 void* from_int_map(struct IntMap* map, uint32_t key) {
     size_t index = (size_t)int_hash_key(key) % map->capacity;
     const struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->key != 0) {
+    while (kvp->occupied) {
         if (key == kvp->key)
             return kvp->value;
 
@@ -373,9 +374,9 @@ void* from_int_map(struct IntMap* map, uint32_t key) {
 void* _pop_int_map(struct IntMap* map, uint32_t key, bool nuke, const char* filename, int line) {
     size_t index = (size_t)int_hash_key(key) % map->capacity;
     struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->key != 0) {
+    while (kvp->occupied) {
         if (key == kvp->key) {
-            kvp->key = 0;
+            kvp->occupied = false;
             void* value = kvp->value;
             kvp->value = NULL;
             if (nuke && value != NULL)

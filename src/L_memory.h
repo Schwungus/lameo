@@ -105,6 +105,7 @@ void* _pop_hash_map(struct HashMap*, const char*, bool, const char*, int);
 #define pop_hash_map(map, key, nuke) _pop_hash_map(map, key, nuke, __FILE__, __LINE__)
 
 struct IKeyValuePair {
+    bool occupied;
     uint32_t key;
     void* value;
 };
