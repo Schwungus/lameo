@@ -78,7 +78,7 @@ void destroy_sample(FMOD_SOUND* sample) {
     FMOD_Sound_Release(sample);
 }
 
-FMOD_CHANNEL* play_ui_sound(const struct Sound* sound, bool loop, uint32_t offset, float pitch, float gain) {
+FMOD_CHANNEL* play_ui_sound(struct Sound* sound, bool loop, uint32_t offset, float pitch, float gain) {
     if (sound == NULL || sound->samples == NULL)
         return NULL;
 

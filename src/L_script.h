@@ -53,6 +53,30 @@
     lua_getinfo(L, "nSl", &debug);                                                                                     \
     log_script(debug.source, debug.name, debug.currentline, format, ##__VA_ARGS__);
 
+#define SCRIPT_ASSET(mapname, typename, assettype, hidtype)                                                            \
+    SCRIPT_FUNCTION(load_##typename) {                                                                                 \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        load_##typename(name);                                                                                         \
+        return 0;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(fetch_##typename) {                                                                                \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        lua_pushinteger(L, fetch_##typename##_hid(name));                                                              \
+        return 1;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(get_##typename) {                                                                                  \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        lua_pushinteger(L, get_##typename##_hid(name));                                                                \
+        return 1;                                                                                                      \
+    }
+
+#define EXPOSE_ASSET(mapname, typename)                                                                                \
+    EXPOSE_FUNCTION(load_##typename);                                                                                  \
+    EXPOSE_FUNCTION(fetch_##typename);                                                                                 \
+    EXPOSE_FUNCTION(get_##typename);
+
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
 #define execute_ref(ref, name) _execute_ref(ref, name, __FILE__, __LINE__)
 #define execute_ref_in(ref, hid, name) _execute_ref_in(ref, hid, name, __FILE__, __LINE__)

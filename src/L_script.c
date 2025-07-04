@@ -324,6 +324,19 @@ SCRIPT_FUNCTION(main_string) {
     return 0;
 }
 
+// Audio
+SCRIPT_FUNCTION(play_ui_sound) {
+    const SoundID hid = luaL_checkinteger(L, 1);
+    const bool loop = luaL_checkinteger(L, 2);
+    const uint32_t offset = luaL_checkinteger(L, 3);
+    const float pitch = luaL_checknumber(L, 4);
+    const float gain = luaL_checknumber(L, 5);
+
+    play_ui_sound(hid_to_sound(hid), loop, offset, pitch, gain);
+
+    return 0;
+}
+
 // UI
 SCRIPT_FUNCTION(create_ui) {
     struct UI* parent = hid_to_ui(luaL_checkinteger(L, 1));
@@ -376,6 +389,15 @@ SCRIPT_FUNCTION(get_last_ui_buttons) {
     lua_pushboolean(L, get_last_ui_buttons(buttons));
     return 1;
 }
+
+// Assets
+SCRIPT_ASSET(shaders, shader, struct Shader*, ShaderID);
+SCRIPT_ASSET(textures, texture, struct Texture*, TextureID);
+SCRIPT_ASSET(materials, material, struct Material*, MaterialID);
+SCRIPT_ASSET(models, model, struct Model*, ModelID);
+SCRIPT_ASSET(fonts, font, struct Font*, FontID);
+SCRIPT_ASSET(sounds, sound, struct Sound*, SoundID);
+SCRIPT_ASSET(music, track, struct Track*, TrackID);
 
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
@@ -472,6 +494,9 @@ void script_init() {
     EXPOSE_FUNCTION(main_rectangle);
     EXPOSE_FUNCTION(main_string);
 
+    // Audio
+    EXPOSE_FUNCTION(play_ui_sound);
+
     // UI
     EXPOSE_INTEGER(UII_UP);
     EXPOSE_INTEGER(UII_LEFT);
@@ -489,6 +514,15 @@ void script_init() {
     EXPOSE_FUNCTION(get_ui_buttons);
     EXPOSE_FUNCTION(get_last_ui_cursor);
     EXPOSE_FUNCTION(get_last_ui_buttons);
+
+    // Assets
+    EXPOSE_ASSET(shaders, shader);
+    EXPOSE_ASSET(textures, texture);
+    EXPOSE_ASSET(materials, material);
+    EXPOSE_ASSET(models, model);
+    EXPOSE_ASSET(fonts, font);
+    EXPOSE_ASSET(sounds, sound);
+    EXPOSE_ASSET(music, track);
 
     mod_init_script();
 

@@ -25,7 +25,7 @@ FMOD_RESULT audio_debug_callback(FMOD_DEBUG_FLAGS, const char*, int, const char*
 void load_sample(const char*, FMOD_SOUND**);
 void destroy_sample(FMOD_SOUND*);
 
-FMOD_CHANNEL* play_ui_sound(const struct Sound*, bool, uint32_t, float, float);
+FMOD_CHANNEL* play_ui_sound(struct Sound*, bool, uint32_t, float, float);
 
 void load_stream(const char*, FMOD_SOUND**);
 void destroy_stream(FMOD_SOUND*);
