@@ -313,7 +313,7 @@ SCRIPT_FUNCTION(main_rectangle) {
 
 SCRIPT_FUNCTION(main_string) {
     const char* str = luaL_checkstring(L, 1);
-    const FontID font = luaL_checknumber(L, 2);
+    const FontID font = luaL_checkinteger(L, 2);
     const GLfloat size = luaL_checknumber(L, 3);
     const GLfloat x = luaL_checknumber(L, 4);
     const GLfloat y = luaL_checknumber(L, 5);
@@ -322,6 +322,21 @@ SCRIPT_FUNCTION(main_string) {
     main_string(str, NULL, size, x, y, z);
 
     return 0;
+}
+
+SCRIPT_FUNCTION(string_width) {
+    const char* str = luaL_checkstring(L, 1);
+    const FontID font = luaL_checkinteger(L, 2);
+    const GLfloat size = luaL_checknumber(L, 3);
+    lua_pushnumber(L, string_width(str, hid_to_font(font), size));
+    return 1;
+}
+
+SCRIPT_FUNCTION(string_height) {
+    const char* str = luaL_checkstring(L, 1);
+    const GLfloat size = luaL_checknumber(L, 2);
+    lua_pushnumber(L, string_height(str, size));
+    return 1;
 }
 
 // Audio
@@ -492,7 +507,10 @@ void script_init() {
     EXPOSE_FUNCTION(get_draw_time);
 
     EXPOSE_FUNCTION(main_rectangle);
+
     EXPOSE_FUNCTION(main_string);
+    EXPOSE_FUNCTION(string_width);
+    EXPOSE_FUNCTION(string_height);
 
     // Audio
     EXPOSE_FUNCTION(play_ui_sound);
