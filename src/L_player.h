@@ -51,12 +51,11 @@ void player_teardown();
 
 int activate_player(int);
 int deactivate_player(int);
+void dispatch_players();
 
 struct Player* get_player(int);
-
-int next_ready_player(int);
-int next_active_player(int);
-int next_neighbor_player(int);
+struct Player* get_ready_players();
+struct Player* get_active_players();
 
 #define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
 #define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
@@ -76,3 +75,6 @@ void reset_pflag(int, const char*);
 bool toggle_pflag(int, const char*);
 Sint64 increment_pflag(int, const char*);
 Sint64 decrement_pflag(int, const char*);
+
+bool player_enter_room(struct Player*, uint32_t);
+bool player_leave_room(struct Player*);

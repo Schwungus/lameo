@@ -14,7 +14,7 @@ struct LoadState {
     enum LoadStates state;
 
     char level[128];
-    uint16_t room;
+    uint32_t room;
     uint16_t tag;
 };
 
@@ -23,3 +23,4 @@ void loop();
 void cleanup();
 
 enum LoadStates get_load_state();
+void start_loading(const char*, uint32_t, uint16_t);

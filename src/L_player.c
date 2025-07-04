@@ -1,4 +1,5 @@
 #include "L_player.h"
+#include "L_level.h"
 #include "L_log.h"
 #include "L_memory.h"
 
@@ -47,7 +48,7 @@ void player_teardown() {
 }
 
 int activate_player(int slot) {
-    if (slot < 0 || slot >= MAX_PLAYERS)
+    if (IS_INVALID_PSLOT(slot))
         return -1;
 
     struct Player* player = &players[slot];
@@ -68,7 +69,7 @@ int activate_player(int slot) {
 }
 
 int deactivate_player(int slot) {
-    if (slot < 0 || slot >= MAX_PLAYERS)
+    if (IS_INVALID_PSLOT(slot))
         return -1;
     if (slot == 0) {
         WARN("Player 0 is always active");
@@ -77,6 +78,7 @@ int deactivate_player(int slot) {
 
     struct Player* player = &players[slot];
     if (player->status != PS_INACTIVE) {
+        player_leave_room(player);
         player->status = PS_INACTIVE;
 
         if (player->previous_ready != NULL)
@@ -101,25 +103,34 @@ int deactivate_player(int slot) {
     return 0;
 }
 
+void dispatch_players() {
+    struct Player* player = ready_players;
+    while (player != NULL) {
+        struct Player* it = player->previous_ready;
+        player->status = PS_ACTIVE;
+        player->previous_ready = player->next_ready = NULL;
+
+        if (active_players != NULL)
+            active_players->next_active = player;
+        player->previous_active = active_players;
+        active_players = player;
+
+        INFO("Dispatched player %u", player->slot);
+        player = it;
+    }
+}
+
 // Player iterators
 struct Player* get_player(int slot) {
     return IS_VALID_PSLOT(slot) ? &players[slot] : NULL;
 }
 
-int next_ready_player(int slot) {
-    if (IS_INVALID_PSLOT(slot))
-        return ready_players == NULL ? -1 : ready_players->slot;
-    return players[slot].next_ready == NULL ? -1 : players[slot].next_ready->slot;
+struct Player* get_ready_players() {
+    return ready_players;
 }
 
-int next_active_player(int slot) {
-    if (IS_INVALID_PSLOT(slot))
-        return active_players == NULL ? -1 : active_players->slot;
-    return players[slot].next_active == NULL ? -1 : players[slot].next_active->slot;
-}
-
-int next_neighbor_player(int slot) {
-    return (IS_INVALID_PSLOT(slot) || players[slot].next_neighbor == NULL) ? -1 : players[slot].next_neighbor->slot;
+struct Player* get_active_players() {
+    return active_players;
 }
 
 // Flag getters
@@ -197,4 +208,56 @@ Sint64 decrement_pflag(int slot, const char* name) {
     Sint64 i = SDL_GetNumberProperty((SDL_PropertiesID)players[slot].flags, name, 0) - 1;
     SDL_SetNumberProperty((SDL_PropertiesID)players[slot].flags, name, i);
     return i;
+}
+
+// Neighbors
+struct Room* get_player_room(int slot) {
+    return IS_VALID_PSLOT(slot) ? players[slot].room : NULL;
+}
+
+bool player_leave_room(struct Player* player) {
+    struct Room* room = player->room;
+    if (room == NULL)
+        return false;
+
+    if (room->master == player)
+        room->master = player->previous_neighbor == NULL ? player->next_neighbor : player->previous_neighbor;
+    if (room->players == player)
+        room->players = player->next_neighbor;
+
+    if (player->previous_neighbor != NULL)
+        player->previous_neighbor->next_neighbor = player->next_neighbor;
+    if (player->next_neighbor != NULL)
+        player->next_neighbor->previous_neighbor = player->previous_neighbor;
+    player->room = NULL;
+
+    if (room != NULL) {
+        // TODO: Deactivate room
+    }
+
+    return true;
+}
+
+bool player_enter_room(struct Player* player, uint32_t id) {
+    player_leave_room(player);
+
+    struct Room* room = from_int_map(get_level()->rooms, id);
+    if (room == NULL) {
+        WTF("Player %u entering invalid room ID %u", player->slot, id);
+        return false;
+    }
+
+    if (room->master == NULL)
+        room->master = player;
+    if (room->players != NULL) {
+        room->players->next_neighbor = player;
+        player->previous_neighbor = room->players;
+    }
+    room->players = player;
+
+    if (room->master == player) {
+        // TODO: Activate room
+    }
+
+    return true;
 }

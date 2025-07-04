@@ -105,10 +105,20 @@ void loop() {
             }
 
             case LOAD_UNLOAD: {
-                // Unload level
+                // Kick players out
+                struct Player* player = get_active_players();
+                while (player != NULL) {
+                    player_leave_room(player);
+                    player = player->previous_active;
+                }
+
+                // Destroy UI
                 struct UI* ui_root = get_ui_root();
                 if (ui_root != NULL)
                     destroy_ui(ui_root);
+
+                // Unload level
+                unload_level();
 
                 // Unload assets
                 clear_assets(0);
@@ -121,12 +131,7 @@ void loop() {
                 INFO("\n\nENTERING \"%s\" (room %d, tag %d)\n", load_state.level, load_state.room, load_state.tag);
 
                 // Load level
-                char level_file_helper[FILE_PATH_MAX];
-                SDL_snprintf(level_file_helper, sizeof(level_file_helper), "levels/%s.json", load_state.level);
-                yyjson_doc* json = load_json(get_mod_file(level_file_helper, NULL));
-                if (json == NULL)
-                    FATAL("Invalid level \"%s\"", load_state.level);
-                yyjson_doc_free(json);
+                load_level(load_state.level, load_state.room, load_state.tag);
 
                 load_ui("Pause");
 
@@ -135,8 +140,15 @@ void loop() {
             }
 
             case LOAD_END: {
-                // Ready players to active
+                // Make ready players active
+                dispatch_players();
+
                 // Assign players to room ID "load_state.room"
+                struct Player* player = get_active_players();
+                while (player != NULL) {
+                    player_enter_room(player, load_state.room);
+                    player = player->previous_active;
+                }
 
                 load_state.state = LOAD_NONE;
                 break;
@@ -154,6 +166,7 @@ void loop() {
 }
 
 void cleanup() {
+    unload_level();
     tick_teardown();
     handler_teardown();
 
@@ -179,4 +192,11 @@ void cleanup() {
 
 enum LoadStates get_load_state() {
     return load_state.state;
+}
+
+void start_loading(const char* name, uint32_t room, uint16_t tag) {
+    SDL_strlcpy(load_state.level, name, sizeof(load_state.level));
+    load_state.room = room;
+    load_state.tag = tag;
+    load_state.state = LOAD_START;
 }

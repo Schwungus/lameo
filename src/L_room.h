@@ -12,9 +12,11 @@ enum RoomActorFlags {
 
 struct Room {
     struct Level* level;
-    uint16_t id;
+    uint32_t id;
 
     struct Player *master, *players;
+
+    struct RoomActor* room_actors;
     struct Actor* actors;
 };
 
@@ -26,3 +28,5 @@ struct RoomActor {
     uint16_t tag;
     enum RoomActorFlags flags;
 };
+
+void destroy_room(struct Room*);
