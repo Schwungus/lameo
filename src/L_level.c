@@ -10,9 +10,6 @@ void unload_level() {
     if (level == NULL)
         return;
 
-    lame_free(&level->name);
-    lame_free(&level->title);
-
     for (size_t i = 0; level->rooms->count > 0 && i < level->rooms->capacity; i++) {
         struct IKeyValuePair* kvp = &level->rooms->items[i];
         if (!kvp->occupied)
@@ -27,6 +24,8 @@ void unload_level() {
     }
     destroy_int_map(level->rooms, true);
 
+    lame_free(&level->name);
+    lame_free(&level->title);
     lame_free(&level);
 }
 

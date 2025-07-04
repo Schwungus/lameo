@@ -87,6 +87,7 @@ int deactivate_player(int slot) {
             player->next_ready->previous_ready = player->previous_ready;
         if (ready_players == player)
             ready_players = player->previous_ready;
+        player->previous_ready = player->next_ready = NULL;
 
         if (player->previous_active != NULL)
             player->previous_active->next_active = player->next_active;
@@ -94,6 +95,7 @@ int deactivate_player(int slot) {
             player->next_active->previous_active = player->previous_active;
         if (active_players == player)
             active_players = player->previous_active;
+        player->previous_active = player->next_active = NULL;
 
         INFO("Player %d deactivated", slot);
         return 1;
@@ -220,15 +222,16 @@ bool player_leave_room(struct Player* player) {
     if (room == NULL)
         return false;
 
-    if (room->master == player)
-        room->master = player->previous_neighbor == NULL ? player->next_neighbor : player->previous_neighbor;
     if (room->players == player)
-        room->players = player->next_neighbor;
+        room->players = player->previous_neighbor;
+    if (room->master == player)
+        room->master = room->players;
 
     if (player->previous_neighbor != NULL)
         player->previous_neighbor->next_neighbor = player->next_neighbor;
     if (player->next_neighbor != NULL)
         player->next_neighbor->previous_neighbor = player->previous_neighbor;
+    player->previous_neighbor = player->next_neighbor = NULL;
     player->room = NULL;
 
     if (room != NULL) {
@@ -249,10 +252,9 @@ bool player_enter_room(struct Player* player, uint32_t id) {
 
     if (room->master == NULL)
         room->master = player;
-    if (room->players != NULL) {
+    if (room->players != NULL)
         room->players->next_neighbor = player;
-        player->previous_neighbor = room->players;
-    }
+    player->previous_neighbor = room->players;
     room->players = player;
 
     if (room->master == player) {
