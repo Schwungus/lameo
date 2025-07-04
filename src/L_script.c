@@ -325,12 +325,42 @@ SCRIPT_FUNCTION(main_string) {
 }
 
 // UI
+SCRIPT_FUNCTION(create_ui) {
+    struct UI* parent = hid_to_ui(luaL_checkinteger(L, 1));
+    const char* name = luaL_checkstring(L, 2);
+
+    struct UI* ui = create_ui(parent, name);
+    lua_pushinteger(L, ui == NULL ? 0 : ui->hid);
+
+    return 1;
+}
+
+SCRIPT_FUNCTION(destroy_ui) {
+    struct UI* ui = hid_to_ui(luaL_checkinteger(L, 1));
+    if (ui != NULL)
+        destroy_ui(ui);
+    return 0;
+}
+
 SCRIPT_FUNCTION(ui_table) {
     struct UI* ui = hid_to_ui(luaL_checkinteger(L, 1));
     if (ui == NULL)
         lua_pushnil(L);
     else
         lua_rawgeti(L, LUA_REGISTRYINDEX, ui->table);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_ui_cursor) {
+    const vec2* cursor = get_ui_cursor();
+    lua_pushnumber(L, (*cursor)[0]);
+    lua_pushnumber(L, (*cursor)[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_ui_button) {
+    int buttons = luaL_checkinteger(L, 1);
+    lua_pushboolean(L, get_ui_button(buttons));
     return 1;
 }
 
@@ -430,7 +460,19 @@ void script_init() {
     EXPOSE_FUNCTION(main_string);
 
     // UI
+    EXPOSE_INTEGER(UII_UP);
+    EXPOSE_INTEGER(UII_LEFT);
+    EXPOSE_INTEGER(UII_DOWN);
+    EXPOSE_INTEGER(UII_RIGHT);
+    EXPOSE_INTEGER(UII_ENTER);
+    EXPOSE_INTEGER(UII_CLICK);
+    EXPOSE_INTEGER(UII_BACK);
+
+    EXPOSE_FUNCTION(create_ui);
+    EXPOSE_FUNCTION(destroy_ui);
     EXPOSE_FUNCTION(ui_table);
+    EXPOSE_FUNCTION(get_ui_cursor);
+    EXPOSE_FUNCTION(get_ui_button);
 
     mod_init_script();
 

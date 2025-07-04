@@ -231,12 +231,12 @@ void video_update() {
     glViewport(0, 0, display.width, display.height);
 
     // Main
-    const float scalew = (float)display.width / (float)(DEFAULT_DISPLAY_WIDTH);
-    const float scaleh = (float)display.height / (float)(DEFAULT_DISPLAY_HEIGHT);
+    const float scalew = (float)display.width / (float)DEFAULT_DISPLAY_WIDTH;
+    const float scaleh = (float)display.height / (float)DEFAULT_DISPLAY_HEIGHT;
     const float scale = SDL_min(scalew, scaleh);
 
-    const float width = (float)(DEFAULT_DISPLAY_WIDTH)*scale;
-    const float height = (float)(DEFAULT_DISPLAY_HEIGHT)*scale;
+    const float width = (float)DEFAULT_DISPLAY_WIDTH * scale;
+    const float height = (float)DEFAULT_DISPLAY_HEIGHT * scale;
     glViewport(((float)display.width - width) / 2, ((float)display.height - height) / 2, width, height);
 
     set_render_stage(RT_MAIN);
@@ -288,6 +288,10 @@ void video_teardown() {
 }
 
 // Display
+const struct Display* get_display() {
+    return &display;
+}
+
 void set_display(int width, int height, enum FullscreenModes fullscreen, bool vsync) {
     if (window == NULL || (display.width == width && display.height == height && display.fullscreen == fullscreen &&
                            display.vsync == vsync))

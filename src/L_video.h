@@ -86,6 +86,7 @@ void video_update();
 void video_teardown();
 
 // Display
+const struct Display* get_display();
 void set_display(int, int, enum FullscreenModes, bool);
 void set_framerate(uint16_t);
 

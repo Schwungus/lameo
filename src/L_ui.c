@@ -1,10 +1,14 @@
 #include "L_ui.h"
+#include "L_input.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_video.h"
 
 static struct HashMap* ui_types = NULL;
 static struct UI *ui_root = NULL, *ui_top = NULL;
 static struct Fixture* ui_handles = NULL;
+
+static struct UIInput ui_input = {0}, last_ui_input = {0};
 
 void ui_init() {
     ui_types = create_hash_map();
@@ -143,4 +147,47 @@ struct UI* get_ui_root() {
 
 struct UI* get_ui_top() {
     return ui_top;
+}
+
+void update_ui_input() {
+    // Cursor position normalized to UI space (i.e. 640x480)
+    SDL_GetMouseState(&ui_input.cursor[0], &ui_input.cursor[1]);
+
+    const struct Display* display = get_display();
+    float scale, offset_x = 0, offset_y = 0;
+    if (((float)display->width / (float)display->height) >
+        ((float)DEFAULT_DISPLAY_WIDTH / (float)DEFAULT_DISPLAY_HEIGHT)) { // Pillarbox
+        scale = (float)display->height / (float)DEFAULT_DISPLAY_HEIGHT;
+        offset_x = ((float)display->width - (DEFAULT_DISPLAY_WIDTH * scale)) / 2.0f;
+    } else { // Letterbox
+        scale = (float)display->width / (float)DEFAULT_DISPLAY_WIDTH;
+        offset_y = ((float)display->height - (DEFAULT_DISPLAY_HEIGHT * scale)) / 2.0f;
+    }
+
+    ui_input.cursor[0] = (ui_input.cursor[0] - offset_x) / scale;
+    ui_input.cursor[1] = (ui_input.cursor[1] - offset_y) / scale;
+
+    ui_input.buttons = 0;
+    if (input_value(VERB_UI_UP, 0))
+        ui_input.buttons |= UII_UP;
+    if (input_value(VERB_UI_LEFT, 0))
+        ui_input.buttons |= UII_LEFT;
+    if (input_value(VERB_UI_DOWN, 0))
+        ui_input.buttons |= UII_DOWN;
+    if (input_value(VERB_UI_RIGHT, 0))
+        ui_input.buttons |= UII_RIGHT;
+    if (input_value(VERB_UI_ENTER, 0))
+        ui_input.buttons |= UII_ENTER;
+    if (input_value(VERB_UI_CLICK, 0))
+        ui_input.buttons |= UII_CLICK;
+    if (input_value(VERB_UI_BACK, 0))
+        ui_input.buttons |= UII_BACK;
+}
+
+const vec2* get_ui_cursor() {
+    return &ui_input.cursor;
+}
+
+bool get_ui_button(enum UIButtons buttons) {
+    return (ui_input.buttons & buttons) == buttons;
 }
