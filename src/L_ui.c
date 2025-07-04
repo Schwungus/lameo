@@ -67,11 +67,17 @@ int define_ui(lua_State* L) {
         type->name = SDL_strdup(name);
         to_hash_map(ui_types, name, type, true);
     } else {
-        unreference(&type->load);
-        unreference(&type->create);
-        unreference(&type->cleanup);
-        unreference(&type->tick);
-        unreference(&type->draw);
+        WARN("Redefining UI \"%s\"", name);
+        if (type->parent == NULL || type->load != parent->load)
+            unreference(&type->load);
+        if (type->parent == NULL || type->create != parent->create)
+            unreference(&type->create);
+        if (type->parent == NULL || type->cleanup != parent->cleanup)
+            unreference(&type->cleanup);
+        if (type->parent == NULL || type->tick != parent->tick)
+            unreference(&type->tick);
+        if (type->parent == NULL || type->draw != parent->draw)
+            unreference(&type->draw);
     }
 
     type->parent = parent;
