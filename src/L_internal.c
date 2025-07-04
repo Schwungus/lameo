@@ -128,6 +128,8 @@ void loop() {
                     FATAL("Invalid level \"%s\"", load_state.level);
                 yyjson_doc_free(json);
 
+                load_ui("Pause");
+
                 load_state.state = LOAD_END;
                 break;
             }
@@ -135,7 +137,6 @@ void loop() {
             case LOAD_END: {
                 // Ready players to active
                 // Assign players to room ID "load_state.room"
-                create_ui(NULL, "Pause");
 
                 load_state.state = LOAD_NONE;
                 break;

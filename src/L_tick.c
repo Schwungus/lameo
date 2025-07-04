@@ -27,16 +27,27 @@ void tick_update() {
 
                 // UI
                 struct UI* ui_top = get_ui_top();
-                if (ui_top == NULL) {
-                    if (input_pressed(VERB_PAUSE, 0))
-                        create_ui(NULL, "Pause");
+                if (ui_top == NULL && input_pressed(VERB_PAUSE, 0)) {
+                    create_ui(NULL, "Pause");
+                    input_consume(VERB_UI_UP);
+                    input_consume(VERB_UI_LEFT);
+                    input_consume(VERB_UI_DOWN);
+                    input_consume(VERB_UI_RIGHT);
+                    input_consume(VERB_UI_ENTER);
+                    input_consume(VERB_UI_CLICK);
+                    input_consume(VERB_UI_BACK);
+                    ui_top = get_ui_top();
                 }
-                if ((ui_top = get_ui_top()) != NULL) {
+                if (ui_top != NULL) {
                     update_ui_input();
                     if (ui_top->type->tick != LUA_NOREF)
                         execute_ref_in(ui_top->type->tick, ui_top->hid, ui_top->type->name);
-                    if ((ui_top = get_ui_top()) != NULL && (ui_top->flags & UIF_BLOCKING))
-                        tick_world = false;
+                    if ((ui_top = get_ui_top()) == NULL) {
+                        input_consume(VERB_PAUSE);
+                    } else {
+                        if (ui_top->flags & UIF_BLOCKING)
+                            tick_world = false;
+                    }
                 }
 
                 // World

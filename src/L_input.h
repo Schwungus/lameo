@@ -82,7 +82,7 @@ struct Verb {
     SDL_GamepadAxis gamepad_axis, default_gamepad_axis;
 
     int8_t axis;
-    bool held, pressed, released;
+    bool held, pressed, released, consumed;
     int16_t value;
 };
 
@@ -120,4 +120,5 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent*);
 int16_t input_value(enum Verbs, size_t);
 bool input_pressed(enum Verbs, size_t);
 bool input_released(enum Verbs, size_t);
+void input_consume(enum Verbs);
 void input_clear_momentary();
