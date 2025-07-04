@@ -97,7 +97,7 @@ set(CAULK_BUILD_TEST OFF)
 FetchContent_Declare(
     caulk
     GIT_REPOSITORY https://github.com/Schwungus/caulk.git
-    GIT_TAG 540c0e7a37bc6978625cf5ecf98a8cc8cb0fcfef
+    GIT_TAG 24994950d69e367ed4e5a8333e3276fe9f58197d
 )
 FetchContent_MakeAvailable(caulk)
 
@@ -112,7 +112,6 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBS})
 target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS=1)
-caulk_register(${PROJECT_NAME})
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND_EXPAND_LISTS
@@ -160,4 +159,5 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${GCDB_SOURCE_DIR} $<TARGET_FILE_DIR:${PROJECT_NAME}>/gamecontrollerdb.txt
     COMMAND ${CMAKE_COMMAND} -E remove_directory $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${MOD_SOURCE_DIR} $<TARGET_FILE_DIR:${PROJECT_NAME}>/data
+    COMMAND ${CMAKE_COMMAND} -E copy ${STEAM_SOURCE_DIR}/steam_appid.txt $<TARGET_FILE_DIR:${PROJECT_NAME}>/steam_appid.txt
 )
