@@ -60,6 +60,7 @@ void ui_init();
 void ui_teardown();
 
 int define_ui(lua_State*);
+bool load_ui(const char*);
 
 struct UI* create_ui(struct UI*, const char*);
 void destroy_ui(struct UI*);

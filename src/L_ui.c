@@ -75,6 +75,13 @@ int define_ui(lua_State* L) {
     }
 
     type->parent = parent;
+    if (parent != NULL) {
+        type->load = parent->load;
+        type->create = parent->create;
+        type->cleanup = parent->cleanup;
+        type->tick = parent->tick;
+        type->draw = parent->draw;
+    }
 
     type->load = function_ref(-1, "load");
     type->create = function_ref(-1, "create");
@@ -85,6 +92,24 @@ int define_ui(lua_State* L) {
     INFO("Defined UI \"%s\"", name);
 
     return 0;
+}
+
+bool load_ui(const char* name) {
+    struct UIType* type = from_hash_map(ui_types, name);
+    if (type == NULL) {
+        WTF("Unknown UI type \"%s\"", name);
+        return false;
+    }
+
+    struct UIType* it = type;
+    do {
+        if (it->load != LUA_NOREF)
+            execute_ref(it->load, it->name);
+        INFO("Loaded UI \"%s\"", it->name);
+        it = it->parent;
+    } while (it != NULL);
+
+    return true;
 }
 
 struct UI* create_ui(struct UI* parent, const char* name) {
