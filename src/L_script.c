@@ -127,6 +127,50 @@ SCRIPT_GETTER_FLAG(increment_flag, integer);
 SCRIPT_GETTER_FLAG(decrement_flag, integer);
 
 // Players
+SCRIPT_FUNCTION(get_ready_players) {
+    int n = 0;
+    struct Player* player = get_ready_players();
+    while (player != NULL) {
+        lua_pushinteger(L, player->slot);
+        n++;
+        player = player->previous_ready;
+    }
+    return n;
+}
+
+SCRIPT_FUNCTION(get_active_players) {
+    int n = 0;
+    struct Player* player = get_active_players();
+    while (player != NULL) {
+        lua_pushinteger(L, player->slot);
+        n++;
+        player = player->previous_active;
+    }
+    return n;
+}
+
+SCRIPT_FUNCTION(get_neighbor_players) {
+    const int slot = luaL_checkinteger(L, 1);
+    const struct Player* player = get_player(slot);
+    if (player == NULL)
+        return 0;
+
+    int n = 0;
+    struct Player* neighbor = player->previous_neighbor;
+    while (neighbor != NULL) {
+        lua_pushinteger(L, neighbor->slot);
+        n++;
+        neighbor = neighbor->previous_neighbor;
+    }
+    neighbor = player->next_neighbor;
+    while (neighbor != NULL) {
+        lua_pushinteger(L, neighbor->slot);
+        n++;
+        neighbor = neighbor->next_neighbor;
+    }
+    return n;
+}
+
 SCRIPT_FUNCTION(get_player_status) {
     struct Player* player = get_player(luaL_checkinteger(L, 1));
     lua_pushinteger(L, player == NULL ? PS_INACTIVE : player->status);
@@ -472,6 +516,10 @@ void script_init() {
     EXPOSE_INTEGER(PB_INVENTORY3);
     EXPOSE_INTEGER(PB_INVENTORY4);
     EXPOSE_INTEGER(PB_AIM);
+
+    EXPOSE_FUNCTION(get_ready_players);
+    EXPOSE_FUNCTION(get_active_players);
+    EXPOSE_FUNCTION(get_neighbor_players);
 
     EXPOSE_FUNCTION(get_player_status);
     EXPOSE_FUNCTION(get_player_move);
