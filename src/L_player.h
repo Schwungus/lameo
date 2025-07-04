@@ -11,24 +11,24 @@ enum PlayerStatus {
 };
 
 enum PlayerButtons {
-    PB_NONE = 0b00000000,
+    PB_NONE = 0,
 
-    PB_JUMP = 0b00000001,
-    PB_INTERACT = 0b00000010,
-    PB_ATTACK = 0b00000100,
+    PB_JUMP = 1 << 0,
+    PB_INTERACT = 1 << 1,
+    PB_ATTACK = 1 << 2,
 
-    PB_INVENTORY1 = 0b00001000,
-    PB_INVENTORY2 = 0b00010000,
-    PB_INVENTORY3 = 0b00100000,
-    PB_INVENTORY4 = 0b01000000,
+    PB_INVENTORY1 = 1 << 3,
+    PB_INVENTORY2 = 1 << 4,
+    PB_INVENTORY3 = 1 << 5,
+    PB_INVENTORY4 = 1 << 6,
 
-    PB_AIM = 0b10000000,
+    PB_AIM = 1 << 7,
 };
 
 struct PlayerInput {
     int8_t move[2];
     int16_t aim[2];
-    uint8_t buttons;
+    enum PlayerButtons buttons;
 };
 
 struct Player {
