@@ -103,12 +103,6 @@ void input_init() {
     INFO("Opened");
 }
 
-void input_update() {
-    for (size_t i = 0; i < VERB_SIZE; i++)
-        if (!verbs[i].held)
-            verbs[i].value = 0;
-}
-
 void input_teardown() {
     CLOSE_HANDLE(verb_map, SDL_DestroyProperties);
 
@@ -337,15 +331,20 @@ void handle_key(SDL_KeyboardEvent* event) {
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
             if (verb != NULL) {
-                verb->held = true;
+                if (!verb->held) {
+                    verb->pressed = true;
+                    verb->held = true;
+                }
                 verb->value = VERB_VALUE_MAX;
             }
         }
     else
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
-            if (verb != NULL)
+            if (verb != NULL && verb->held) {
+                verb->released = true;
                 verb->held = false;
+            }
         }
 }
 
@@ -382,15 +381,20 @@ void handle_mouse_button(SDL_MouseButtonEvent* event) {
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
             if (verb != NULL) {
-                verb->held = true;
+                if (!verb->held) {
+                    verb->pressed = true;
+                    verb->held = true;
+                }
                 verb->value = VERB_VALUE_MAX;
             }
         }
     else
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
-            if (verb != NULL)
+            if (verb != NULL && verb->held) {
+                verb->released = true;
                 verb->held = false;
+            }
         }
 }
 
@@ -434,15 +438,20 @@ void handle_gamepad_button(SDL_GamepadButtonEvent* event) {
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
             if (verb != NULL) {
-                verb->held = true;
+                if (!verb->held) {
+                    verb->pressed = true;
+                    verb->held = true;
+                }
                 verb->value = VERB_VALUE_MAX;
             }
         }
     else
         for (size_t i = 0; i < list->size; i++) {
             struct Verb* verb = list->list[i];
-            if (verb != NULL)
+            if (verb != NULL && verb->held) {
+                verb->released = true;
                 verb->held = false;
+            }
         }
 }
 
@@ -456,9 +465,15 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
         if (verb != NULL) {
             Sint16 value = verb->axis >= 0 ? SDL_max(event->value, 0) : -SDL_clamp(event->value, VERB_VALUE_MIN, 0);
             if (value < 8) {
-                verb->held = false;
+                if (verb->held) {
+                    verb->released = true;
+                    verb->held = false;
+                }
             } else {
-                verb->held = true;
+                if (!verb->held) {
+                    verb->pressed = true;
+                    verb->held = true;
+                }
                 verb->value = value;
             }
         }
@@ -467,4 +482,21 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
 
 int16_t input_value(enum Verbs verb, size_t slot) {
     return verbs[verb].value;
+}
+
+bool input_pressed(enum Verbs verb, size_t slot) {
+    return verbs[verb].pressed;
+}
+
+bool input_released(enum Verbs verb, size_t slot) {
+    return verbs[verb].released;
+}
+
+void input_clear_momentary() {
+    for (size_t i = 0; i < VERB_SIZE; i++) {
+        verbs[i].pressed = false;
+        verbs[i].released = false;
+        if (!verbs[i].held)
+            verbs[i].value = 0;
+    }
 }

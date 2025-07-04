@@ -146,7 +146,6 @@ void loop() {
         tick_update();
         video_update();
         audio_update();
-        input_update();
 
         if (load_state.state != LOAD_NONE && load_state.level[0] == '\0')
             running = false;

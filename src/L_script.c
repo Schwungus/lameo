@@ -358,9 +358,22 @@ SCRIPT_FUNCTION(get_ui_cursor) {
     return 2;
 }
 
-SCRIPT_FUNCTION(get_ui_button) {
+SCRIPT_FUNCTION(get_ui_buttons) {
     int buttons = luaL_checkinteger(L, 1);
-    lua_pushboolean(L, get_ui_button(buttons));
+    lua_pushboolean(L, get_ui_buttons(buttons));
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_last_ui_cursor) {
+    const vec2* cursor = get_last_ui_cursor();
+    lua_pushnumber(L, (*cursor)[0]);
+    lua_pushnumber(L, (*cursor)[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_last_ui_buttons) {
+    int buttons = luaL_checkinteger(L, 1);
+    lua_pushboolean(L, get_last_ui_buttons(buttons));
     return 1;
 }
 
@@ -471,8 +484,11 @@ void script_init() {
     EXPOSE_FUNCTION(create_ui);
     EXPOSE_FUNCTION(destroy_ui);
     EXPOSE_FUNCTION(ui_table);
+
     EXPOSE_FUNCTION(get_ui_cursor);
-    EXPOSE_FUNCTION(get_ui_button);
+    EXPOSE_FUNCTION(get_ui_buttons);
+    EXPOSE_FUNCTION(get_last_ui_cursor);
+    EXPOSE_FUNCTION(get_last_ui_buttons);
 
     mod_init_script();
 

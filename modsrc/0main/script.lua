@@ -15,7 +15,7 @@ end
 
 functions.tick = function (this)
     ui_table(this).dummy = get_draw_time()
-    if get_ui_button(UII_BACK) then destroy_ui(this) end
+    if (get_ui_buttons(UII_BACK) and not get_last_ui_buttons(UII_BACK)) then destroy_ui(this) end
 end
 
 functions.draw = function (this)

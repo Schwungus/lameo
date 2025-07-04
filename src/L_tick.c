@@ -1,6 +1,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 
+#include "L_input.h"
 #include "L_internal.h"
 #include "L_log.h"
 #include "L_tick.h"
@@ -26,7 +27,11 @@ void tick_update() {
 
                 // UI
                 struct UI* ui_top = get_ui_top();
-                if (ui_top != NULL) {
+                if (ui_top == NULL) {
+                    if (input_pressed(VERB_PAUSE, 0))
+                        create_ui(NULL, "Pause");
+                }
+                if ((ui_top = get_ui_top()) != NULL) {
                     update_ui_input();
                     if (ui_top->type->tick != LUA_NOREF)
                         execute_ref_in(ui_top->type->tick, ui_top->hid, ui_top->type->name);
@@ -37,6 +42,7 @@ void tick_update() {
                 // World
                 if (tick_world) {}
 
+                input_clear_momentary();
                 ticks -= 1;
             }
         else

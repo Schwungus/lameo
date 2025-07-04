@@ -71,4 +71,6 @@ struct UI* get_ui_top();
 
 void update_ui_input();
 const vec2* get_ui_cursor();
-bool get_ui_button(enum UIButtons);
+bool get_ui_buttons(enum UIButtons);
+const vec2* get_last_ui_cursor();
+bool get_last_ui_buttons(enum UIButtons);

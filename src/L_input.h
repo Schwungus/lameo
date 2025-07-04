@@ -82,7 +82,7 @@ struct Verb {
     SDL_GamepadAxis gamepad_axis, default_gamepad_axis;
 
     int8_t axis;
-    bool held;
+    bool held, pressed, released;
     int16_t value;
 };
 
@@ -92,7 +92,6 @@ struct VerbList {
 };
 
 void input_init();
-void input_update();
 void input_teardown();
 
 void define_verb(enum Verbs, const char*, int8_t, SDL_Scancode, enum MouseButtons, SDL_GamepadButton, SDL_GamepadAxis);
@@ -119,3 +118,6 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent*);
 // void handle_gamepad_touchpad(SDL_GamepadTouchpadEvent*);
 
 int16_t input_value(enum Verbs, size_t);
+bool input_pressed(enum Verbs, size_t);
+bool input_released(enum Verbs, size_t);
+void input_clear_momentary();

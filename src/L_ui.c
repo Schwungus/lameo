@@ -121,6 +121,9 @@ struct UI* create_ui(struct UI* parent, const char* name) {
 }
 
 void destroy_ui(struct UI* ui) {
+    if (ui->type->cleanup != LUA_NOREF)
+        execute_ref_in(ui->type->cleanup, ui->hid, ui->type->name);
+
     if (ui_root == ui)
         ui_root = NULL;
     if (ui_top == ui)
@@ -150,6 +153,10 @@ struct UI* get_ui_top() {
 }
 
 void update_ui_input() {
+    // Save last input
+    glm_vec2_copy(ui_input.cursor, last_ui_input.cursor);
+    last_ui_input.buttons = ui_input.buttons;
+
     // Cursor position normalized to UI space (i.e. 640x480)
     SDL_GetMouseState(&ui_input.cursor[0], &ui_input.cursor[1]);
 
@@ -188,6 +195,14 @@ const vec2* get_ui_cursor() {
     return &ui_input.cursor;
 }
 
-bool get_ui_button(enum UIButtons buttons) {
+bool get_ui_buttons(enum UIButtons buttons) {
     return (ui_input.buttons & buttons) == buttons;
+}
+
+const vec2* get_last_ui_cursor() {
+    return &last_ui_input.cursor;
+}
+
+bool get_last_ui_buttons(enum UIButtons buttons) {
+    return (last_ui_input.buttons & buttons) == buttons;
 }
