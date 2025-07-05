@@ -111,8 +111,7 @@ int define_actor(lua_State* L) {
             type->draw_ui = parent->draw_ui;
     }
 
-    INFO("Defined Actor \"%s\"", name);
-
+    SCRIPT_LOG(L, "Defined Actor \"%s\"", name);
     return 0;
 }
 

@@ -661,3 +661,11 @@ void _execute_ref_in(int ref, HandleID scope, const char* name, const char* file
     if (lua_pcall(context, 1, 0, 0) != LUA_OK)
         log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
 }
+
+lua_Debug* script_stack_trace(lua_State* L) {
+    if (L == NULL)
+        L = context;
+    lua_getstack(L, 1, &debug);
+    lua_getinfo(L, "nSl", &debug);
+    return &debug;
+}

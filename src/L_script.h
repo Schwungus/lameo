@@ -48,10 +48,11 @@
         return 1;                                                                                                      \
     }
 
-#define SCRIPT_LOG(format, ...)                                                                                        \
-    lua_getstack(L, 1, &debug);                                                                                        \
-    lua_getinfo(L, "nSl", &debug);                                                                                     \
-    log_script(debug.source, debug.name, debug.currentline, format, ##__VA_ARGS__);
+#define SCRIPT_LOG(L, format, ...)                                                                                     \
+    do {                                                                                                               \
+        lua_Debug* trace = script_stack_trace(L);                                                                      \
+        log_script(trace->source, trace->name, trace->currentline, format, ##__VA_ARGS__);                             \
+    } while (0);
 
 #define SCRIPT_ASSET(mapname, typename, assettype, hidtype)                                                            \
     SCRIPT_FUNCTION(load_##typename) {                                                                                 \
@@ -93,3 +94,5 @@ int function_ref(int, const char*);
 void unreference(int*);
 void _execute_ref(int, const char*, const char*, int);
 void _execute_ref_in(int, HandleID, const char*, const char*, int);
+
+lua_Debug* script_stack_trace(lua_State*);

@@ -101,8 +101,7 @@ int define_ui(lua_State* L) {
             type->draw = parent->draw;
     }
 
-    INFO("Defined UI \"%s\"", name);
-
+    SCRIPT_LOG(L, "Defined UI \"%s\"", name);
     return 0;
 }
 
