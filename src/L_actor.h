@@ -3,6 +3,7 @@
 #include "L_math.h" // IWYU pragma: keep
 #include "L_memory.h"
 #include "L_player.h"
+#include "L_script.h" // IWYU pragma: keep
 
 #include "L_room.h" // L_room.h relies on ACTOR_NAME_MAX, so only include after that's defined
 
@@ -35,6 +36,12 @@ enum CameraFlags {
 struct ActorType {
     const char* name;
     struct ActorType* parent;
+
+    int load;
+    int create;
+    int on_destroy, cleanup;
+    int tick;
+    int draw, draw_screen, draw_ui;
 };
 
 struct ActorCamera {
@@ -83,3 +90,6 @@ struct Actor {
 
 void actor_init();
 void actor_teardown();
+
+int define_actor(lua_State*);
+bool load_actor(const char*);
