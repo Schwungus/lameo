@@ -499,6 +499,16 @@ void submit_main_batch() {
     main_batch.vertex_count = 0;
 }
 
+void set_main_color(GLfloat r, GLfloat g, GLfloat b) {
+    main_batch.color[0] = r;
+    main_batch.color[1] = g;
+    main_batch.color[2] = b;
+}
+
+void set_main_alpha(GLfloat a) {
+    main_batch.color[3] = a;
+}
+
 void set_main_texture(struct Texture* texture) {
     GLuint target = texture == NULL ? blank_texture : texture->texture;
     if (main_batch.texture != target) {

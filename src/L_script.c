@@ -1,4 +1,5 @@
 #include "L_script.h"
+#include "L_actor.h"
 #include "L_flags.h"
 #include "L_handler.h"
 #include "L_localize.h"
@@ -29,7 +30,7 @@ SCRIPT_FUNCTION(define_ui) {
 }
 
 SCRIPT_FUNCTION(define_actor) {
-    return 0;
+    return define_actor(L);
 }
 
 // Debug
@@ -328,6 +329,22 @@ SCRIPT_FUNCTION(localized) {
 // Video
 SCRIPT_GETTER(get_draw_time, integer);
 
+SCRIPT_FUNCTION(set_main_color) {
+    const GLfloat r = luaL_checknumber(L, 1);
+    const GLfloat g = luaL_checknumber(L, 2);
+    const GLfloat b = luaL_checknumber(L, 3);
+
+    set_main_color(r, g, b);
+
+    return 0;
+}
+
+SCRIPT_FUNCTION(set_main_alpha) {
+    const GLfloat a = luaL_checknumber(L, 1);
+    set_main_alpha(a);
+    return 0;
+}
+
 SCRIPT_FUNCTION(main_rectangle) {
     set_main_texture(NULL);
 
@@ -546,6 +563,9 @@ void script_init() {
 
     EXPOSE_FUNCTION(get_draw_time);
 
+    EXPOSE_FUNCTION(set_main_color);
+    EXPOSE_FUNCTION(set_main_alpha);
+
     EXPOSE_FUNCTION(main_rectangle);
 
     EXPOSE_FUNCTION(main_string);
@@ -554,6 +574,8 @@ void script_init() {
 
     // Audio
     EXPOSE_FUNCTION(play_ui_sound);
+
+    // Actor
 
     // UI
     EXPOSE_INTEGER(UII_UP);
