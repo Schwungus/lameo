@@ -23,6 +23,7 @@ struct Room {
 struct RoomActor {
     struct ActorType* type;
     struct RoomActor *previous, *next;
+    struct Actor* actor;
 
     vec3 pos, angle;
     uint16_t tag;

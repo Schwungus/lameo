@@ -81,19 +81,25 @@ int define_ui(lua_State* L) {
     }
 
     type->parent = parent;
-    if (parent != NULL) {
-        type->load = parent->load;
-        type->create = parent->create;
-        type->cleanup = parent->cleanup;
-        type->tick = parent->tick;
-        type->draw = parent->draw;
-    }
 
     type->load = function_ref(-1, "load");
     type->create = function_ref(-1, "create");
     type->cleanup = function_ref(-1, "cleanup");
     type->tick = function_ref(-1, "tick");
     type->draw = function_ref(-1, "draw");
+
+    if (parent != NULL) {
+        if (type->load == LUA_NOREF)
+            type->load = parent->load;
+        if (type->create == LUA_NOREF)
+            type->create = parent->create;
+        if (type->cleanup == LUA_NOREF)
+            type->cleanup = parent->cleanup;
+        if (type->tick == LUA_NOREF)
+            type->tick = parent->tick;
+        if (type->draw == LUA_NOREF)
+            type->draw = parent->draw;
+    }
 
     INFO("Defined UI \"%s\"", name);
 

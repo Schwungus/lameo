@@ -250,14 +250,13 @@ bool player_enter_room(struct Player* player, uint32_t id) {
         return false;
     }
 
-    if (room->master == NULL)
-        room->master = player;
     if (room->players != NULL)
         room->players->next_neighbor = player;
     player->previous_neighbor = room->players;
     room->players = player;
 
-    if (room->master == player) {
+    if (room->master == NULL) {
+        room->master = player;
         // TODO: Activate room
     }
 
