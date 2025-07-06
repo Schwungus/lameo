@@ -180,6 +180,17 @@ struct UI* hid_to_ui(UIID hid) {
     return (struct UI*)hid_to_pointer(ui_handles, hid);
 }
 
+bool ui_is_ancestor(struct UI* ui, const char* name) {
+    struct UIType* it = ui->type;
+    while (it != NULL) {
+        if (SDL_strcmp(it->name, name) == 0)
+            return true;
+        it = it->parent;
+    }
+
+    return false;
+}
+
 struct UI* get_ui_root() {
     return ui_root;
 }

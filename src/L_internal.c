@@ -105,13 +105,6 @@ void loop() {
             }
 
             case LOAD_UNLOAD: {
-                // Kick players out
-                struct Player* player = get_active_players();
-                while (player != NULL) {
-                    player_leave_room(player);
-                    player = player->previous_active;
-                }
-
                 // Destroy UI
                 struct UI* ui_root = get_ui_root();
                 if (ui_root != NULL)

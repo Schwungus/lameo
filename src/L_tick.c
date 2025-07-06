@@ -50,10 +50,57 @@ void tick_update() {
                     }
                 }
 
+                if (input_pressed(VERB_ATTACK, 0)) {
+                    struct Player* player = get_active_players();
+                    if (player != NULL && player->room != NULL) {
+                        struct Actor* actor = player->room->actors;
+                        if (actor != NULL) {
+                            int i = SDL_rand(10);
+                            while (i-- && actor->previous_neighbor != NULL)
+                                actor = actor->previous_neighbor;
+                            destroy_actor(actor, true);
+                        }
+                    }
+                }
+
+                if (input_pressed(VERB_AIM, 0)) {
+                    struct Player* player = get_active_players();
+                    if (player != NULL)
+                        player_enter_room(player, (player->room == NULL || player->room->id != 0) ? 0 : 25);
+                }
+
+                if (input_pressed(VERB_LEAVE, 0)) {
+                    struct Player* player = get_active_players();
+                    if (player != NULL)
+                        player_leave_room(player);
+                }
+
+                if (input_pressed(VERB_INTERACT, 0)) {
+                    go_to_level("main", 25, 0);
+                    tick_world = false;
+                }
+
                 // World
-                if (tick_world) {}
+                if (tick_world) {
+                    struct Player* player = get_active_players();
+                    while (player != NULL) {
+                        if (player->room != NULL && player->room->master == player) {
+                            struct Actor* actor = player->room->actors;
+                            while (actor != NULL) {
+                                // TODO: Culling
+                                tick_actor(actor);
+                                actor = actor->previous_neighbor;
+                            }
+                        }
+                        player = player->previous_active;
+                    }
+                }
 
                 input_clear_momentary();
+                if (get_load_state() != LOAD_NONE) {
+                    ticks -= SDL_floorf(ticks);
+                    break;
+                }
                 ticks -= 1;
             }
         else

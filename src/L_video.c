@@ -1,10 +1,10 @@
 #include <SDL3/SDL_timer.h>
 
-#include "L_input.h"
 #include "L_internal.h"
 #include "L_localize.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_player.h"
 #include "L_ui.h"
 #include "L_video.h"
 
@@ -249,14 +249,18 @@ void video_update() {
             ((GLfloat)DEFAULT_DISPLAY_HEIGHT - string_height(loading, 16)) / 2, 0
         );
     } else {
-        for (size_t i = 0; i < VERB_SIZE; i++) {
-            char str[128];
-            const struct Verb* verb = get_verb(i);
-            SDL_snprintf(str, 128, "%s: %d", verb->name, verb->value);
-            main_string(str, NULL, 16, 0, i * 16, 0);
+        struct Player* player = get_active_players();
+        while (player != NULL) {
+            if (player->room != NULL && player->room->master == player) {
+                struct Actor* actor = player->room->actors;
+                while (actor != NULL) {
+                    if ((actor->flags & AF_VISIBLE) && actor->type->draw_ui != LUA_NOREF)
+                        execute_ref_in(actor->type->draw_ui, actor->hid, actor->type->name);
+                    actor = actor->previous_neighbor;
+                }
+            }
+            player = player->previous_active;
         }
-
-        main_string_wrap(localized("test"), NULL, 32, 320, 320, 0, 0);
 
         const struct UI* ui_top = get_ui_top();
         if (ui_top != NULL && ui_top->type->draw != LUA_NOREF)

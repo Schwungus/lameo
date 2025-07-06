@@ -1,5 +1,7 @@
 #include "L_script.h"
 #include "L_actor.h"
+#include "L_asset.h"
+#include "L_audio.h"
 #include "L_flags.h"
 #include "L_handler.h"
 #include "L_localize.h"
@@ -7,6 +9,7 @@
 #include "L_memory.h"
 #include "L_mod.h"
 #include "L_player.h"
+#include "L_room.h"
 #include "L_ui.h"
 #include "L_video.h"
 
@@ -409,6 +412,16 @@ SCRIPT_FUNCTION(play_ui_sound) {
     return 0;
 }
 
+// Actor
+SCRIPT_FUNCTION(actor_table) {
+    struct Actor* actor = hid_to_actor(luaL_checkinteger(L, 1));
+    if (actor == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, actor->table);
+    return 1;
+}
+
 // UI
 SCRIPT_FUNCTION(create_ui) {
     struct UI* parent = hid_to_ui(luaL_checkinteger(L, 1));
@@ -576,6 +589,7 @@ void script_init() {
     EXPOSE_FUNCTION(play_ui_sound);
 
     // Actor
+    EXPOSE_FUNCTION(actor_table);
 
     // UI
     EXPOSE_INTEGER(UII_UP);

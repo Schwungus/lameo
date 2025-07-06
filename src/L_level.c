@@ -18,6 +18,7 @@ void unload_level() {
         struct Room* room = kvp->value;
         if (room != NULL)
             destroy_room(room);
+        kvp->value = NULL;
         kvp->occupied = false;
 
         level->rooms->count--;
@@ -54,7 +55,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
     // Rooms
     level->rooms = create_int_map();
     value = yyjson_obj_get(root, "rooms");
-    if (yyjson_is_arr(root)) {
+    if (yyjson_is_arr(value)) {
         yyjson_val* roomdef;
         size_t i, n;
         yyjson_arr_foreach(value, i, n, roomdef) {
@@ -81,6 +82,54 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
             // Properties
 
             // Actors
+            if (yyjson_is_arr(roomval = yyjson_obj_get(roomdef, "actors"))) {
+                yyjson_val* actdef;
+                size_t j, o;
+                yyjson_arr_foreach(roomval, j, o, actdef) {
+                    if (!yyjson_is_obj(actdef))
+                        FATAL(
+                            "Expected level \"%s\" room ID %u actor %u as object, got %s", name, room->id, j,
+                            yyjson_get_type_desc(actdef)
+                        );
+                    yyjson_val* actval = yyjson_obj_get(actdef, "type");
+                    if (!yyjson_is_str(actval))
+                        FATAL(
+                            "Expected level \"%s\" room ID %u actor %u type as string, got %s", name, room->id, j,
+                            yyjson_get_type_desc(actdef)
+                        );
+                    const char* type = yyjson_get_str(actval);
+                    if (!load_actor(type))
+                        continue;
+
+                    struct RoomActor* room_actor = lame_alloc(sizeof(struct RoomActor));
+                    room_actor->type = get_actor_type(type);
+
+                    if (room->room_actors != NULL)
+                        room->room_actors->next = room_actor;
+                    room_actor->previous = room->room_actors;
+                    room_actor->next = NULL;
+                    room->room_actors = room_actor;
+
+                    room_actor->actor = NULL;
+
+                    room_actor->pos[0] = (float)yyjson_get_real(yyjson_obj_get(actdef, "x"));
+                    room_actor->pos[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "y"));
+                    room_actor->pos[2] = (float)yyjson_get_real(yyjson_obj_get(actdef, "z"));
+                    room_actor->angle[0] = (float)yyjson_get_real(yyjson_obj_get(actdef, "yaw"));
+                    room_actor->angle[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "pitch"));
+                    room_actor->angle[2] = (float)yyjson_get_real(yyjson_obj_get(actdef, "roll"));
+                    room_actor->tag = (uint16_t)yyjson_get_uint(yyjson_obj_get(actdef, "tag"));
+
+                    room_actor->flags = RAF_DEFAULT;
+                    if (yyjson_get_bool(yyjson_obj_get(actdef, "persistent")))
+                        room_actor->flags |= RAF_PERSISTENT;
+                    if (yyjson_get_bool(yyjson_obj_get(actdef, "disposable")))
+                        room_actor->flags |= RAF_DISPOSABLE;
+                }
+            } else {
+                WTF("Expected level \"%s\" room ID %u actors as array, got %s", name, room->id,
+                    yyjson_get_type_desc(root));
+            }
         }
     } else {
         WTF("Expected level \"%s\" rooms as array, got %s", name, yyjson_get_type_desc(root));

@@ -29,7 +29,8 @@ void player_init() {
         if ((players[i].flags = (FlagsID)SDL_CreateProperties()) == 0)
             FATAL("Player %d flags fail: %s", i, SDL_GetError());
 
-        players[i].room = players[i].actor = players[i].camera = NULL;
+        players[i].room = NULL;
+        players[i].actor = NULL;
     }
 
     activate_player(0);
@@ -38,8 +39,13 @@ void player_init() {
 }
 
 void player_teardown() {
-    for (int i = 0; i < MAX_PLAYERS; i++)
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        if (players[i].room != NULL)
+            player_leave_room(&players[i]);
+        if (players[i].actor != NULL)
+            destroy_actor(players[i].actor, false);
         CLOSE_HANDLE(players[i].flags, SDL_DestroyProperties);
+    }
     ready_players = active_players = NULL;
 
     CLOSE_HANDLE(default_pflags, SDL_DestroyProperties);
@@ -58,6 +64,7 @@ int activate_player(int slot) {
         if (ready_players != NULL)
             ready_players->next_ready = player;
         player->previous_ready = ready_players;
+        player->next_ready = NULL;
         ready_players = player;
 
         INFO("Player %d activated", slot);
@@ -115,11 +122,13 @@ void dispatch_players() {
         if (active_players != NULL)
             active_players->next_active = player;
         player->previous_active = active_players;
+        player->next_active = NULL;
         active_players = player;
 
         INFO("Dispatched player %u", player->slot);
         player = it;
     }
+    ready_players = NULL;
 }
 
 // Player iterators
@@ -222,6 +231,9 @@ bool player_leave_room(struct Player* player) {
     if (room == NULL)
         return false;
 
+    if (player->actor != NULL)
+        destroy_actor(player->actor, false);
+
     if (room->players == player)
         room->players = player->previous_neighbor;
     if (room->master == player)
@@ -234,10 +246,8 @@ bool player_leave_room(struct Player* player) {
     player->previous_neighbor = player->next_neighbor = NULL;
     player->room = NULL;
 
-    if (room != NULL) {
-        // TODO: Deactivate room
-    }
-
+    if (room->master == NULL)
+        deactivate_room(room);
     return true;
 }
 
@@ -250,15 +260,17 @@ bool player_enter_room(struct Player* player, uint32_t id) {
         return false;
     }
 
+    player->room = room;
+
     if (room->players != NULL)
         room->players->next_neighbor = player;
     player->previous_neighbor = room->players;
+    player->next_neighbor = NULL;
     room->players = player;
 
     if (room->master == NULL) {
         room->master = player;
-        // TODO: Activate room
+        activate_room(room);
     }
-
     return true;
 }

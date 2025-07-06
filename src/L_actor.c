@@ -3,6 +3,7 @@
 #include "L_memory.h"
 
 static struct HashMap* actor_types = NULL;
+static struct Actor* actors = NULL;
 static struct Fixture* actor_handles = NULL;
 
 void actor_init() {
@@ -13,6 +14,9 @@ void actor_init() {
 }
 
 void actor_teardown() {
+    while (actors != NULL)
+        destroy_actor(actors, false);
+
     for (size_t i = 0; actor_types->count > 0 && i < actor_types->capacity; i++) {
         struct KeyValuePair* kvp = &actor_types->items[i];
         if (kvp->key == NULL)
@@ -131,4 +135,134 @@ bool load_actor(const char* name) {
     } while (it != NULL);
 
     return true;
+}
+
+struct ActorType* get_actor_type(const char* name) {
+    return (struct ActorType*)from_hash_map(actor_types, name);
+}
+
+struct Actor* create_actor(
+    struct Room* room, struct RoomActor* base, const char* name, bool invoke_create, float x, float y, float z,
+    float yaw, float pitch, float roll, uint16_t tag
+) {
+    struct ActorType* type = get_actor_type(name);
+    if (type == NULL) {
+        WTF("Unknown Actor type \"%s\"", name);
+        return NULL;
+    }
+
+    return create_actor_from_type(room, base, type, invoke_create, x, y, z, yaw, pitch, roll, tag);
+}
+
+struct Actor* create_actor_from_type(
+    struct Room* room, struct RoomActor* base, struct ActorType* type, bool invoke_create, float x, float y, float z,
+    float yaw, float pitch, float roll, uint16_t tag
+) {
+    if (base != NULL && ((base->flags & RAF_DISPOSED) || base->actor != NULL))
+        return NULL;
+
+    struct Actor* actor = lame_alloc(sizeof(struct Actor));
+    ActorID hid = create_handle(actor_handles, actor);
+    actor->hid = hid;
+    actor->type = type;
+    actor->camera = NULL;
+
+    if (actors != NULL)
+        actors->next = actor;
+    actor->previous = actors;
+    actor->next = NULL;
+    actors = actor;
+
+    if (room->actors != NULL)
+        room->actors->next_neighbor = actor;
+    actor->previous_neighbor = room->actors;
+    actor->next_neighbor = NULL;
+    room->actors = actor;
+
+    actor->room = room;
+    actor->base = base;
+
+    actor->player = NULL;
+    actor->master = actor->target = 0;
+
+    actor->pos[0] = x;
+    actor->pos[1] = y;
+    actor->pos[2] = z;
+    actor->angle[0] = yaw;
+    actor->angle[1] = pitch;
+    actor->angle[2] = roll;
+    glm_vec3_zero(actor->vel);
+    actor->friction = actor->gravity = 0;
+
+    actor->table = create_table_ref();
+    actor->flags = AF_DEFAULT;
+
+    if (invoke_create) {
+        if (type->create != LUA_NOREF)
+            execute_ref_in(type->create, actor->hid, type->name);
+    } else {
+        // Assume that this actor's create() will be invoked later on
+        actor->flags |= AF_NEW;
+    }
+
+    return hid_to_actor(hid) != NULL ? actor : NULL;
+}
+
+void tick_actor(struct Actor* actor) {
+    if (actor->type->tick != LUA_NOREF)
+        execute_ref_in(actor->type->tick, actor->hid, actor->type->name);
+}
+
+void destroy_actor(struct Actor* actor, bool natural) {
+    if (natural && actor->type->on_destroy != LUA_NOREF)
+        execute_ref_in(actor->type->on_destroy, actor->hid, actor->type->name);
+    if (actor->type->cleanup != LUA_NOREF)
+        execute_ref_in(actor->type->cleanup, actor->hid, actor->type->name);
+
+    if (actor->base != NULL) {
+        if ((actor->flags & AF_DISPOSABLE) || (actor->base->flags & RAF_DISPOSABLE))
+            actor->base->flags |= RAF_DISPOSED;
+        actor->base->actor = NULL;
+    }
+
+    if (actors == actor)
+        actors = actor->previous;
+    if (actor->previous != NULL)
+        actor->previous->next = actor->next;
+    if (actor->next != NULL)
+        actor->next->previous = actor->previous;
+
+    if (actor->room->actors == actor)
+        actor->room->actors = actor->previous_neighbor;
+    if (actor->previous_neighbor != NULL)
+        actor->previous_neighbor->next_neighbor = actor->next_neighbor;
+    if (actor->next_neighbor != NULL)
+        actor->next_neighbor->previous_neighbor = actor->previous_neighbor;
+
+    if (actor->camera != NULL) {
+        // TODO: destroy_actor_camera();
+    }
+
+    if (actor->player != NULL && actor->player->actor == actor)
+        actor->player->actor = NULL;
+
+    unreference(&actor->table);
+
+    destroy_handle(actor_handles, actor->hid);
+    lame_free(&actor);
+}
+
+struct Actor* hid_to_actor(ActorID hid) {
+    return (struct Actor*)hid_to_pointer(actor_handles, hid);
+}
+
+bool actor_is_ancestor(struct Actor* actor, const char* name) {
+    struct ActorType* it = actor->type;
+    while (it != NULL) {
+        if (SDL_strcmp(it->name, name) == 0)
+            return true;
+        it = it->parent;
+    }
+
+    return false;
 }
