@@ -1,6 +1,8 @@
 #pragma once
 
+#include "L_actor.h"
 #include "L_flags.h"
+#include "L_room.h"
 
 #define MAX_PLAYERS 4
 
@@ -35,15 +37,16 @@ struct Player {
     uint8_t slot;
 
     enum PlayerStatus status;
-    struct Player *previous_ready, *next_ready;
-    struct Player *previous_active, *next_active;
-    struct Player *previous_neighbor, *next_neighbor;
+    struct Player *previous_ready, *next_ready;       // Position in list (previous-order)
+    struct Player *previous_active, *next_active;     // Position in list (previous-order)
+    struct Player *previous_neighbor, *next_neighbor; // Position in list (previous-order)
 
     struct PlayerInput input, last_input;
 
     FlagsID flags;
 
-    void *room, *actor, *camera;
+    struct Room* room;
+    struct Actor* actor;
 };
 
 void player_init();

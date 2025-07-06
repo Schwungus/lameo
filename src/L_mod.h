@@ -11,7 +11,7 @@ struct Mod {
     uint32_t crc32;
     uint16_t version;
 
-    struct Mod *previous, *next;
+    struct Mod *previous, *next; // Position in list (previous-order)
 };
 
 void mod_init();

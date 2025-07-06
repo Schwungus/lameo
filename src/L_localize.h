@@ -4,7 +4,7 @@
 
 struct Language {
     const char* name;
-    struct Language *previous, *next;
+    struct Language *previous, *next; // Position in list (previous-order)
     struct HashMap* map;
 };
 

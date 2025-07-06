@@ -4,7 +4,7 @@
 
 struct Handler {
     const char* name;
-    struct Handler *previous, *next;
+    struct Handler *previous, *next; // Position in list (next-order)
 
     int on_register, on_start;
     int player_activated, player_deactivated;
