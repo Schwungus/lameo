@@ -99,6 +99,7 @@ struct Shader {
     ShaderID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     GLuint program;
     SDL_PropertiesID uniforms;
@@ -108,6 +109,7 @@ struct Texture {
     TextureID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     struct Texture* parent;
     TextureID* children;
@@ -122,6 +124,7 @@ struct Material {
     MaterialID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     TextureID* textures[2]; // (0) Base and (1) blend textures
     size_t num_textures[2]; // (0) Base and (1) blend texture count
@@ -142,6 +145,7 @@ struct Model {
     ModelID hid;
     const char* name;
     bool transient;
+    int userdata;
 };
 
 struct Glyph {
@@ -152,6 +156,7 @@ struct Font {
     FontID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     TextureID texture;
     float size;
@@ -166,6 +171,7 @@ struct Sound {
     SoundID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     Sample** samples;
     size_t num_samples;
@@ -178,6 +184,7 @@ struct Track {
     TrackID hid;
     const char* name;
     bool transient;
+    int userdata;
 
     Stream* stream;
 };

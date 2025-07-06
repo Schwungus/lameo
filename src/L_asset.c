@@ -5,6 +5,7 @@
 #include "L_log.h"
 #include "L_memory.h"
 #include "L_mod.h"
+#include "L_script.h"
 
 static char asset_file_helper[FILE_PATH_MAX];
 
@@ -110,12 +111,14 @@ void load_shader(const char* name) {
             FATAL("Shader \"%s\" uniform \"%s\" fail: %s", name, uname, SDL_GetError());
     }
 
+    shader->userdata = create_pointer_ref("shader", shader);
     ASSET_SANITY_PUSH(shader, shaders);
     INFO("Loaded shader \"%s\" (%u)", name, shader->hid);
 }
 
 void destroy_shader(struct Shader* shader) {
     ASSET_SANITY_POP(shader, shaders);
+    unreference_pointer(&shader->userdata);
 
     glDeleteProgram(shader->program);
     SDL_DestroyProperties(shader->uniforms);
@@ -214,12 +217,14 @@ void load_texture(const char* name) {
     glTexImage2D(GL_TEXTURE_2D, 0, format, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_DestroySurface(surface);
 
+    texture->userdata = create_pointer_ref("texture", texture);
     ASSET_SANITY_PUSH(texture, textures);
     INFO("Loaded texture \"%s\" (%u)", name, texture->hid);
 }
 
 void destroy_texture(struct Texture* texture) {
     ASSET_SANITY_POP(texture, textures);
+    unreference_pointer(&texture->userdata);
 
     if (texture->children != NULL) {
         for (int i = 0; i < texture->num_children; i++)
@@ -351,12 +356,14 @@ void load_font(const char* name) {
 
     yyjson_doc_free(json);
 
+    font->userdata = create_pointer_ref("font", font);
     ASSET_SANITY_PUSH(font, fonts);
     INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font->hid, gldef, font->num_glyphs);
 }
 
 void destroy_font(struct Font* font) {
     ASSET_SANITY_POP(font, fonts);
+    unreference_pointer(&font->userdata);
 
     if (font->glyphs != NULL) {
         for (size_t i = 0; i < font->num_glyphs; i++)
@@ -386,6 +393,8 @@ struct Sound* create_sound(const char* name) {
     sound->num_samples = 0;
     sound->gain = 1;
     sound->pitch[0] = sound->pitch[1] = 1;
+
+    sound->userdata = create_pointer_ref("sound", sound);
 
     return sound;
 }
@@ -498,6 +507,7 @@ sound_loaded:
 
 void destroy_sound(struct Sound* sound) {
     ASSET_SANITY_POP(sound, sounds);
+    unreference_pointer(&sound->userdata);
 
     if (sound->samples != NULL) {
         for (size_t i = 0; i < sound->num_samples; i++)
@@ -536,12 +546,14 @@ void load_track(const char* name) {
     // Data
     load_stream(track_file, &track->stream);
 
+    track->userdata = create_pointer_ref("track", track);
     ASSET_SANITY_PUSH(track, music);
     INFO("Loaded track \"%s\" (%u)", name, track->hid);
 }
 
 void destroy_track(struct Track* track) {
     ASSET_SANITY_POP(track, music);
+    unreference_pointer(&track->userdata);
 
     destroy_stream(track->stream);
     INFO("Freed track \"%s\" (%u)", track->name, track->hid);
@@ -558,8 +570,6 @@ void asset_init() {
     fonts_init();
     sounds_init();
     music_init();
-
-    video_init_render();
 
     INFO("Opened");
 }

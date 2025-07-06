@@ -48,7 +48,7 @@ void activate_room(struct Room* room) {
     while (it != NULL) {
         if (it->actor != NULL && (it->actor->flags & AF_NEW)) {
             if (it->type->create != LUA_NOREF)
-                execute_ref_in(it->type->create, it->actor->hid, it->type->name);
+                execute_ref_in(it->type->create, it->actor->userdata, it->type->name);
             it->actor->flags &= ~AF_NEW;
         }
         it = it->previous;

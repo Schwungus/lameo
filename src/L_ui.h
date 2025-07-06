@@ -50,6 +50,7 @@ struct UIType {
 struct UI {
     UIID hid;
     struct UIType* type;
+    int userdata;
 
     struct UI *parent, *child;
     int table;

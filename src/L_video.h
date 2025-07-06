@@ -81,7 +81,6 @@ struct WorldBatch {
 };
 
 void video_init();
-void video_init_render();
 void video_update();
 void video_teardown();
 

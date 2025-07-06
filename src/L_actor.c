@@ -197,9 +197,11 @@ struct Actor* create_actor_from_type(
     actor->table = create_table_ref();
     actor->flags = AF_DEFAULT;
 
+    actor->userdata = create_pointer_ref("actor", actor);
+
     if (invoke_create) {
         if (type->create != LUA_NOREF)
-            execute_ref_in(type->create, actor->hid, type->name);
+            execute_ref_in(type->create, actor->userdata, type->name);
     } else {
         // Assume that this actor's create() will be invoked later on
         actor->flags |= AF_NEW;
@@ -210,14 +212,14 @@ struct Actor* create_actor_from_type(
 
 void tick_actor(struct Actor* actor) {
     if (actor->type->tick != LUA_NOREF)
-        execute_ref_in(actor->type->tick, actor->hid, actor->type->name);
+        execute_ref_in(actor->type->tick, actor->userdata, actor->type->name);
 }
 
 void destroy_actor(struct Actor* actor, bool natural) {
     if (natural && actor->type->on_destroy != LUA_NOREF)
-        execute_ref_in(actor->type->on_destroy, actor->hid, actor->type->name);
+        execute_ref_in(actor->type->on_destroy, actor->userdata, actor->type->name);
     if (actor->type->cleanup != LUA_NOREF)
-        execute_ref_in(actor->type->cleanup, actor->hid, actor->type->name);
+        execute_ref_in(actor->type->cleanup, actor->userdata, actor->type->name);
 
     if (actor->base != NULL) {
         if ((actor->flags & AF_DISPOSABLE) || (actor->base->flags & RAF_DISPOSABLE))
@@ -247,6 +249,7 @@ void destroy_actor(struct Actor* actor, bool natural) {
         actor->player->actor = NULL;
 
     unreference(&actor->table);
+    unreference_pointer(&actor->userdata);
 
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);

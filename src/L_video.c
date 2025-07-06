@@ -70,10 +70,6 @@ void video_init() {
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
-    INFO("Opened");
-}
-
-void video_init_render() {
     // Blank texture
     glGenTextures(1, &blank_texture);
     glBindTexture(GL_TEXTURE_2D, blank_texture);
@@ -212,7 +208,7 @@ void video_init_render() {
     if (fontex != NULL)
         fontex->transient = true;
 
-    INFO("Opened for rendering");
+    INFO("Opened");
 }
 
 void video_update() {
@@ -255,7 +251,7 @@ void video_update() {
                 struct Actor* actor = player->room->actors;
                 while (actor != NULL) {
                     if ((actor->flags & AF_VISIBLE) && actor->type->draw_ui != LUA_NOREF)
-                        execute_ref_in(actor->type->draw_ui, actor->hid, actor->type->name);
+                        execute_ref_in(actor->type->draw_ui, actor->userdata, actor->type->name);
                     actor = actor->previous_neighbor;
                 }
             }
@@ -264,7 +260,7 @@ void video_update() {
 
         const struct UI* ui_top = get_ui_top();
         if (ui_top != NULL && ui_top->type->draw != LUA_NOREF)
-            execute_ref_in(ui_top->type->draw, ui_top->hid, ui_top->type->name);
+            execute_ref_in(ui_top->type->draw, ui_top->userdata, ui_top->type->name);
     }
 
     submit_batch();

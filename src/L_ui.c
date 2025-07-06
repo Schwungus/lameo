@@ -151,14 +151,16 @@ struct UI* create_ui(struct UI* parent, const char* name) {
     ui->table = create_table_ref();
     ui->flags = UIF_DEFAULT;
 
+    ui->userdata = create_pointer_ref("ui", ui);
+
     if (type->create != LUA_NOREF)
-        execute_ref_in(type->create, ui->hid, name);
+        execute_ref_in(type->create, ui->userdata, name);
     return hid_to_ui(hid) != NULL ? ui : NULL;
 }
 
 void destroy_ui(struct UI* ui) {
     if (ui->type->cleanup != LUA_NOREF)
-        execute_ref_in(ui->type->cleanup, ui->hid, ui->type->name);
+        execute_ref_in(ui->type->cleanup, ui->userdata, ui->type->name);
 
     if (ui_root == ui)
         ui_root = NULL;
@@ -171,6 +173,7 @@ void destroy_ui(struct UI* ui) {
         destroy_ui(ui->child);
 
     unreference(&ui->table);
+    unreference_pointer(&ui->userdata);
 
     destroy_handle(ui_handles, ui->hid);
     lame_free(&ui);

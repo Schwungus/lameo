@@ -79,6 +79,7 @@ struct Actor {
     ActorID hid;
     struct ActorType* type;
     struct ActorCamera* camera;
+    int userdata;
 
     struct Actor *previous, *next;                   // Position in global list (previous-order)
     struct Actor *previous_neighbor, *next_neighbor; // Position in local list (previous-order)

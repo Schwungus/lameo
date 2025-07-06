@@ -41,7 +41,7 @@ void tick_update() {
                 if (ui_top != NULL) {
                     update_ui_input();
                     if (ui_top->type->tick != LUA_NOREF)
-                        execute_ref_in(ui_top->type->tick, ui_top->hid, ui_top->type->name);
+                        execute_ref_in(ui_top->type->tick, ui_top->userdata, ui_top->type->name);
                     if ((ui_top = get_ui_top()) == NULL) {
                         input_consume(VERB_PAUSE);
                     } else {
