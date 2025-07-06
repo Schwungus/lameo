@@ -1,10 +1,12 @@
 #pragma once
 
 #include "L_actor.h"
-#include "L_flags.h"
 #include "L_room.h"
 
 #define MAX_PLAYERS 4
+
+#define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
+#define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
 
 enum PlayerStatus {
     PS_INACTIVE,
@@ -43,8 +45,6 @@ struct Player {
 
     struct PlayerInput input, last_input;
 
-    FlagsID flags;
-
     struct Room* room;
     struct Actor* actor;
 };
@@ -59,25 +59,6 @@ void dispatch_players();
 struct Player* get_player(int);
 struct Player* get_ready_players();
 struct Player* get_active_players();
-
-#define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
-#define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
-
-enum FlagTypes get_pflag_type(int, const char*);
-bool get_bool_pflag(int, const char*, bool);
-Sint64 get_int_pflag(int, const char*, Sint64);
-float get_float_pflag(int, const char*, float);
-const char* get_string_pflag(int, const char*, const char*);
-
-void set_bool_pflag(int, const char*, bool);
-void set_int_pflag(int, const char*, Sint64);
-void set_float_pflag(int, const char*, float);
-void set_string_pflag(int, const char*, const char*);
-
-void reset_pflag(int, const char*);
-bool toggle_pflag(int, const char*);
-Sint64 increment_pflag(int, const char*);
-Sint64 decrement_pflag(int, const char*);
 
 bool player_enter_room(struct Player*, uint32_t);
 bool player_leave_room(struct Player*);
