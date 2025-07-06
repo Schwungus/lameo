@@ -306,12 +306,6 @@ SCRIPT_FUNCTION(destroy_ui) {
     return 0;
 }
 
-SCRIPT_FUNCTION(ui_table) {
-    struct UI* ui = s_check_ui(L, 1);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, ui->table);
-    return 1;
-}
-
 SCRIPT_FUNCTION(get_ui_cursor) {
     const vec2* cursor = get_ui_cursor();
     lua_pushnumber(L, (*cursor)[0]);
