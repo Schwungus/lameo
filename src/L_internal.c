@@ -25,20 +25,22 @@ void init(const char* config_path, const char* controls_path) {
         FATAL("SDL fail: %s", SDL_GetError());
     steam_init();
     file_init();
-    video_init();
-    audio_init();
     input_init();
     config_init(config_path, controls_path);
-    flags_init();
-    player_init();
     mod_init();
     localize_init();
-    asset_init();
 
-    // Initialize actors and UIs before scripting
+    // Initialize these before scripting
+    asset_init();
+    flags_init();
+    player_init();
     actor_init();
     ui_init();
     script_init();
+
+    // Initialize these before scripting since they load assets
+    video_init();
+    audio_init();
 
     handler_init();
     tick_init();
@@ -163,16 +165,16 @@ void cleanup() {
     tick_teardown();
     handler_teardown();
 
-    // Free actors and UIs before scripting
+    // Free these before scripting
     ui_teardown();
     actor_teardown();
-    script_teardown();
-
-    asset_teardown();
-    localize_teardown();
-    mod_teardown();
     player_teardown();
     flags_teardown();
+    asset_teardown();
+    script_teardown();
+
+    localize_teardown();
+    mod_teardown();
     config_teardown();
     input_teardown();
     audio_teardown();
