@@ -149,6 +149,8 @@ SCRIPT_FUNCTION(play_ui_sound) {
 // Actor
 SCRIPT_CHECKER(actor, struct Actor*);
 SCRIPT_TESTER(actor, struct Actor*);
+SCRIPT_CHECKER(camera, struct ActorCamera*);
+SCRIPT_TESTER(camera, struct ActorCamera*);
 
 SCRIPT_FUNCTION(actor_index) {
     struct Actor* actor = s_check_actor(L, 1);
@@ -176,6 +178,7 @@ SCRIPT_FUNCTION(actor_newindex) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, actor->table);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, key);
+    lua_pop(L, -1);
 
     return 0;
 }
@@ -190,6 +193,27 @@ SCRIPT_FUNCTION(actor_is_ancestor) {
     const char* type = luaL_checkstring(L, 2);
     lua_pushboolean(L, actor_is_ancestor(actor, type));
     return 1;
+}
+
+SCRIPT_FUNCTION(actor_get_camera) {
+    struct Actor* actor = s_check_actor(L, 1);
+    if (actor->camera == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, actor->camera->userdata);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_create_camera) {
+    struct Actor* actor = s_check_actor(L, 1);
+    create_actor_camera(actor);
+    return s_actor_get_camera(L);
+}
+
+SCRIPT_FUNCTION(actor_destroy_camera) {
+    struct Actor* actor = s_check_actor(L, 1);
+    destroy_actor_camera(actor);
+    return 0;
 }
 
 SCRIPT_FUNCTION(actor_get_pos) {
@@ -244,6 +268,46 @@ SCRIPT_FUNCTION(actor_get_vel_z) {
     return 1;
 }
 
+SCRIPT_FUNCTION(camera_index) {
+    struct ActorCamera* camera = s_check_camera(L, 1);
+    const char* key = luaL_checkstring(L, 2);
+
+    lua_getmetatable(L, -2);
+    lua_pushvalue(L, -2);
+    lua_rawget(L, -2);
+    if (!lua_isnil(L, -1))
+        return 1;
+    lua_pop(L, 2);
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, camera->table);
+    lua_getfield(L, -1, key);
+    lua_remove(L, -2);
+
+    return 1;
+}
+
+SCRIPT_FUNCTION(camera_newindex) {
+    struct ActorCamera* camera = s_check_camera(L, 1);
+    const char* key = luaL_checkstring(L, 2);
+    luaL_checkany(L, 3);
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, camera->table);
+    lua_pushvalue(L, -2);
+    lua_setfield(L, -2, key);
+    lua_pop(L, -1);
+
+    return 0;
+}
+
+SCRIPT_FUNCTION(camera_get_actor) {
+    struct ActorCamera* camera = s_check_camera(L, 1);
+    if (camera->actor == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, camera->actor->userdata);
+    return 1;
+}
+
 // UI
 SCRIPT_CHECKER(ui, struct UI*);
 SCRIPT_TESTER(ui, struct UI*);
@@ -274,6 +338,7 @@ SCRIPT_FUNCTION(ui_newindex) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ui->table);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, key);
+    lua_pop(L, -1);
 
     return 0;
 }
@@ -415,6 +480,10 @@ void script_init() {
     static const luaL_Reg actor_methods[] = {
         {"is_ancestor", s_actor_is_ancestor},
 
+        {"get_camera", s_actor_get_camera},
+        {"create_camera", s_actor_create_camera},
+        {"destroy_camera", s_actor_destroy_camera},
+
         {"get_pos", s_actor_get_pos},
         {"get_pos_x", s_actor_get_pos_x},
         {"get_pos_y", s_actor_get_pos_y},
@@ -431,6 +500,18 @@ void script_init() {
     lua_pushcfunction(context, s_actor_index);
     lua_setfield(context, -2, "__index");
     lua_pushcfunction(context, s_actor_newindex);
+    lua_setfield(context, -2, "__newindex");
+    lua_pop(context, 1);
+
+    luaL_newmetatable(context, "camera");
+    static const luaL_Reg camera_methods[] = {
+        {"get_actor", s_camera_get_actor},
+        {NULL, NULL},
+    };
+    luaL_setfuncs(context, camera_methods, 0);
+    lua_pushcfunction(context, s_camera_index);
+    lua_setfield(context, -2, "__index");
+    lua_pushcfunction(context, s_camera_newindex);
     lua_setfield(context, -2, "__newindex");
     lua_pop(context, 1);
 
@@ -540,6 +621,14 @@ void _execute_ref(int ref, const char* name, const char* filename, int line) {
 void _execute_ref_in(int ref, int userdata, const char* name, const char* filename, int line) {
     lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
     lua_rawgeti(context, LUA_REGISTRYINDEX, userdata);
+    if (lua_pcall(context, 1, 0, 0) != LUA_OK)
+        log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
+}
+
+void _execute_ref_in_child(int ref, int userdata, int userdata2, const char* name, const char* filename, int line) {
+    lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
+    lua_rawgeti(context, LUA_REGISTRYINDEX, userdata);
+    lua_rawgeti(context, LUA_REGISTRYINDEX, userdata2);
     if (lua_pcall(context, 1, 0, 0) != LUA_OK)
         log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
 }

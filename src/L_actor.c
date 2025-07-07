@@ -1,6 +1,7 @@
 #include "L_actor.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_video.h"
 
 static struct HashMap* actor_types = NULL;
 static struct Actor* actors = NULL;
@@ -71,12 +72,16 @@ int define_actor(lua_State* L) {
             unreference(&type->load);
         if (type->parent == NULL || type->create != parent->create)
             unreference(&type->create);
+        if (type->parent == NULL || type->create_camera != parent->create_camera)
+            unreference(&type->create_camera);
         if (type->parent == NULL || type->on_destroy != parent->on_destroy)
             unreference(&type->on_destroy);
         if (type->parent == NULL || type->cleanup != parent->cleanup)
             unreference(&type->cleanup);
         if (type->parent == NULL || type->tick != parent->tick)
             unreference(&type->tick);
+        if (type->parent == NULL || type->tick_camera != parent->tick_camera)
+            unreference(&type->tick_camera);
         if (type->parent == NULL || type->draw != parent->draw)
             unreference(&type->draw);
         if (type->parent == NULL || type->draw_screen != parent->draw_screen)
@@ -89,9 +94,11 @@ int define_actor(lua_State* L) {
 
     type->load = function_ref(-1, "load");
     type->create = function_ref(-1, "create");
+    type->create_camera = function_ref(-1, "create_camera");
     type->on_destroy = function_ref(-1, "on_destroy");
     type->cleanup = function_ref(-1, "cleanup");
     type->tick = function_ref(-1, "tick");
+    type->tick_camera = function_ref(-1, "tick_camera");
     type->draw = function_ref(-1, "draw");
     type->draw_screen = function_ref(-1, "draw_screen");
     type->draw_ui = function_ref(-1, "draw_ui");
@@ -101,12 +108,16 @@ int define_actor(lua_State* L) {
             type->load = parent->load;
         if (type->create == LUA_NOREF)
             type->create = parent->create;
+        if (type->create_camera == LUA_NOREF)
+            type->create_camera = parent->create_camera;
         if (type->on_destroy == LUA_NOREF)
             type->on_destroy = parent->on_destroy;
         if (type->cleanup == LUA_NOREF)
             type->cleanup = parent->cleanup;
         if (type->tick == LUA_NOREF)
             type->tick = parent->tick;
+        if (type->tick_camera == LUA_NOREF)
+            type->tick_camera = parent->tick_camera;
         if (type->draw == LUA_NOREF)
             type->draw = parent->draw;
         if (type->draw_screen == LUA_NOREF)
@@ -183,7 +194,6 @@ struct Actor* create_actor_from_type(
     actor->base = base;
 
     actor->player = NULL;
-    actor->master = actor->target = 0;
 
     actor->pos[0] = x;
     actor->pos[1] = y;
@@ -191,8 +201,10 @@ struct Actor* create_actor_from_type(
     actor->angle[0] = yaw;
     actor->angle[1] = pitch;
     actor->angle[2] = roll;
+
     glm_vec3_zero(actor->vel);
-    actor->friction = actor->gravity = 0;
+    glm_vec3_one(actor->friction);
+    glm_vec3_zero(actor->gravity);
 
     actor->table = create_table_ref();
     actor->flags = AF_DEFAULT;
@@ -210,9 +222,50 @@ struct Actor* create_actor_from_type(
     return hid_to_actor(hid) != NULL ? actor : NULL;
 }
 
+struct ActorCamera* create_actor_camera(struct Actor* actor) {
+    if (actor->camera != NULL)
+        return actor->camera;
+
+    struct ActorCamera* camera = lame_alloc(sizeof(struct ActorCamera));
+    camera->actor = actor;
+    camera->parent = camera->child = NULL;
+
+    camera->targets = NULL;
+    camera->pois = NULL;
+
+    glm_vec3_copy(actor->pos, camera->pos);
+    glm_vec3_copy(actor->angle, camera->angle);
+    camera->fov = 45;
+    camera->range = 0;
+
+    camera->userdata = create_pointer_ref("camera", camera);
+    camera->table = create_table_ref();
+    camera->flags = CF_DEFAULT;
+
+    glm_mat4_identity(camera->view_matrix);
+    glm_mat4_identity(camera->projection_matrix);
+    camera->surface = NULL;
+
+    actor->camera = camera;
+    if (actor->type->create_camera != LUA_NOREF)
+        execute_ref_in_child(actor->type->create_camera, actor->userdata, camera->userdata, actor->type->name);
+
+    return actor->camera;
+}
+
 void tick_actor(struct Actor* actor) {
     if (actor->type->tick != LUA_NOREF)
         execute_ref_in(actor->type->tick, actor->userdata, actor->type->name);
+
+    struct ActorCamera* camera = actor->camera;
+    if (camera != NULL) {
+        if (camera->flags & CF_COPY_POSITION)
+            glm_vec3_copy(actor->pos, camera->pos);
+        if (camera->flags & CF_COPY_ANGLE)
+            glm_vec3_copy(actor->angle, camera->angle);
+        if (actor->type->tick_camera != LUA_NOREF)
+            execute_ref_in_child(actor->type->tick_camera, actor->userdata, camera->userdata, actor->type->name);
+    }
 }
 
 void destroy_actor(struct Actor* actor, bool natural) {
@@ -241,18 +294,46 @@ void destroy_actor(struct Actor* actor, bool natural) {
     if (actor->next_neighbor != NULL)
         actor->next_neighbor->previous_neighbor = actor->previous_neighbor;
 
-    if (actor->camera != NULL) {
-        // TODO: destroy_actor_camera();
-    }
+    destroy_actor_camera(actor);
 
     if (actor->player != NULL && actor->player->actor == actor)
         actor->player->actor = NULL;
 
     unreference(&actor->table);
     unreference_pointer(&actor->userdata);
-
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);
+}
+
+void destroy_actor_camera(struct Actor* actor) {
+    struct ActorCamera* camera = actor->camera;
+    if (camera == NULL)
+        return;
+
+    if (get_active_camera() == camera)
+        set_active_camera(camera->child);
+    if (camera->parent != NULL)
+        camera->parent->child = camera->child;
+    if (camera->child != NULL)
+        camera->child->parent = camera->parent;
+
+    struct CameraTarget* target = camera->targets;
+    while (target != NULL) {
+        // TODO
+    }
+
+    struct CameraPOI* poi = camera->pois;
+    while (poi != NULL) {
+        // TODO
+    }
+
+    if (camera->surface != NULL) {
+        // TODO
+    }
+
+    unreference(&camera->table);
+    unreference_pointer(&camera->userdata);
+    lame_free(&actor->camera);
 }
 
 struct Actor* hid_to_actor(ActorID hid) {

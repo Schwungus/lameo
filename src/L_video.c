@@ -1,5 +1,6 @@
 #include <SDL3/SDL_timer.h>
 
+#include "L_actor.h"
 #include "L_internal.h"
 #include "L_localize.h"
 #include "L_log.h"
@@ -22,6 +23,7 @@ static GLuint blank_texture = 0;
 static enum RenderTypes render_stage = RT_MAIN;
 static struct MainBatch main_batch = {0};
 static struct WorldBatch world_batch = {0};
+static struct ActorCamera* active_camera = NULL;
 
 static struct Shader* default_shaders[RT_SIZE] = {NULL};
 static struct Shader* current_shader = NULL;
@@ -225,6 +227,20 @@ void video_update() {
 
     glClear(GL_COLOR_BUFFER_BIT);
     glViewport(0, 0, display.width, display.height);
+
+    struct ActorCamera* camera = active_camera;
+    if (camera == NULL) {
+        struct Player* player = get_active_players();
+        while (player != NULL) {
+            if (player->actor != NULL && (camera = player->actor->camera) != NULL) {
+                // TODO: Render player camera(s)
+                break;
+            }
+            player = player->previous_active;
+        }
+    } else {
+        // TODO: Render active camera
+    }
 
     // Main
     const float scalew = (float)display.width / (float)DEFAULT_DISPLAY_WIDTH;
@@ -685,6 +701,14 @@ void main_string_wrap(
 
 // World
 void submit_world_batch() {}
+
+struct ActorCamera* get_active_camera() {
+    return active_camera;
+}
+
+void set_active_camera(struct ActorCamera* camera) {
+    active_camera = camera;
+}
 
 // Fonts
 GLfloat string_width(const char* str, struct Font* font, GLfloat size) {

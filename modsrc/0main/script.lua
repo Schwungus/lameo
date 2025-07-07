@@ -11,11 +11,13 @@ functions.load = function()
     load_sound("logo/schwungus")
 end
 
-functions.create = function (this)
+function Main_create(this)
     this.dummy = dummy
     dummy = math.fmod(dummy + 8, 160)
     this.dummy2 = 0
 end
+
+functions.create = Main_create
 
 functions.on_destroy = function (this)
     play_ui_sound(get_sound("logo/schwungus"), 0, 0, 1, 1)
@@ -39,6 +41,11 @@ define_actor("Main", nil, functions)
 
 -- Fake Actor
 local functions = {}
+
+functions.create = function (this)
+    Main_create(this)
+    this.dummy = this.dummy * 2
+end
 
 functions.draw_ui = function (this)
     local dumb = this.dummy

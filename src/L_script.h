@@ -106,6 +106,8 @@
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
 #define execute_ref(ref, name) _execute_ref(ref, name, __FILE__, __LINE__)
 #define execute_ref_in(ref, userdata, name) _execute_ref_in(ref, userdata, name, __FILE__, __LINE__)
+#define execute_ref_in_child(ref, userdata, userdata2, name)                                                           \
+    _execute_ref_in_child(ref, userdata, userdata2, name, __FILE__, __LINE__)
 
 void script_init();
 void script_teardown();
@@ -121,5 +123,6 @@ void unreference(int*);
 void unreference_pointer(int*);
 void _execute_ref(int, const char*, const char*, int);
 void _execute_ref_in(int, int, const char*, const char*, int);
+void _execute_ref_in_child(int, int, int, const char*, const char*, int);
 
 lua_Debug* script_stack_trace(lua_State*);

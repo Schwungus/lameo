@@ -34,8 +34,13 @@ enum ActorFlags {
 enum CameraFlags {
     CF_NONE = 0,
 
-    CF_THIRD_PERSON = 1 << 0, // Camera follows targets in third-person mode.
-    CF_RAYCAST = 1 << 1,      // Raycast from targets to
+    CF_ORTHOGONAL = 1 << 0,    // Use orthogonal view instead of perspective
+    CF_THIRD_PERSON = 1 << 1,  // Camera follows targets in third-person mode.
+    CF_RAYCAST = 1 << 2,       // Stick to collision meshes while following targets.
+    CF_COPY_POSITION = 1 << 3, // Copy source position.
+    CF_COPY_ANGLE = 1 << 4,    // Copy source angle.
+
+    CF_DEFAULT = CF_COPY_POSITION | CF_COPY_ANGLE,
 };
 
 struct ActorType {
@@ -43,24 +48,35 @@ struct ActorType {
     struct ActorType* parent;
 
     int load;
-    int create;
+    int create, create_camera;
     int on_destroy, cleanup;
-    int tick;
+    int tick, tick_camera;
     int draw, draw_screen, draw_ui;
 };
 
 // Actor component for camera functionality.
 struct ActorCamera {
-    ActorID parent, child;
-    float fov;
-    enum CameraFlags flags;
+    struct Actor* actor;
+    struct ActorCamera *parent, *child;
+    int userdata;
 
     struct CameraTarget* targets;
     struct CameraPOI* pois;
+
+    vec3 pos, angle;
+    float fov, range;
+
+    int table; // User-specific
+    enum CameraFlags flags;
+
+    mat4 view_matrix, projection_matrix;
+    void* surface;
 };
 
 struct CameraTarget {
+    struct ActorCamera* camera;
     struct CameraTarget *previous, *next; // Position in list (previous-order)
+    int userdata;
 
     vec3 pos;       // Exact position (relative if a target exists)
     ActorID target; // Actor to follow
@@ -68,7 +84,9 @@ struct CameraTarget {
 };
 
 struct CameraPOI {
+    struct ActorCamera* camera;
     struct CameraPOI *previous, *next; // Position in list (previous-order)
+    int userdata;
 
     vec3 pos;       // Exact position (relative if a target exists)
     ActorID target; // Actor to track
@@ -88,11 +106,11 @@ struct Actor {
     struct RoomActor* base;
 
     struct Player* player;
-    ActorID master, target; // User-specific
 
     vec3 pos; // Read-only
-    vec3 angle, vel;
-    float friction, gravity;
+    vec3 angle;
+
+    vec3 vel, friction, gravity;
 
     int table; // User-specific
     enum ActorFlags flags;
@@ -111,9 +129,11 @@ create_actor(struct Room*, struct RoomActor*, const char*, bool, float, float, f
 struct Actor* create_actor_from_type(
     struct Room*, struct RoomActor*, struct ActorType*, bool, float, float, float, float, float, float, uint16_t
 );
+struct ActorCamera* create_actor_camera(struct Actor*);
 void tick_actor(struct Actor*);
 void draw_actor(struct Actor*);
 void destroy_actor(struct Actor*, bool);
+void destroy_actor_camera(struct Actor*);
 
 struct Actor* hid_to_actor(ActorID);
 bool actor_is_ancestor(struct Actor*, const char*);

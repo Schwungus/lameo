@@ -137,6 +137,9 @@ void main_string_wrap(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfl
 // World
 void submit_world_batch();
 
+struct ActorCamera* get_active_camera();
+void set_active_camera(struct ActorCamera*);
+
 // Fonts
 GLfloat string_width(const char*, struct Font*, GLfloat);
 GLfloat string_height(const char*, GLfloat);
