@@ -35,7 +35,7 @@ void player_teardown() {
         if (players[i].room != NULL)
             player_leave_room(&players[i]);
         if (players[i].actor != NULL)
-            destroy_actor(players[i].actor, false);
+            destroy_actor(players[i].actor, false, false);
     }
     ready_players = active_players = NULL;
 
@@ -144,7 +144,7 @@ bool player_leave_room(struct Player* player) {
         return false;
 
     if (player->actor != NULL)
-        destroy_actor(player->actor, false);
+        destroy_actor(player->actor, false, false);
 
     if (room->players == player)
         room->players = player->previous_neighbor;

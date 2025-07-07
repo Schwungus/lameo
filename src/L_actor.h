@@ -132,7 +132,7 @@ struct Actor* create_actor_from_type(
 struct ActorCamera* create_actor_camera(struct Actor*);
 void tick_actor(struct Actor*);
 void draw_actor(struct Actor*);
-void destroy_actor(struct Actor*, bool);
+void destroy_actor(struct Actor*, bool, bool);
 void destroy_actor_camera(struct Actor*);
 
 struct Actor* hid_to_actor(ActorID);

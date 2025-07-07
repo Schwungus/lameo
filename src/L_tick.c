@@ -48,36 +48,36 @@ void tick_update() {
                         if (ui_top->flags & UIF_BLOCKING)
                             tick_world = false;
                     }
-                }
-
-                if (input_pressed(VERB_ATTACK, 0)) {
-                    struct Player* player = get_active_players();
-                    if (player != NULL && player->room != NULL) {
-                        struct Actor* actor = player->room->actors;
-                        if (actor != NULL) {
-                            int i = SDL_rand(10);
-                            while (i-- && actor->previous_neighbor != NULL)
-                                actor = actor->previous_neighbor;
-                            destroy_actor(actor, true);
+                } else {
+                    if (input_pressed(VERB_ATTACK, 0)) {
+                        struct Player* player = get_active_players();
+                        if (player != NULL && player->room != NULL) {
+                            struct Actor* actor = player->room->actors;
+                            if (actor != NULL) {
+                                int i = SDL_rand(10);
+                                while (i-- && actor->previous_neighbor != NULL)
+                                    actor = actor->previous_neighbor;
+                                destroy_actor(actor, true, true);
+                            }
                         }
                     }
-                }
 
-                if (input_pressed(VERB_AIM, 0)) {
-                    struct Player* player = get_active_players();
-                    if (player != NULL)
-                        player_enter_room(player, (player->room == NULL || player->room->id != 0) ? 0 : 25);
-                }
+                    if (input_pressed(VERB_AIM, 0)) {
+                        struct Player* player = get_active_players();
+                        if (player != NULL)
+                            player_enter_room(player, (player->room == NULL || player->room->id != 0) ? 0 : 25);
+                    }
 
-                if (input_pressed(VERB_LEAVE, 0)) {
-                    struct Player* player = get_active_players();
-                    if (player != NULL)
-                        player_leave_room(player);
-                }
+                    if (input_pressed(VERB_LEAVE, 0)) {
+                        struct Player* player = get_active_players();
+                        if (player != NULL)
+                            player_leave_room(player);
+                    }
 
-                if (input_pressed(VERB_INTERACT, 0)) {
-                    go_to_level("main", 25, 0);
-                    tick_world = false;
+                    if (input_pressed(VERB_INTERACT, 0)) {
+                        go_to_level("main", 25, 0);
+                        tick_world = false;
+                    }
                 }
 
                 // World

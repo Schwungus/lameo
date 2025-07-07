@@ -8,7 +8,7 @@ void destroy_room(struct Room* room) {
     }
 
     while (room->actors != NULL)
-        destroy_actor(room->actors, false);
+        destroy_actor(room->actors, false, false);
 
     struct RoomActor* it = room->room_actors;
     while (it != NULL) {
@@ -59,7 +59,7 @@ void deactivate_room(struct Room* room) {
     struct Actor* it = room->actors;
     while (it != NULL) {
         if (!(it->flags & AF_PERSISTENT) && (it->base == NULL || !(it->base->flags & RAF_PERSISTENT)))
-            destroy_actor(it, false);
+            destroy_actor(it, false, false);
         it = (it == room->actors) ? it->previous : room->actors;
     }
 }

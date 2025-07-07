@@ -16,7 +16,7 @@ void actor_init() {
 
 void actor_teardown() {
     while (actors != NULL)
-        destroy_actor(actors, false);
+        destroy_actor(actors, false, false);
 
     for (size_t i = 0; actor_types->count > 0 && i < actor_types->capacity; i++) {
         struct KeyValuePair* kvp = &actor_types->items[i];
@@ -268,14 +268,14 @@ void tick_actor(struct Actor* actor) {
     }
 }
 
-void destroy_actor(struct Actor* actor, bool natural) {
+void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (natural && actor->type->on_destroy != LUA_NOREF)
         execute_ref_in(actor->type->on_destroy, actor->userdata, actor->type->name);
     if (actor->type->cleanup != LUA_NOREF)
         execute_ref_in(actor->type->cleanup, actor->userdata, actor->type->name);
 
     if (actor->base != NULL) {
-        if ((actor->flags & AF_DISPOSABLE) || (actor->base->flags & RAF_DISPOSABLE))
+        if (dispose && ((actor->flags & AF_DISPOSABLE) || (actor->base->flags & RAF_DISPOSABLE)))
             actor->base->flags |= RAF_DISPOSED;
         actor->base->actor = NULL;
     }
