@@ -12,40 +12,37 @@ typedef HandleID ActorID;
 enum ActorFlags {
     AF_NONE = 0,
 
+    // Room
     AF_PERSISTENT = 1 << 0, // Will not be destroyed when deactivating a room.
     AF_DISPOSABLE = 1 << 1, // If this actor has a base and is destroyed, it will not spawn in its own room again.
     AF_UNIQUE = 1 << 2,     // Cannot be created if an instance of it already exists in the same room.
 
+    // Visual
     AF_VISIBLE = 1 << 3,     // Can be drawn as long as it's not culled.
     AF_XRAY = 1 << 4,        // Will be drawn as a silhouette behind other objects.
     AF_SHADOW = 1 << 5,      // Has a blob shadow.
     AF_SHADOW_BONE = 1 << 6, // Blob shadow follows a bone instead of the actual position.
 
+    // Handling
     AF_GARBAGE = 1 << 7,             // User-specific flag. Actor is considered unimportant.
     AF_FROZEN = 1 << 8,              // Won't tick.
     AF_DESTROY_WHEN_CULLED = 1 << 9, // Destroys itself as soon as it's culled in the world.
 
+    // Internal
     AF_NEW = 1 << 10,               // [INTERNAL] Was created, but hasn't invoked `create()` yet.
     AF_CULLED = 1 << 11,            // [INTERNAL] Culled in world, won't tick.
     AF_DESTROYED = 1 << 12,         // [INTERNAL] Marked for deletion.
     AF_DESTROYED_NATURAL = 1 << 13, // [INTERNAL] Will invoke `on_destroy()`.
 
+    // Collision
+    AF_COLLISION = 1 << 14, // [INTERNAL] Collides with colliders.
+    AF_BUMP = 1 << 15,      // [INTERNAL] Bumps other actors.
+    AF_BUMPABLE = 1 << 16,  // [INTERNAL] Bumped by other actors.
+    AF_PUSH = 1 << 17,      // [INTERNAL] Pushes actors with lower or equal mass.
+    AF_PUSHABLE = 1 << 18,  // [INTERNAL] Pushed by other actors with greater or equal mass.
+    AF_HITSCAN = 1 << 19,   // Intercepts hitscans.
+
     AF_DEFAULT = AF_VISIBLE,
-};
-
-enum ActorCollisionFlags {
-    ACF_NONE = 0,
-
-    ACF_COLLIDE = 1 << 0, // Collides with triangles
-
-    ACF_BUMPER = 1 << 1,   // Bumps other actors
-    ACF_BUMPABLE = 1 << 2, // Can be bumped by other actors
-    ACF_PUSHER = 1 << 3,   // Pushes other actors
-    ACF_PUSHABLE = 1 << 4, // Can be pushed by other actors
-
-    ACF_INTERCEPT = 1 << 5, // Can be hitscanned
-
-    ACF_DEFAULT = ACF_NONE,
 };
 
 enum CameraFlags {
@@ -132,7 +129,6 @@ struct Actor {
     enum ActorFlags flags;
     uint16_t tag; // User-specific
 
-    enum ActorCollisionFlags collision_flags;
     vec2 collision_size, bump_size;          // (0) Radius and (1) height
     float mass;                              // Push priority
     size_t bump_index;                       // Cell index in bump map

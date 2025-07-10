@@ -211,7 +211,6 @@ struct Actor* create_actor_from_type(
     actor->userdata = create_pointer_ref("actor", actor);
     actor->tag = tag;
 
-    actor->collision_flags = ACF_DEFAULT;
     actor->collision_size[0] = actor->bump_size[0] = 8;
     actor->collision_size[1] = actor->bump_size[1] = 16;
     actor->mass = 0;
@@ -309,7 +308,7 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (actor->next_neighbor != NULL)
         actor->next_neighbor->previous_neighbor = actor->previous_neighbor;
 
-    if (actor->collision_flags & ACF_BUMPABLE) {
+    if (actor->flags & AF_BUMPABLE) {
         struct Actor** chunks = actor->room->bump.chunks;
         if (chunks[actor->bump_index] == actor)
             chunks[actor->bump_index] = actor->previous_bump;
