@@ -133,6 +133,70 @@ SCRIPT_FUNCTION(string_height) {
     return 1;
 }
 
+SCRIPT_CHECKER_DIRECT(surface, struct Surface*);
+SCRIPT_TESTER_DIRECT(surface, struct Surface*);
+
+SCRIPT_FUNCTION(create_surface) {
+    const uint16_t width = luaL_checkinteger(L, 1);
+    const uint16_t height = luaL_checkinteger(L, 2);
+    const bool color = luaL_optinteger(L, 3, 1);
+    const bool depth = luaL_optinteger(L, 4, 0);
+    const bool stencil = luaL_optinteger(L, 5, 0);
+
+    create_surface(true, width, height, color, depth, stencil);
+    return 1;
+}
+
+SCRIPT_FUNCTION(validate_surface) {
+    struct Surface* surface = s_check_surface(L, 1);
+    validate_surface(surface);
+    return 0;
+}
+
+SCRIPT_FUNCTION(dispose_surface) {
+    struct Surface* surface = s_check_surface(L, 1);
+    dispose_surface(surface);
+    return 0;
+}
+
+SCRIPT_FUNCTION(push_surface) {
+    struct Surface* surface = s_check_surface(L, 1);
+    set_surface(surface);
+    return 0;
+}
+
+SCRIPT_FUNCTION_DIRECT(pop_surface);
+
+SCRIPT_FUNCTION(main_surface) {
+    struct Surface* surface = s_check_surface(L, 1);
+    const GLfloat x = luaL_checknumber(L, 2);
+    const GLfloat y = luaL_checknumber(L, 3);
+    const GLfloat z = luaL_checknumber(L, 4);
+    main_surface(surface, x, y, z);
+    return 0;
+}
+
+SCRIPT_FUNCTION(clear_color) {
+    const GLfloat r = luaL_optnumber(L, 1, 0);
+    const GLfloat g = luaL_optnumber(L, 2, 0);
+    const GLfloat b = luaL_optnumber(L, 3, 0);
+    const GLfloat a = luaL_optnumber(L, 4, 1);
+    clear_color(r, g, b, a);
+    return 0;
+}
+
+SCRIPT_FUNCTION(clear_depth) {
+    const GLfloat depth = luaL_optnumber(L, 1, 1);
+    clear_depth(depth);
+    return 0;
+}
+
+SCRIPT_FUNCTION(clear_stencil) {
+    const GLint stencil = luaL_optinteger(L, 1, 0);
+    clear_stencil(stencil);
+    return 0;
+}
+
 // Audio
 SCRIPT_FUNCTION(play_ui_sound) {
     struct Sound* sound = luaL_opt(L, s_check_sound, 1, NULL);
@@ -472,6 +536,28 @@ void script_init() {
     EXPOSE_FUNCTION(string_width);
     EXPOSE_FUNCTION(string_height);
 
+    luaL_newmetatable(context, "surface");
+    static const luaL_Reg surface_methods[] = {
+        {"validate", s_validate_surface},
+        {"dispose", s_dispose_surface},
+        {"push", s_push_surface},
+        {"main", s_main_surface},
+        {"__gc", s_dispose_surface},
+
+        {NULL, NULL},
+    };
+    luaL_setfuncs(context, surface_methods, 0);
+    lua_pushvalue(context, -1);
+    lua_setfield(context, -2, "__index");
+    lua_pop(context, 1);
+
+    EXPOSE_FUNCTION(create_surface);
+    EXPOSE_FUNCTION(pop_surface);
+
+    EXPOSE_FUNCTION(clear_color);
+    EXPOSE_FUNCTION(clear_depth);
+    EXPOSE_FUNCTION(clear_stencil);
+
     // Audio
     EXPOSE_FUNCTION(play_ui_sound);
 
@@ -582,14 +668,23 @@ void _execute_buffer(void* buffer, size_t size, const char* name, const char* fi
         log_fatal(src_basename(filename), line, "Error in script \"%s\": %s", name, lua_tostring(context, -1));
 }
 
+void collect_garbage() {
+    lua_gc(context, LUA_GCCOLLECT);
+}
+
+void* userdata_alloc(const char* type, size_t size) {
+    void* userdata = lua_newuserdata(context, size);
+    luaL_setmetatable(context, type);
+    return userdata;
+}
+
 int create_table_ref() {
     lua_newtable(context);
     return luaL_ref(context, LUA_REGISTRYINDEX);
 }
 
 int create_pointer_ref(const char* type, void* ptr) {
-    *(void**)(lua_newuserdata(context, sizeof(void*))) = ptr;
-    luaL_setmetatable(context, type);
+    *(void**)(userdata_alloc(type, sizeof(void*))) = ptr;
     return luaL_ref(context, LUA_REGISTRYINDEX);
 }
 

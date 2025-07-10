@@ -28,6 +28,7 @@ static struct ActorCamera* active_camera = NULL;
 static struct Shader* default_shaders[RT_SIZE] = {NULL};
 static struct Shader* current_shader = NULL;
 static struct Font* default_font = NULL;
+static struct Surface* current_surface = NULL;
 
 static mat4 model_matrix, view_matrix, projection_matrix, mvp_matrix;
 
@@ -64,7 +65,6 @@ void video_init() {
     display.vsync = false;
 
     // Rendering
-    glClearColor(0, 0, 0, 1);
     glm_mat4_identity(model_matrix);
     glm_mat4_identity(view_matrix);
     glm_mat4_identity(projection_matrix);
@@ -225,7 +225,8 @@ void video_update() {
         last_cap_time = draw_time;
     }
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    set_surface(NULL);
+    clear_color(0, 0, 0, 1);
     glViewport(0, 0, display.width, display.height);
 
     struct ActorCamera* camera = active_camera;
@@ -526,10 +527,13 @@ void set_main_alpha(GLfloat a) {
 }
 
 void set_main_texture(struct Texture* texture) {
-    GLuint target = texture == NULL ? blank_texture : texture->texture;
-    if (main_batch.texture != target) {
+    set_main_texture_direct(texture == NULL ? blank_texture : texture->texture);
+}
+
+void set_main_texture_direct(GLuint texture) {
+    if (main_batch.texture != texture) {
         submit_main_batch();
-        main_batch.texture = target;
+        main_batch.texture = texture;
     }
 }
 
@@ -546,6 +550,23 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
     main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex
     ){x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
       u, v};
+}
+
+void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
+    if (surface->texture[SURFACE_COLOR_TEXTURE] == 0)
+        return;
+    set_main_texture_direct(surface->texture[SURFACE_COLOR_TEXTURE]);
+
+    GLfloat x1 = x;
+    GLfloat y1 = y;
+    GLfloat x2 = x + surface->size[0];
+    GLfloat y2 = y + surface->size[1];
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
 }
 
 void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
@@ -759,60 +780,139 @@ GLfloat string_height(const char* str, GLfloat size) {
 }
 
 // Surfaces
-struct Surface* create_surface(uint16_t width, uint16_t height, bool color, bool depth, bool stencil) {
-    struct Surface* surface = lame_alloc(sizeof(struct Surface));
+struct Surface* create_surface(bool external, uint16_t width, uint16_t height, bool color, bool depth, bool stencil) {
+    struct Surface* surface =
+        external ? userdata_alloc("surface", sizeof(struct Surface)) : lame_alloc(sizeof(struct Surface));
 
     surface->active = false;
+    surface->stack = NULL;
+
+    surface->enabled[SURFACE_COLOR_TEXTURE] = color;
+    surface->enabled[SURFACE_DEPTH_TEXTURE] = depth;
+    surface->enabled[SURFACE_STENCIL_TEXTURE] = stencil;
+    surface->fbo = 0;
+    surface->texture[SURFACE_COLOR_TEXTURE] = surface->texture[SURFACE_DEPTH_TEXTURE] =
+        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
     surface->size[0] = width;
     surface->size[1] = height;
-
-    // Framebuffer & textures
-    glGenFramebuffers(1, &surface->fbo);
-
-    if (color) {
-        glGenTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
-        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE], 0
-        );
-    } else {
-        surface->texture[SURFACE_COLOR_TEXTURE] = 0;
-    }
-
-    if (depth) {
-        glGenTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
-        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
-        );
-    } else {
-        surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
-    }
-
-    if (stencil) {
-        glGenTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
-        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, NULL);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE], 0
-        );
-    } else {
-        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
-    }
 
     return surface;
 }
 
-void destroy_surface(struct Surface* surface) {
-    glDeleteFramebuffers(1, &surface->fbo);
-    if (surface->texture[SURFACE_COLOR_TEXTURE] != 0)
-        glDeleteTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
-    if (surface->texture[SURFACE_DEPTH_TEXTURE] != 0)
-        glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
-    if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0)
-        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+void validate_surface(struct Surface* surface) {
+    if (surface->fbo == 0)
+        glGenFramebuffers(1, &surface->fbo);
 
+    if (surface->enabled[SURFACE_COLOR_TEXTURE]) {
+        if (surface->texture[SURFACE_COLOR_TEXTURE] == 0)
+            glGenTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->size[0], surface->size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE], 0
+        );
+    } else if (surface->texture[SURFACE_COLOR_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
+        surface->texture[SURFACE_COLOR_TEXTURE] = 0;
+    }
+
+    if (surface->enabled[SURFACE_DEPTH_TEXTURE]) {
+        if (surface->texture[SURFACE_DEPTH_TEXTURE] == 0)
+            glGenTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, surface->size[0], surface->size[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+            NULL
+        );
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
+        );
+    } else if (surface->texture[SURFACE_DEPTH_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
+        surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
+    }
+
+    if (surface->enabled[SURFACE_STENCIL_TEXTURE]) {
+        if (surface->texture[SURFACE_STENCIL_TEXTURE] == 0)
+            glGenTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+        glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, surface->size[0], surface->size[1], 0, GL_STENCIL_INDEX,
+            GL_UNSIGNED_BYTE, NULL
+        );
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE], 0
+        );
+    } else if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
+    }
+}
+
+void dispose_surface(struct Surface* surface) {
+    if (current_surface == surface)
+        pop_surface();
+
+    if (surface->fbo != 0) {
+        glDeleteFramebuffers(1, &surface->fbo);
+        surface->fbo = 0;
+    }
+    if (surface->texture[SURFACE_COLOR_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
+        surface->texture[SURFACE_COLOR_TEXTURE] = 0;
+    }
+    if (surface->texture[SURFACE_DEPTH_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
+        surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
+    }
+    if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0) {
+        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
+    }
+}
+
+void destroy_surface(struct Surface* surface) {
+    dispose_surface(surface);
     lame_free(&surface);
+}
+
+void set_surface(struct Surface* surface) {
+    if (current_surface != surface) {
+        submit_batch();
+        if (current_surface != NULL)
+            current_surface->active = false;
+        if (surface != NULL) {
+            surface->active = true;
+            surface->stack = current_surface;
+            validate_surface(surface);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, surface == NULL ? 0 : surface->fbo);
+        current_surface = surface;
+    }
+}
+
+void pop_surface() {
+    if (current_surface == NULL)
+        return;
+    set_surface(current_surface->stack);
+}
+
+void resize_surface(struct Surface* surface, uint16_t width, uint16_t height) {}
+
+void clear_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
+    glClearColor(r, g, b, a);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void clear_depth(GLfloat depth) {
+    glClearDepth(depth);
+    glClear(GL_DEPTH_BUFFER_BIT);
+}
+
+void clear_stencil(GLint stencil) {
+    glClearStencil(stencil);
+    glClear(GL_STENCIL_BUFFER_BIT);
 }

@@ -86,6 +86,9 @@ struct WorldBatch {
 
 struct Surface {
     bool active;
+    struct Surface* stack;
+
+    bool enabled[3];
     GLuint fbo, texture[3];
     uint16_t size[2];
 };
@@ -135,10 +138,12 @@ void set_main_stencil_color(GLfloat, GLfloat, GLfloat);
 void set_main_stencil_alpha(GLfloat);
 void set_main_alpha_test(GLfloat);
 void set_main_texture(struct Texture*);
+void set_main_texture_direct(GLuint);
 void set_main_filter(bool);
 void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, bool);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
+void main_surface(struct Surface*, GLfloat, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
 void main_material_sprite(struct Material*, GLfloat, GLfloat, GLfloat);
 void main_string(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfloat);
@@ -155,5 +160,14 @@ GLfloat string_width(const char*, struct Font*, GLfloat);
 GLfloat string_height(const char*, GLfloat);
 
 // Surfaces
-struct Surface* create_surface(uint16_t, uint16_t, bool, bool, bool);
+struct Surface* create_surface(bool, uint16_t, uint16_t, bool, bool, bool);
+void validate_surface(struct Surface*);
+void dispose_surface(struct Surface*);
 void destroy_surface(struct Surface*);
+void set_surface(struct Surface*);
+void pop_surface();
+void resize_surface(struct Surface*, uint16_t, uint16_t);
+
+void clear_color(GLfloat, GLfloat, GLfloat, GLfloat);
+void clear_depth(GLfloat);
+void clear_stencil(GLint);

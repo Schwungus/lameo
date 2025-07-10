@@ -26,6 +26,12 @@
 
 #define SCRIPT_FUNCTION(name) static int SCRIPT_PREFIX(name)(lua_State * L)
 
+#define SCRIPT_FUNCTION_DIRECT(name)                                                                                   \
+    static int SCRIPT_PREFIX(name)(lua_State * L) {                                                                    \
+        name();                                                                                                        \
+        return 0;                                                                                                      \
+    }
+
 #define SCRIPT_CHECKER(name, type)                                                                                     \
     static type SCRIPT_PREFIX(check_##name)(lua_State * L, int arg) {                                                  \
         void** ptr = luaL_checkudata(L, arg, #name);                                                                   \
@@ -38,6 +44,19 @@
     static type SCRIPT_PREFIX(test_##name)(lua_State * L, int arg) {                                                   \
         void** ptr = luaL_testudata(L, arg, #name);                                                                    \
         return (ptr != NULL && *ptr != NULL) ? *ptr : NULL;                                                            \
+    }
+
+#define SCRIPT_CHECKER_DIRECT(name, type)                                                                              \
+    static type SCRIPT_PREFIX(check_##name)(lua_State * L, int arg) {                                                  \
+        type ptr = luaL_checkudata(L, arg, #name);                                                                     \
+        if (ptr == NULL)                                                                                               \
+            luaL_error(L, "Null " #name);                                                                              \
+        return ptr;                                                                                                    \
+    }
+
+#define SCRIPT_TESTER_DIRECT(name, type)                                                                               \
+    static type SCRIPT_PREFIX(test_##name)(lua_State * L, int arg) {                                                   \
+        return (type)luaL_testudata(L, arg, #name);                                                                    \
     }
 
 #define SCRIPT_GETTER(name, type)                                                                                      \
@@ -116,11 +135,16 @@ void set_import_path(const char*);
 
 void _execute_buffer(void*, size_t, const char*, const char*, int);
 
+void collect_garbage();
+void* userdata_alloc(const char*, size_t);
+
 int create_table_ref();
 int create_pointer_ref(const char*, void*);
 int function_ref(int, const char*);
+
 void unreference(int*);
 void unreference_pointer(int*);
+
 void _execute_ref(int, const char*, const char*, int);
 void _execute_ref_in(int, int, const char*, const char*, int);
 void _execute_ref_in_child(int, int, int, const char*, const char*, int);
