@@ -4,6 +4,8 @@
 #include "L_level.h"
 #include "L_math.h" // IWYU pragma: keep
 
+#define BUMP_CHUNK_SIZE 128
+
 enum RoomActorFlags {
     RAF_NONE = 0,
 
@@ -12,6 +14,12 @@ enum RoomActorFlags {
     RAF_DISPOSED = 1 << 2,   // Won't be spawned upon activating the room.
 
     RAF_DEFAULT = RAF_NONE,
+};
+
+struct BumpMap {
+    struct Actor** chunks;
+    vec2 pos;
+    size_t size[2];
 };
 
 struct Room {
@@ -23,6 +31,7 @@ struct Room {
 
     struct RoomActor* room_actors; // List of room actors (previous-order)
     struct Actor* actors;          // List of actors (previous-order)
+    struct BumpMap bump;
 };
 
 struct RoomActor {
@@ -34,6 +43,8 @@ struct RoomActor {
     uint16_t tag;
     enum RoomActorFlags flags;
 };
+
+void update_bump_map(struct BumpMap*, vec2);
 
 void destroy_room(struct Room*);
 void activate_room(struct Room*);

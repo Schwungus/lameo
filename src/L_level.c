@@ -79,6 +79,10 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
             room->room_actors = NULL;
             room->actors = NULL;
 
+            room->bump.chunks = NULL;
+            glm_vec2_zero(room->bump.pos);
+            room->bump.size[0] = room->bump.size[1] = 1;
+
             // Properties
 
             // Actors
@@ -125,6 +129,8 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                         room_actor->flags |= RAF_PERSISTENT;
                     if (yyjson_get_bool(yyjson_obj_get(actdef, "disposable")))
                         room_actor->flags |= RAF_DISPOSABLE;
+
+                    update_bump_map(&room->bump, room_actor->pos);
                 }
             } else {
                 WTF("Expected level \"%s\" room ID %u actors as array, got %s", name, room->id,

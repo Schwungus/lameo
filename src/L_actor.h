@@ -33,6 +33,21 @@ enum ActorFlags {
     AF_DEFAULT = AF_VISIBLE,
 };
 
+enum ActorCollisionFlags {
+    ACF_NONE = 0,
+
+    ACF_COLLIDE = 1 << 0, // Collides with triangles
+
+    ACF_BUMPER = 1 << 1,   // Bumps other actors
+    ACF_BUMPABLE = 1 << 2, // Can be bumped by other actors
+    ACF_PUSHER = 1 << 3,   // Pushes other actors
+    ACF_PUSHABLE = 1 << 4, // Can be pushed by other actors
+
+    ACF_INTERCEPT = 1 << 5, // Can be hitscanned
+
+    ACF_DEFAULT = ACF_NONE,
+};
+
 enum CameraFlags {
     CF_NONE = 0,
 
@@ -109,14 +124,19 @@ struct Actor {
 
     struct Player* player;
 
-    vec3 pos; // Read-only
-    vec3 angle;
-
+    vec3 pos;   // Read-only
+    vec3 angle; // (0) Yaw, (1) pitch and (2) roll
     vec3 vel, friction, gravity;
 
     int table; // User-specific
     enum ActorFlags flags;
     uint16_t tag; // User-specific
+
+    enum ActorCollisionFlags collision_flags;
+    vec2 collision_size, bump_size;          // (0) Radius and (1) height
+    float mass;                              // Push priority
+    size_t bump_index;                       // Cell index in bump map
+    struct Actor *previous_bump, *next_bump; // Position in bump list (previous-order)
 };
 
 void actor_init();

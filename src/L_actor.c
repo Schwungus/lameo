@@ -208,8 +208,15 @@ struct Actor* create_actor_from_type(
 
     actor->table = create_table_ref();
     actor->flags = AF_DEFAULT;
-
     actor->userdata = create_pointer_ref("actor", actor);
+    actor->tag = tag;
+
+    actor->collision_flags = ACF_DEFAULT;
+    actor->collision_size[0] = actor->bump_size[0] = 8;
+    actor->collision_size[1] = actor->bump_size[1] = 16;
+    actor->mass = 0;
+    actor->bump_index = 0;
+    actor->previous_bump = actor->next_bump = NULL;
 
     if (invoke_create) {
         if (type->create != LUA_NOREF)
@@ -301,6 +308,16 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
         actor->previous_neighbor->next_neighbor = actor->next_neighbor;
     if (actor->next_neighbor != NULL)
         actor->next_neighbor->previous_neighbor = actor->previous_neighbor;
+
+    if (actor->collision_flags & ACF_BUMPABLE) {
+        struct Actor** chunks = actor->room->bump.chunks;
+        if (chunks[actor->bump_index] == actor)
+            chunks[actor->bump_index] = actor->previous_bump;
+        if (actor->previous_bump != NULL)
+            actor->previous_bump->next_bump = actor->next_bump;
+        if (actor->next_bump != NULL)
+            actor->next_bump->previous_bump = actor->previous_bump;
+    }
 
     destroy_actor_camera(actor);
 
