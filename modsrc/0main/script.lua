@@ -1,3 +1,12 @@
+-- Camera
+local functions = {}
+
+functions.create = function (this)
+    this:create_camera()
+end
+
+define_actor("Camera", nil, functions)
+
 -- Main Actor
 dummy = 0
 
@@ -23,10 +32,6 @@ functions.on_destroy = function (this)
     play_ui_sound(get_sound("logo/schwungus"), 0, 0, 1, 1)
 end
 
-functions.cleanup = function (this)
-    print("YOU HAVE KILLED " .. tostring(this))
-end
-
 functions.tick = function (this)
     this.dummy2 = this.dummy2 + (this.dummy * 0.1)
 end
@@ -38,22 +43,6 @@ functions.draw_ui = function (this)
 end
 
 define_actor("Main", nil, functions)
-
--- Fake Actor
-local functions = {}
-
-functions.create = function (this)
-    Main_create(this)
-    this.dummy = this.dummy * 2
-end
-
-functions.draw_ui = function (this)
-    local dumb = this.dummy
-    local dumb2 = math.fmod(this.dummy2, 128)
-    main_string("I am FAKE!!!", nil, 16, 256 - dumb, 256 - dumb - dumb2, UI_Z)
-end
-
-define_actor("Fake", "Main", functions)
 
 -- Pause UI
 local functions = {}
