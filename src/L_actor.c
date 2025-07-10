@@ -351,9 +351,8 @@ void destroy_actor_camera(struct Actor* actor) {
         // TODO
     }
 
-    if (camera->surface != NULL) {
-        // TODO
-    }
+    if (camera->surface != NULL)
+        destroy_surface(camera->surface);
 
     unreference(&camera->table);
     unreference_pointer(&camera->userdata);

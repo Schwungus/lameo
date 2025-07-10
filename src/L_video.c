@@ -757,3 +757,62 @@ GLfloat string_height(const char* str, GLfloat size) {
 
     return height;
 }
+
+// Surfaces
+struct Surface* create_surface(uint16_t width, uint16_t height, bool color, bool depth, bool stencil) {
+    struct Surface* surface = lame_alloc(sizeof(struct Surface));
+
+    surface->active = false;
+    surface->size[0] = width;
+    surface->size[1] = height;
+
+    // Framebuffer & textures
+    glGenFramebuffers(1, &surface->fbo);
+
+    if (color) {
+        glGenTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE], 0
+        );
+    } else {
+        surface->texture[SURFACE_COLOR_TEXTURE] = 0;
+    }
+
+    if (depth) {
+        glGenTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
+        );
+    } else {
+        surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
+    }
+
+    if (stencil) {
+        glGenTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, width, height, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, NULL);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE], 0
+        );
+    } else {
+        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
+    }
+
+    return surface;
+}
+
+void destroy_surface(struct Surface* surface) {
+    glDeleteFramebuffers(1, &surface->fbo);
+    if (surface->texture[SURFACE_COLOR_TEXTURE] != 0)
+        glDeleteTextures(1, &surface->texture[SURFACE_COLOR_TEXTURE]);
+    if (surface->texture[SURFACE_DEPTH_TEXTURE] != 0)
+        glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
+    if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0)
+        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
+
+    lame_free(&surface);
+}

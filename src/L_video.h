@@ -13,6 +13,10 @@
 #define DEFAULT_DISPLAY_WIDTH 640
 #define DEFAULT_DISPLAY_HEIGHT 480
 
+#define SURFACE_COLOR_TEXTURE 0
+#define SURFACE_DEPTH_TEXTURE 1
+#define SURFACE_STENCIL_TEXTURE 2
+
 enum FullscreenModes {
     FSM_WINDOWED,
     FSM_FULLSCREEN,
@@ -80,6 +84,12 @@ struct WorldBatch {
     bool filter;
 };
 
+struct Surface {
+    bool active;
+    GLuint fbo, texture[3];
+    uint16_t size[2];
+};
+
 void video_init();
 void video_update();
 void video_teardown();
@@ -143,3 +153,7 @@ void set_active_camera(struct ActorCamera*);
 // Fonts
 GLfloat string_width(const char*, struct Font*, GLfloat);
 GLfloat string_height(const char*, GLfloat);
+
+// Surfaces
+struct Surface* create_surface(uint16_t, uint16_t, bool, bool, bool);
+void destroy_surface(struct Surface*);

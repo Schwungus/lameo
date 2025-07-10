@@ -84,7 +84,7 @@ struct ActorCamera {
     enum CameraFlags flags;
 
     mat4 view_matrix, projection_matrix;
-    void* surface;
+    struct Surface* surface;
 };
 
 struct CameraTarget {
