@@ -25,8 +25,10 @@ enum ActorFlags {
     AF_FROZEN = 1 << 8,              // Won't tick.
     AF_DESTROY_WHEN_CULLED = 1 << 9, // Destroys itself as soon as it's culled in the world.
 
-    AF_NEW = 1 << 10,    // [INTERNAL] Actor was created but hasn't invoked `create()` yet.
-    AF_CULLED = 1 << 11, // [INTERNAL] Culled in world, won't tick.
+    AF_NEW = 1 << 10,               // [INTERNAL] Was created, but hasn't invoked `create()` yet.
+    AF_CULLED = 1 << 11,            // [INTERNAL] Culled in world, won't tick.
+    AF_DESTROYED = 1 << 12,         // [INTERNAL] Marked for deletion.
+    AF_DESTROYED_NATURAL = 1 << 13, // [INTERNAL] Will invoke `on_destroy()`.
 
     AF_DEFAULT = AF_VISIBLE,
 };
@@ -132,6 +134,7 @@ struct Actor* create_actor_from_type(
 struct ActorCamera* create_actor_camera(struct Actor*);
 void tick_actor(struct Actor*);
 void draw_actor(struct Actor*);
+void destroy_actor_later(struct Actor*, bool);
 void destroy_actor(struct Actor*, bool, bool);
 void destroy_actor_camera(struct Actor*);
 

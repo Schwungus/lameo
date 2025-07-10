@@ -57,7 +57,7 @@ void tick_update() {
                                 int i = SDL_rand(10);
                                 while (i-- && actor->previous_neighbor != NULL)
                                     actor = actor->previous_neighbor;
-                                destroy_actor(actor, true, true);
+                                destroy_actor_later(actor, true);
                             }
                         }
                     }
@@ -88,8 +88,12 @@ void tick_update() {
                             struct Actor* actor = player->room->actors;
                             while (actor != NULL) {
                                 // TODO: Culling
-                                tick_actor(actor);
-                                actor = actor->previous_neighbor;
+                                struct Actor* next = actor->previous_neighbor;
+                                if (!(actor->flags & (AF_CULLED | AF_FROZEN | AF_DESTROYED)))
+                                    tick_actor(actor);
+                                if (actor->flags & AF_DESTROYED)
+                                    destroy_actor(actor, actor->flags & AF_DESTROYED_NATURAL, true);
+                                actor = next;
                             }
                         }
                         player = player->previous_active;

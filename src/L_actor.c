@@ -268,6 +268,14 @@ void tick_actor(struct Actor* actor) {
     }
 }
 
+void destroy_actor_later(struct Actor* actor, bool natural) {
+    if (actor->flags & AF_DESTROYED)
+        return;
+    actor->flags |= AF_DESTROYED;
+    if (natural)
+        actor->flags |= AF_DESTROYED_NATURAL;
+}
+
 void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (natural && actor->type->on_destroy != LUA_NOREF)
         execute_ref_in(actor->type->on_destroy, actor->userdata, actor->type->name);
