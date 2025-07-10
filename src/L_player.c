@@ -23,6 +23,9 @@ void player_init() {
 
         players[i].room = NULL;
         players[i].actor = NULL;
+
+        players[i].userdata = create_pointer_ref("player", &players[i]);
+        players[i].table = create_table_ref();
     }
 
     activate_player(0);
@@ -32,6 +35,8 @@ void player_init() {
 
 void player_teardown() {
     for (int i = 0; i < MAX_PLAYERS; i++) {
+        unreference_pointer(&players[i].userdata);
+        unreference(&players[i].table);
         if (players[i].room != NULL)
             player_leave_room(&players[i]);
         if (players[i].actor != NULL)

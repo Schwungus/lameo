@@ -47,6 +47,8 @@ struct Player {
 
     struct Room* room;
     struct Actor* actor;
+
+    int userdata, table;
 };
 
 void player_init();

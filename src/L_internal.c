@@ -32,13 +32,13 @@ void init(const char* config_path, const char* controls_path) {
 
     // Initialize these before scripting
     asset_init();
-    flags_init();
-    player_init();
     actor_init();
     ui_init();
     script_init();
 
     // Initialize these before scripting since they load assets
+    flags_init();
+    player_init();
     video_init();
     audio_init();
 
@@ -107,16 +107,12 @@ void loop() {
             }
 
             case LOAD_UNLOAD: {
-                // Destroy UI
                 struct UI* ui_root = get_ui_root();
                 if (ui_root != NULL)
                     destroy_ui(ui_root);
-
-                // Unload level
                 unload_level();
-
-                // Unload assets
                 clear_assets(0);
+                collect_garbage();
 
                 load_state.state = LOAD_LOAD;
                 break;
@@ -166,10 +162,10 @@ void cleanup() {
     handler_teardown();
 
     // Free these before scripting
-    ui_teardown();
-    actor_teardown();
     player_teardown();
     flags_teardown();
+    ui_teardown();
+    actor_teardown();
     asset_teardown();
     script_teardown();
 
