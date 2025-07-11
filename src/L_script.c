@@ -141,9 +141,8 @@ SCRIPT_FUNCTION(create_surface) {
     const uint16_t height = luaL_checkinteger(L, 2);
     const bool color = luaL_optinteger(L, 3, 1);
     const bool depth = luaL_optinteger(L, 4, 0);
-    const bool stencil = luaL_optinteger(L, 5, 0);
 
-    create_surface(true, width, height, color, depth, stencil);
+    create_surface(true, width, height, color, depth);
     return 1;
 }
 
@@ -378,6 +377,21 @@ SCRIPT_FUNCTION(camera_get_surface) {
     return 1;
 }
 
+SCRIPT_FUNCTION(get_active_camera) {
+    struct ActorCamera* camera = get_active_camera();
+    if (camera == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, camera->userdata);
+    return 1;
+}
+
+SCRIPT_FUNCTION(set_active_camera) {
+    struct ActorCamera* camera = luaL_opt(L, s_check_camera, 1, NULL);
+    set_active_camera(camera);
+    return 0;
+}
+
 // UI
 SCRIPT_CHECKER(ui, struct UI*);
 SCRIPT_TESTER(ui, struct UI*);
@@ -595,10 +609,15 @@ void script_init() {
     lua_setfield(context, -2, "__newindex");
     lua_pop(context, 1);
 
+    EXPOSE_FUNCTION(actor_exists);
+
     luaL_newmetatable(context, "camera");
     static const luaL_Reg camera_methods[] = {
         {"get_actor", s_camera_get_actor},
         {"get_surface", s_camera_get_surface},
+
+        {"set_active", s_set_active_camera},
+
         {NULL, NULL},
     };
     luaL_setfuncs(context, camera_methods, 0);
@@ -608,7 +627,8 @@ void script_init() {
     lua_setfield(context, -2, "__newindex");
     lua_pop(context, 1);
 
-    EXPOSE_FUNCTION(actor_exists);
+    EXPOSE_FUNCTION(get_active_camera);
+    EXPOSE_FUNCTION(set_active_camera);
 
     // UI
     luaL_newmetatable(context, "ui");
@@ -685,20 +705,24 @@ void* userdata_alloc(const char* type, size_t size) {
     return userdata;
 }
 
+int create_ref() {
+    return luaL_ref(context, LUA_REGISTRYINDEX);
+}
+
 int create_table_ref() {
     lua_newtable(context);
-    return luaL_ref(context, LUA_REGISTRYINDEX);
+    return create_ref();
 }
 
 int create_pointer_ref(const char* type, void* ptr) {
     *(void**)(userdata_alloc(type, sizeof(void*))) = ptr;
-    return luaL_ref(context, LUA_REGISTRYINDEX);
+    return create_ref();
 }
 
 int function_ref(int idx, const char* name) {
     lua_getfield(context, idx, name);
     if (lua_isfunction(context, idx))
-        return luaL_ref(context, LUA_REGISTRYINDEX);
+        return create_ref();
     lua_pop(context, 1);
     return LUA_NOREF;
 }

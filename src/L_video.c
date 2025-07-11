@@ -68,9 +68,7 @@ void video_init() {
     glm_mat4_identity(model_matrix);
     glm_mat4_identity(view_matrix);
     glm_mat4_identity(projection_matrix);
-    glm_ortho(0, 640, 480, 0, -1000, 1000, projection_matrix);
-    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
-    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
+    glm_mat4_identity(mvp_matrix);
 
     // Blank texture
     glGenTextures(1, &blank_texture);
@@ -229,32 +227,16 @@ void video_update() {
 
     set_surface(NULL);
     clear_color(0, 0, 0, 1);
-    glViewport(0, 0, display.width, display.height);
+    set_render_stage(RT_MAIN);
+    set_shader(NULL);
 
-    struct ActorCamera* camera = active_camera;
-    if (camera == NULL) {
-        struct Player* player = get_active_players();
-        while (player != NULL) {
-            if (player->actor != NULL && (camera = player->actor->camera) != NULL) {
-                // TODO: Render player camera(s)
-                break;
-            }
-            player = player->previous_active;
-        }
-    } else {
-        // TODO: Render active camera
-    }
-
-    const float scalew = (float)display.width / (float)DEFAULT_DISPLAY_WIDTH;
+    /*const float scalew = (float)display.width / (float)DEFAULT_DISPLAY_WIDTH;
     const float scaleh = (float)display.height / (float)DEFAULT_DISPLAY_HEIGHT;
     const float scale = SDL_min(scalew, scaleh);
 
     const float width = (float)DEFAULT_DISPLAY_WIDTH * scale;
     const float height = (float)DEFAULT_DISPLAY_HEIGHT * scale;
-    glViewport(((float)display.width - width) / 2, ((float)display.height - height) / 2, width, height);
-
-    set_render_stage(RT_MAIN);
-    set_shader(NULL);
+    glViewport(((float)display.width - width) / 2, ((float)display.height - height) / 2, width, height);*/
 
     if (get_load_state() != LOAD_NONE) {
         const char* loading = localized("loading");
@@ -263,6 +245,19 @@ void video_update() {
             ((GLfloat)DEFAULT_DISPLAY_HEIGHT - string_height(loading, 16)) / 2, 0
         );
     } else {
+        struct ActorCamera* camera = active_camera;
+        if (camera == NULL) {
+            // TODO: Splitscreen
+            struct Player* player = get_active_players();
+            while (player != NULL) {
+                if (player->actor != NULL && (camera = player->actor->camera) != NULL)
+                    break;
+                player = player->previous_active;
+            }
+        }
+        if (camera != NULL)
+            main_surface(render_camera(camera, display.width, display.height), 0, 0, 0);
+
         struct Player* player = get_active_players();
         while (player != NULL) {
             if (player->room != NULL && player->room->master == player) {
@@ -562,12 +557,12 @@ void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
     GLfloat y1 = y;
     GLfloat x2 = x + surface->size[0];
     GLfloat y2 = y + surface->size[1];
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
-    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
-    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 0);
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
 }
 
 void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
@@ -732,6 +727,32 @@ void set_active_camera(struct ActorCamera* camera) {
     active_camera = camera;
 }
 
+struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16_t height) {
+    if (camera->surface == NULL) {
+        camera->surface = create_surface(true, width, height, true, true);
+        camera->surface_ref = create_ref();
+        INFO("Validating camera in \"%s\"", camera->actor->type->name);
+    } else {
+        resize_surface(camera->surface, width, height);
+    }
+
+    set_surface(camera->surface);
+    clear_color(0.5, 0.5, 0.5, 1);
+    clear_depth(0);
+    clear_stencil(0);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+    main_string("HI", NULL, 16, 0, 0, 0);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_DEPTH_TEST);
+    pop_surface();
+
+    return camera->surface;
+}
+
 // Fonts
 GLfloat string_width(const char* str, struct Font* font, GLfloat size) {
     if (font == NULL)
@@ -781,7 +802,7 @@ GLfloat string_height(const char* str, GLfloat size) {
 }
 
 // Surfaces
-struct Surface* create_surface(bool external, uint16_t width, uint16_t height, bool color, bool depth, bool stencil) {
+struct Surface* create_surface(bool external, uint16_t width, uint16_t height, bool color, bool depth) {
     struct Surface* surface =
         external ? userdata_alloc("surface", sizeof(struct Surface)) : lame_alloc(sizeof(struct Surface));
 
@@ -790,10 +811,8 @@ struct Surface* create_surface(bool external, uint16_t width, uint16_t height, b
 
     surface->enabled[SURFACE_COLOR_TEXTURE] = color;
     surface->enabled[SURFACE_DEPTH_TEXTURE] = depth;
-    surface->enabled[SURFACE_STENCIL_TEXTURE] = stencil;
     surface->fbo = 0;
-    surface->texture[SURFACE_COLOR_TEXTURE] = surface->texture[SURFACE_DEPTH_TEXTURE] =
-        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
+    surface->texture[SURFACE_COLOR_TEXTURE] = surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
     surface->size[0] = width;
     surface->size[1] = height;
 
@@ -824,32 +843,15 @@ void validate_surface(struct Surface* surface) {
         glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
         glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE]);
         glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, surface->size[0], surface->size[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT,
-            NULL
+            GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, surface->size[0], surface->size[1], 0, GL_DEPTH_STENCIL,
+            GL_UNSIGNED_INT_24_8, NULL
         );
         glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
+            GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
         );
     } else if (surface->texture[SURFACE_DEPTH_TEXTURE] != 0) {
         glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
         surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
-    }
-
-    if (surface->enabled[SURFACE_STENCIL_TEXTURE]) {
-        if (surface->texture[SURFACE_STENCIL_TEXTURE] == 0)
-            glGenTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
-        glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
-        glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE]);
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, surface->size[0], surface->size[1], 0, GL_STENCIL_INDEX,
-            GL_UNSIGNED_BYTE, NULL
-        );
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_STENCIL_TEXTURE], 0
-        );
-    } else if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0) {
-        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
-        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
     }
 }
 
@@ -869,10 +871,6 @@ void dispose_surface(struct Surface* surface) {
         glDeleteTextures(1, &surface->texture[SURFACE_DEPTH_TEXTURE]);
         surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
     }
-    if (surface->texture[SURFACE_STENCIL_TEXTURE] != 0) {
-        glDeleteTextures(1, &surface->texture[SURFACE_STENCIL_TEXTURE]);
-        surface->texture[SURFACE_STENCIL_TEXTURE] = 0;
-    }
 }
 
 void destroy_surface(struct Surface* surface) {
@@ -889,7 +887,14 @@ void set_surface(struct Surface* surface) {
             surface->active = true;
             surface->stack = current_surface;
             validate_surface(surface);
+            glViewport(0, 0, surface->size[0], surface->size[1]);
+            glm_ortho(0, surface->size[0], surface->size[1], 0, -1000, 1000, projection_matrix);
+        } else {
+            glViewport(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT);
+            glm_ortho(0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0, -1000, 1000, projection_matrix);
         }
+        glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+        glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
         glBindFramebuffer(GL_FRAMEBUFFER, surface == NULL ? 0 : surface->fbo);
         current_surface = surface;
     }
@@ -901,7 +906,14 @@ void pop_surface() {
     set_surface(current_surface->stack);
 }
 
-void resize_surface(struct Surface* surface, uint16_t width, uint16_t height) {}
+void resize_surface(struct Surface* surface, uint16_t width, uint16_t height) {
+    if (surface->size[0] == width && surface->size[1] == height)
+        return;
+    dispose_surface(surface);
+    surface->size[0] = width;
+    surface->size[1] = height;
+    INFO("Resized surface %u to %ux%u px", surface, width, height);
+}
 
 void clear_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
     glClearColor(r, g, b, a);

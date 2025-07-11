@@ -138,6 +138,7 @@ void _execute_buffer(void*, size_t, const char*, const char*, int);
 void collect_garbage();
 void* userdata_alloc(const char*, size_t);
 
+int create_ref();
 int create_table_ref();
 int create_pointer_ref(const char*, void*);
 int function_ref(int, const char*);

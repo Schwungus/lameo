@@ -2,7 +2,7 @@
 local functions = {}
 
 functions.create = function (this)
-    this:create_camera()
+    this:create_camera():set_active()
 end
 
 define_actor("Camera", nil, functions)
@@ -13,7 +13,6 @@ dummy = 0
 local functions = {}
 
 functions.load = function()
-    load_texture("logo/schwungus/full")
     load_texture("logo/sdl")
     load_texture("logo/fmod")
     load_texture("logo/lua")
@@ -47,14 +46,28 @@ define_actor("Main", nil, functions)
 -- Pause UI
 local functions = {}
 
+functions.create = function (this)
+    this.surface = create_surface(64, 64)
+end
+
+functions.cleanup = function (this)
+    this.surface:dispose()
+end
+
 functions.tick = function (this)
     if (get_ui_buttons(UII_BACK) and not get_last_ui_buttons(UII_BACK)) then destroy_ui(this) end
 end
 
 functions.draw = function (this)
+    this.surface:push()
+    clear_color(1, 0, 0, 1)
+    main_string("HI", nil, 16, 0, 0, 0)
+    pop_surface()
+
     main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
     local paused = localized("paused")
     main_string(paused, nil, 16, (DEFAULT_DISPLAY_WIDTH - string_width(paused, nil, 16)) / 2, (DEFAULT_DISPLAY_HEIGHT - string_height(paused, 16)) / 2, UI_Z)
+    this.surface:main(32, 32, UI_Z)
 end
 
 define_ui("Pause", nil, functions)

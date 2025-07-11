@@ -15,7 +15,6 @@
 
 #define SURFACE_COLOR_TEXTURE 0
 #define SURFACE_DEPTH_TEXTURE 1
-#define SURFACE_STENCIL_TEXTURE 2
 
 enum FullscreenModes {
     FSM_WINDOWED,
@@ -88,8 +87,8 @@ struct Surface {
     bool active;
     struct Surface* stack;
 
-    bool enabled[3];
-    GLuint fbo, texture[3];
+    bool enabled[2];
+    GLuint fbo, texture[2];
     uint16_t size[2];
 };
 
@@ -154,13 +153,14 @@ void submit_world_batch();
 
 struct ActorCamera* get_active_camera();
 void set_active_camera(struct ActorCamera*);
+struct Surface* render_camera(struct ActorCamera*, uint16_t, uint16_t);
 
 // Fonts
 GLfloat string_width(const char*, struct Font*, GLfloat);
 GLfloat string_height(const char*, GLfloat);
 
 // Surfaces
-struct Surface* create_surface(bool, uint16_t, uint16_t, bool, bool, bool);
+struct Surface* create_surface(bool, uint16_t, uint16_t, bool, bool);
 void validate_surface(struct Surface*);
 void dispose_surface(struct Surface*);
 void destroy_surface(struct Surface*);
