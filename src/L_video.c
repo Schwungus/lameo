@@ -200,6 +200,8 @@ void video_init() {
     // Shaders
     if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
         FATAL("Main shader \"main\" not found");
+    if (default_shaders[RT_WORLD] == NULL && (default_shaders[RT_WORLD] = fetch_shader("world")) == NULL)
+        FATAL("Main shader \"world\" not found");
 
     // Fonts
     if ((default_font = fetch_font("main")) == NULL)
@@ -243,7 +245,6 @@ void video_update() {
         // TODO: Render active camera
     }
 
-    // Main
     const float scalew = (float)display.width / (float)DEFAULT_DISPLAY_WIDTH;
     const float scaleh = (float)display.height / (float)DEFAULT_DISPLAY_HEIGHT;
     const float scale = SDL_min(scalew, scaleh);

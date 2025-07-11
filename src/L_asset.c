@@ -17,7 +17,7 @@ void load_shader(const char* name) {
         return;
 
     // Vertex shader
-    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.vsh", name);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.vs", name);
     const char* file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         WARN("Vertex shader for \"%s\" not found", name);
@@ -42,7 +42,7 @@ void load_shader(const char* name) {
     lame_free(&code);
 
     // Fragment shader
-    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.fsh", name);
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.fs", name);
     file = get_mod_file(asset_file_helper, NULL);
     if (file == NULL) {
         WARN("Fragment shader for \"%s\" not found", name);
