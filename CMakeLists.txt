@@ -22,7 +22,9 @@ set(SDL_SHARED OFF)
 set(SDL_STATIC ON)
 set(SDL_TEST_LIBRARY OFF)
 set(SDL_RENDER OFF)
+set(SDL_GPU OFF)
 set(SDL_AUDIO OFF)
+set(SDL_CAMERA OFF)
 
 FetchContent_Declare(
     SDL3
@@ -35,6 +37,8 @@ FetchContent_MakeAvailable(SDL3)
 set(SDLIMAGE_AVIF OFF)
 set(SDLIMAGE_TIF OFF)
 set(SDLIMAGE_WEBP OFF)
+set(SDLIMAGE_SVG OFF)
+set(SDLIMAGE_XCF OFF)
 
 FetchContent_Declare(
     SDL3_image
