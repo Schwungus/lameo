@@ -820,8 +820,9 @@ struct Surface* create_surface(bool external, uint16_t width, uint16_t height, b
 }
 
 void validate_surface(struct Surface* surface) {
-    if (surface->fbo == 0)
-        glGenFramebuffers(1, &surface->fbo);
+    if (surface->fbo != 0)
+        return;
+    glGenFramebuffers(1, &surface->fbo);
 
     if (surface->enabled[SURFACE_COLOR_TEXTURE]) {
         if (surface->texture[SURFACE_COLOR_TEXTURE] == 0)
