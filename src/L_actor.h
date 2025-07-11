@@ -85,6 +85,7 @@ struct ActorCamera {
 
     mat4 view_matrix, projection_matrix;
     struct Surface* surface;
+    int surface_ref;
 };
 
 struct CameraTarget {

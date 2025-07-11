@@ -372,6 +372,12 @@ SCRIPT_FUNCTION(camera_get_actor) {
     return 1;
 }
 
+SCRIPT_FUNCTION(camera_get_surface) {
+    struct ActorCamera* camera = s_check_camera(L, 1);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, camera->surface_ref);
+    return 1;
+}
+
 // UI
 SCRIPT_CHECKER(ui, struct UI*);
 SCRIPT_TESTER(ui, struct UI*);
@@ -592,6 +598,7 @@ void script_init() {
     luaL_newmetatable(context, "camera");
     static const luaL_Reg camera_methods[] = {
         {"get_actor", s_camera_get_actor},
+        {"get_surface", s_camera_get_surface},
         {NULL, NULL},
     };
     luaL_setfuncs(context, camera_methods, 0);

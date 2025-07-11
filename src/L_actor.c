@@ -251,6 +251,7 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
     glm_mat4_identity(camera->view_matrix);
     glm_mat4_identity(camera->projection_matrix);
     camera->surface = NULL;
+    camera->surface_ref = LUA_NOREF;
 
     actor->camera = camera;
     if (actor->type->create_camera != LUA_NOREF)
@@ -352,7 +353,8 @@ void destroy_actor_camera(struct Actor* actor) {
     }
 
     if (camera->surface != NULL)
-        destroy_surface(camera->surface);
+        dispose_surface(camera->surface);
+    unreference(&camera->surface_ref);
 
     unreference(&camera->table);
     unreference_pointer(&camera->userdata);
