@@ -755,7 +755,7 @@ void _execute_ref_in_child(int ref, int userdata, int userdata2, const char* nam
     lua_rawgeti(context, LUA_REGISTRYINDEX, ref);
     lua_rawgeti(context, LUA_REGISTRYINDEX, userdata);
     lua_rawgeti(context, LUA_REGISTRYINDEX, userdata2);
-    if (lua_pcall(context, 1, 0, 0) != LUA_OK)
+    if (lua_pcall(context, 2, 0, 0) != LUA_OK)
         log_fatal(src_basename(filename), line, "Error from \"%s\": %s", name, lua_tostring(context, -1));
 }
 
