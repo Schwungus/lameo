@@ -195,9 +195,13 @@ void video_init() {
 
     glEnable(GL_BLEND);
 
-    // Init axes
+    // Build matrices
     glm_translate_x(forward_axis, 1);
     glm_translate_z(up_axis, 1);
+
+    glm_ortho(0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0, -1000, 1000, projection_matrix);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
     // Shaders
     if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
