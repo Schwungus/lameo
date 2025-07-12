@@ -1,73 +1,57 @@
 -- Camera
-local functions = {}
+define_actor("Camera", nil, {
+    create = function (this)
+        this:create_camera()
+    end,
 
-functions.create = function (this)
-    this:create_camera():set_active()
-end
-
-define_actor("Camera", nil, functions)
+    create_camera = function (this, camera)
+        if this.active then
+            camera:set_active()
+        end
+    end,
+})
 
 -- Main Actor
 dummy = 0
 
-local functions = {}
+define_actor("Main", nil, {
+    load = function()
+        load_texture("logo/sdl")
+        load_texture("logo/fmod")
+        load_texture("logo/lua")
+        load_sound("logo/schwungus")
+    end,
 
-functions.load = function()
-    load_texture("logo/sdl")
-    load_texture("logo/fmod")
-    load_texture("logo/lua")
-    load_sound("logo/schwungus")
-end
+    create = function (this)
+        this.dummy = dummy
+        dummy = math.fmod(dummy + 8, 160)
+        this.dummy2 = 0
+    end,
 
-function Main_create(this)
-    this.dummy = dummy
-    dummy = math.fmod(dummy + 8, 160)
-    this.dummy2 = 0
-end
+    on_destroy = function (this)
+        play_ui_sound(get_sound("logo/schwungus"), 0, 0, 1, 1)
+    end,
 
-functions.create = Main_create
+    tick = function (this)
+        this.dummy2 = this.dummy2 + (this.dummy * 0.1)
+    end,
 
-functions.on_destroy = function (this)
-    play_ui_sound(get_sound("logo/schwungus"), 0, 0, 1, 1)
-end
+    draw_ui = function (this)
+        local dumb = this.dummy
+        local dumb2 = math.fmod(this.dummy2, 128)
+        main_string("I am main", nil, 16, 32 + dumb, 32 + dumb + dumb2, UI_Z)
+    end,
+})
 
-functions.tick = function (this)
-    this.dummy2 = this.dummy2 + (this.dummy * 0.1)
-end
+define_ui("Pause", nil, {
+    tick = function (this)
+        if (get_ui_buttons(UII_BACK) and not get_last_ui_buttons(UII_BACK)) then destroy_ui(this) end
+    end,
 
-functions.draw_ui = function (this)
-    local dumb = this.dummy
-    local dumb2 = math.fmod(this.dummy2, 128)
-    main_string("I am main", nil, 16, 32 + dumb, 32 + dumb + dumb2, UI_Z)
-end
-
-define_actor("Main", nil, functions)
-
--- Pause UI
-local functions = {}
-
-functions.create = function (this)
-    this.surface = create_surface(64, 64)
-end
-
-functions.cleanup = function (this)
-    this.surface:dispose()
-end
-
-functions.tick = function (this)
-    if (get_ui_buttons(UII_BACK) and not get_last_ui_buttons(UII_BACK)) then destroy_ui(this) end
-end
-
-functions.draw = function (this)
-    this.surface:push()
-    clear_color(1, 0, 0, 1)
-    main_string("HI", nil, 16, 0, 0, 0)
-    pop_surface()
-
-    main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
-    local paused = localized("paused")
-    main_string(paused, nil, 16, (DEFAULT_DISPLAY_WIDTH - string_width(paused, nil, 16)) / 2, (DEFAULT_DISPLAY_HEIGHT - string_height(paused, 16)) / 2, UI_Z)
-    this.surface:main(32, 32, UI_Z)
-end
-
-define_ui("Pause", nil, functions)
+    draw = function (this)
+        main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
+        local paused = localized("paused")
+        main_string(paused, nil, 16, (DEFAULT_DISPLAY_WIDTH - string_width(paused, nil, 16)) / 2, (DEFAULT_DISPLAY_HEIGHT - string_height(paused, 16)) / 2, UI_Z)
+        this.surface:main(32, 32, UI_Z)
+    end,
+})
