@@ -30,7 +30,13 @@ static struct Shader* current_shader = NULL;
 static struct Font* default_font = NULL;
 static struct Surface* current_surface = NULL;
 
-static mat4 model_matrix, view_matrix, projection_matrix, mvp_matrix;
+static mat4 forward_axis = GLM_MAT4_IDENTITY_INIT;
+static mat4 up_axis = GLM_MAT4_IDENTITY_INIT;
+
+static mat4 model_matrix = GLM_MAT4_IDENTITY_INIT;
+static mat4 view_matrix = GLM_MAT4_IDENTITY_INIT;
+static mat4 projection_matrix = GLM_MAT4_IDENTITY_INIT;
+static mat4 mvp_matrix = GLM_MAT4_IDENTITY_INIT;
 
 void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -63,12 +69,6 @@ void video_init() {
     display.height = DEFAULT_DISPLAY_HEIGHT;
     display.fullscreen = FSM_WINDOWED;
     display.vsync = false;
-
-    // Rendering
-    glm_mat4_identity(model_matrix);
-    glm_mat4_identity(view_matrix);
-    glm_mat4_identity(projection_matrix);
-    glm_mat4_identity(mvp_matrix);
 
     // Blank texture
     glGenTextures(1, &blank_texture);
@@ -194,6 +194,10 @@ void video_init() {
     world_batch.filter = true;
 
     glEnable(GL_BLEND);
+
+    // Init axes
+    glm_translate_x(forward_axis, 1);
+    glm_translate_z(up_axis, 1);
 
     // Shaders
     if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
@@ -717,7 +721,100 @@ void main_string_wrap(
 }
 
 // World
-void submit_world_batch() {}
+void submit_world_batch() {
+    if (world_batch.vertex_count <= 0)
+        return;
+
+    // Apply matrices
+    set_mat4_uniform("u_model_matrix", &model_matrix);
+    set_mat4_uniform("u_view_matrix", &view_matrix);
+    set_mat4_uniform("u_projection_matrix", &projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+
+    glBindVertexArray(world_batch.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * world_batch.vertex_count, world_batch.vertices);
+
+    // Apply stencil
+    set_vec4_uniform(
+        "u_stencil", world_batch.stencil[0], world_batch.stencil[1], world_batch.stencil[2], world_batch.stencil[3]
+    );
+
+    // Apply texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, world_batch.texture);
+    const GLint filter = world_batch.filter ? GL_LINEAR : GL_NEAREST;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+    set_int_uniform("u_texture", 0);
+    set_float_uniform("u_alpha_test", world_batch.alpha_test);
+
+    // Apply blend mode
+    glBlendFuncSeparate(
+        world_batch.blend_src[0], world_batch.blend_dest[0], world_batch.blend_src[1], world_batch.blend_dest[1]
+    );
+
+    glDrawArrays(GL_TRIANGLES, 0, world_batch.vertex_count);
+    world_batch.vertex_count = 0;
+}
+
+void set_world_color(GLfloat r, GLfloat g, GLfloat b) {
+    world_batch.color[0] = r;
+    world_batch.color[1] = g;
+    world_batch.color[2] = b;
+}
+
+void set_world_alpha(GLfloat a) {
+    world_batch.color[3] = a;
+}
+
+void set_world_texture(struct Texture* texture) {
+    set_world_texture_direct(texture == NULL ? blank_texture : texture->texture);
+}
+
+void set_world_texture_direct(GLuint texture) {
+    if (world_batch.texture != texture) {
+        submit_world_batch();
+        world_batch.texture = texture;
+    }
+}
+
+void world_vertex(
+    GLfloat x, GLfloat y, GLfloat z, GLfloat nx, GLfloat ny, GLfloat nz, GLubyte r, GLubyte g, GLubyte b, GLubyte a,
+    GLfloat u, GLfloat v
+) {
+    if (world_batch.vertex_count >= world_batch.vertex_capacity) {
+        submit_world_batch();
+        world_batch.vertex_capacity *= 2;
+        INFO("Reallocated world batch VBO to %u vertices", world_batch.vertex_capacity);
+        lame_realloc(&world_batch.vertices, world_batch.vertex_capacity * sizeof(struct WorldVertex));
+        glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * world_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+    }
+
+    world_batch.vertices[world_batch.vertex_count++] = (struct WorldVertex){x,
+                                                                            y,
+                                                                            z,
+                                                                            nx,
+                                                                            ny,
+                                                                            nz,
+                                                                            world_batch.color[0] * r,
+                                                                            world_batch.color[1] * g,
+                                                                            world_batch.color[2] * b,
+                                                                            world_batch.color[3] * a,
+                                                                            u,
+                                                                            v,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0,
+                                                                            0};
+}
 
 struct ActorCamera* get_active_camera() {
     return active_camera;
@@ -740,14 +837,58 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     clear_color(0.5, 0.5, 0.5, 1);
     clear_depth(0);
     clear_stencil(0);
+
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_GEQUAL);
+
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilMask(0xFF);
-    main_string("HI", NULL, 16, 0, 0, 0);
+
+    // Build matrices
+    static mat4 lookie;
+    glm_mat4_identity(lookie);
+    glm_spin(lookie, deg_to_rad(camera->angle[0]), GLM_ZUP);
+    glm_spin(lookie, deg_to_rad(camera->angle[1]), GLM_YUP);
+    glm_spin(lookie, deg_to_rad(camera->angle[2]), GLM_XUP);
+
+    static mat4 forward_matrix, up_matrix;
+    static vec3 forward_vector, up_vector;
+    glm_mat4_mul(lookie, forward_axis, forward_matrix);
+    glm_vec3_copy(forward_matrix[3], forward_vector);
+    glm_mat4_mul(lookie, up_axis, up_matrix);
+    glm_vec3_copy(up_matrix[3], up_vector);
+
+    static vec3 look_from, look_to;
+    glm_vec3_copy(camera->pos, look_from);
+    glm_vec3_add(forward_vector, look_from, look_to);
+
+    glm_lookat(look_from, look_to, up_vector, view_matrix);
+    if (camera->flags & CF_ORTHOGONAL)
+        glm_ortho(0, width, height, 0, 1, 32000, projection_matrix);
+    else
+        glm_perspective(deg_to_rad(camera->fov), (float)width / (float)height, 1, 32000, projection_matrix);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
+
+    // Render room
+    set_render_stage(RT_WORLD);
+    set_shader(NULL);
+    set_world_texture(fetch_texture("dumdum"));
+    world_vertex(-256, 256, 0, 0, 0, 1, 255, 0, 0, 255, 0, 1);
+    world_vertex(256, 256, 0, 0, 0, 1, 0, 255, 0, 255, 1, 1);
+    world_vertex(256, -256, 0, 0, 0, 1, 0, 0, 255, 255, 1, 0);
+    world_vertex(256, -256, 0, 0, 0, 1, 255, 0, 0, 255, 1, 0);
+    world_vertex(-256, -256, 0, 0, 0, 1, 0, 255, 0, 255, 0, 0);
+    world_vertex(-256, 256, 0, 0, 0, 1, 0, 0, 255, 255, 0, 1);
+    submit_world_batch();
+
     glDisable(GL_STENCIL_TEST);
     glDisable(GL_DEPTH_TEST);
+
+    set_render_stage(RT_MAIN);
+    set_shader(NULL);
     pop_surface();
 
     return camera->surface;
@@ -884,6 +1025,7 @@ void set_surface(struct Surface* surface) {
         submit_batch();
         if (current_surface != NULL)
             current_surface->active = false;
+        glm_mat4_identity(view_matrix);
         if (surface != NULL) {
             surface->active = true;
             surface->stack = current_surface;

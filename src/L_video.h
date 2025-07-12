@@ -139,7 +139,6 @@ void set_main_alpha_test(GLfloat);
 void set_main_texture(struct Texture*);
 void set_main_texture_direct(GLuint);
 void set_main_filter(bool);
-void set_main_batch(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, bool);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
 void main_surface(struct Surface*, GLfloat, GLfloat, GLfloat);
@@ -150,6 +149,19 @@ void main_string_wrap(const char*, struct Font*, GLfloat, GLfloat, GLfloat, GLfl
 
 // World
 void submit_world_batch();
+void set_world_color(GLfloat, GLfloat, GLfloat);
+void set_world_alpha(GLfloat);
+void set_world_stencil_color(GLfloat, GLfloat, GLfloat);
+void set_world_stencil_alpha(GLfloat);
+void set_world_alpha_test(GLfloat);
+void set_world_bright(GLfloat);
+void set_world_texture(struct Texture*);
+void set_world_texture_direct(GLuint);
+void set_world_filter(bool);
+
+void world_vertex(
+    GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat
+);
 
 struct ActorCamera* get_active_camera();
 void set_active_camera(struct ActorCamera*);
