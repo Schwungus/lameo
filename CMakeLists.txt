@@ -101,7 +101,7 @@ set(CAULK_BUILD_TEST OFF)
 FetchContent_Declare(
     caulk
     GIT_REPOSITORY https://github.com/Schwungus/caulk.git
-    GIT_TAG 24994950d69e367ed4e5a8333e3276fe9f58197d
+    GIT_TAG master
 )
 FetchContent_MakeAvailable(caulk)
 
