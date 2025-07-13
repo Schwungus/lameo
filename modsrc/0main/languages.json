@@ -1,6 +1,6 @@
 {
-	"English": {
-		"loading": "Loading",
+    "English": {
+        "loading": "Loading",
         "paused": "Paused",
 
         // "main" screen
@@ -9,5 +9,5 @@
         "legal_sdl": "Simple DirectMedia Layer © 1997-2025 Sam Lantinga.\nSDL3 is available under the Zlib license.\nMore information at \"libsdl.org/license.php\".",
         "legal_fmod": "FMOD Engine © 1995-2025 Firelight Technologies Pty Ltd.\nMore information at \"fmod.com/licensing\".",
         "legal_lua": "Lua © 1994-2025 Lua.org, PUC-Rio.\nLua is available under the MIT license.\nMore information at \"lua.org/license.html\"."
-	}
+    }
 }
