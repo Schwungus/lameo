@@ -16,7 +16,11 @@ struct Track;
 
 #define BEGIN_ASSET(assettype, hidtype)                                                                                \
     typedef HandleID hidtype;                                                                                          \
-    struct assettype {
+    struct assettype {                                                                                                 \
+        hidtype hid;                                                                                                   \
+        const char* name;                                                                                              \
+        bool transient;                                                                                                \
+        int userdata;
 
 #define END_ASSET(mapname, assetname, assettype, hidtype)                                                              \
     }                                                                                                                  \
@@ -112,21 +116,11 @@ typedef FMOD_SOUND Stream;
 // clang-format off
 
 BEGIN_ASSET(Shader, ShaderID)
-    ShaderID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     GLuint program;
     SDL_PropertiesID uniforms;
 END_ASSET(shaders, shader, Shader, ShaderID)
 
 BEGIN_ASSET(Texture, TextureID)
-    TextureID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     struct Texture* parent;
     TextureID* children;
     size_t num_children;
@@ -137,11 +131,6 @@ BEGIN_ASSET(Texture, TextureID)
 END_ASSET(textures, texture, Texture, TextureID)
 
 BEGIN_ASSET(Material, MaterialID)
-    MaterialID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     TextureID* textures[2]; // (0) Base and (1) blend textures
     size_t num_textures[2]; // (0) Base and (1) blend texture count
     float texture_speed[2]; // Cycle factor between (0) base and (1) blend textures per millisecond
@@ -158,18 +147,9 @@ BEGIN_ASSET(Material, MaterialID)
 END_ASSET(materials, material, Material, MaterialID)
 
 BEGIN_ASSET(Model, ModelID)
-    ModelID hid;
-    const char* name;
-    bool transient;
-    int userdata;
 END_ASSET(models, model, Model, ModelID)
 
 BEGIN_ASSET(Font, FontID)
-    FontID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     TextureID texture;
     float size;
     struct Glyph** glyphs;
@@ -177,11 +157,6 @@ BEGIN_ASSET(Font, FontID)
 END_ASSET(fonts, font, Font, FontID)
 
 BEGIN_ASSET(Sound, SoundID)
-    SoundID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     Sample** samples;
     size_t num_samples;
 
@@ -190,11 +165,6 @@ BEGIN_ASSET(Sound, SoundID)
 END_ASSET(sounds, sound, Sound, SoundID)
 
 BEGIN_ASSET(Track, TrackID)
-    TrackID hid;
-    const char* name;
-    bool transient;
-    int userdata;
-
     Stream* stream;
 END_ASSET(music, track, Track, TrackID)
 
