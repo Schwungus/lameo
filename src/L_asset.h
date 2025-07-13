@@ -1,22 +1,36 @@
 #pragma once
 
+// FIXME: temporary just to make this compile again......
+struct Shader;
+struct Texture;
+struct Material;
+struct Model;
+struct Font;
+struct Sound;
+struct Track;
+
 #include "L_memory.h"
 #include "L_video.h" // IWYU pragma: keep
 
 #include "L_audio.h" // IWYU pragma: keep
 
-#define HEADER_ASSET(mapname, assetname, assettype, hidtype)                                                           \
+#define BEGIN_ASSET(assettype, hidtype)                                                                                \
     typedef HandleID hidtype;                                                                                          \
+    struct assettype {
+
+#define END_ASSET(mapname, assetname, assettype, hidtype)                                                              \
+    }                                                                                                                  \
+    ;                                                                                                                  \
                                                                                                                        \
     void mapname##_init();                                                                                             \
     void mapname##_teardown();                                                                                         \
     void load_##assetname(const char*);                                                                                \
-    assettype fetch_##assetname(const char*);                                                                          \
+    struct assettype* fetch_##assetname(const char*);                                                                  \
     hidtype fetch_##assetname##_hid(const char*);                                                                      \
-    assettype get_##assetname(const char*);                                                                            \
+    struct assettype* get_##assetname(const char*);                                                                    \
     hidtype get_##assetname##_hid(const char*);                                                                        \
-    assettype hid_to_##assetname(hidtype);                                                                             \
-    void destroy_##assetname(assettype);                                                                               \
+    struct assettype* hid_to_##assetname(hidtype);                                                                     \
+    void destroy_##assetname(struct assettype*);                                                                       \
     void destroy_##assetname##_hid(hidtype);                                                                           \
     void clear_##mapname(bool);
 
@@ -87,15 +101,17 @@ void asset_teardown();
 
 void clear_assets(bool);
 
-HEADER_ASSET(shaders, shader, struct Shader*, ShaderID);
-HEADER_ASSET(textures, texture, struct Texture*, TextureID);
-HEADER_ASSET(materials, material, struct Material*, MaterialID);
-HEADER_ASSET(models, model, struct Model*, ModelID);
-HEADER_ASSET(fonts, font, struct Font*, FontID);
-HEADER_ASSET(sounds, sound, struct Sound*, SoundID);
-HEADER_ASSET(music, track, struct Track*, TrackID);
+struct Glyph {
+    GLfloat size[2], offset[2], uvs[4], advance;
+};
 
-struct Shader {
+typedef FMOD_SOUND Sample;
+typedef FMOD_SOUND Stream;
+
+// manual formatting.....
+// clang-format off
+
+BEGIN_ASSET(Shader, ShaderID)
     ShaderID hid;
     const char* name;
     bool transient;
@@ -103,9 +119,9 @@ struct Shader {
 
     GLuint program;
     SDL_PropertiesID uniforms;
-};
+END_ASSET(shaders, shader, Shader, ShaderID)
 
-struct Texture {
+BEGIN_ASSET(Texture, TextureID)
     TextureID hid;
     const char* name;
     bool transient;
@@ -118,9 +134,9 @@ struct Texture {
     GLuint texture;
     uint16_t size[2], offset[2];
     GLfloat uvs[4];
-};
+END_ASSET(textures, texture, Texture, TextureID)
 
-struct Material {
+BEGIN_ASSET(Material, MaterialID)
     MaterialID hid;
     const char* name;
     bool transient;
@@ -139,20 +155,16 @@ struct Material {
     GLboolean half_lambert; // Enable half-lambert shading on this material
     GLfloat cel;            // Cel-shading factor
     GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin
-};
+END_ASSET(materials, material, Material, MaterialID)
 
-struct Model {
+BEGIN_ASSET(Model, ModelID)
     ModelID hid;
     const char* name;
     bool transient;
     int userdata;
-};
+END_ASSET(models, model, Model, ModelID)
 
-struct Glyph {
-    GLfloat size[2], offset[2], uvs[4], advance;
-};
-
-struct Font {
+BEGIN_ASSET(Font, FontID)
     FontID hid;
     const char* name;
     bool transient;
@@ -162,12 +174,9 @@ struct Font {
     float size;
     struct Glyph** glyphs;
     size_t num_glyphs;
-};
+END_ASSET(fonts, font, Font, FontID)
 
-typedef FMOD_SOUND Sample;
-typedef FMOD_SOUND Stream;
-
-struct Sound {
+BEGIN_ASSET(Sound, SoundID)
     SoundID hid;
     const char* name;
     bool transient;
@@ -178,13 +187,15 @@ struct Sound {
 
     float gain;
     float pitch[2]; // lower, upper
-};
+END_ASSET(sounds, sound, Sound, SoundID)
 
-struct Track {
+BEGIN_ASSET(Track, TrackID)
     TrackID hid;
     const char* name;
     bool transient;
     int userdata;
 
     Stream* stream;
-};
+END_ASSET(music, track, Track, TrackID)
+
+// clang-format on
