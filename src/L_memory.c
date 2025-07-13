@@ -1,5 +1,7 @@
-#include "L_memory.h"
+#include <SDL3/SDL_endian.h>
+
 #include "L_log.h"
+#include "L_memory.h"
 
 void* _lame_alloc(size_t size, const char* filename, int line) {
     if (!size)
@@ -42,6 +44,67 @@ void _lame_set(void* dest, char val, size_t size, const char* filename, int line
     if (size <= 0)
         log_fatal(src_basename(filename), line, "Filling 0 bytes?");
     SDL_memset(dest, val, size);
+}
+
+uint8_t read_u8(uint8_t** buf) {
+    uint8_t result = **buf;
+    *buf += sizeof(uint8_t);
+    return result;
+}
+
+uint16_t _read_u16(uint8_t** buf, const char* filename, int line) {
+    uint16_t result;
+    _lame_copy(&result, *buf, sizeof(uint16_t), filename, line);
+    *buf += sizeof(uint16_t);
+    return SDL_Swap16LE(result);
+}
+
+uint32_t _read_u32(uint8_t** buf, const char* filename, int line) {
+    uint32_t result;
+    _lame_copy(&result, *buf, sizeof(uint32_t), filename, line);
+    *buf += sizeof(uint32_t);
+    return SDL_Swap32LE(result);
+}
+
+uint64_t _read_u64(uint8_t** buf, const char* filename, int line) {
+    uint64_t result;
+    _lame_copy(&result, *buf, sizeof(uint64_t), filename, line);
+    *buf += sizeof(uint64_t);
+    return SDL_Swap64LE(result);
+}
+
+int8_t read_s8(uint8_t** buf) {
+    int8_t result = *(int8_t*)(*buf);
+    *buf += sizeof(int8_t);
+    return result;
+}
+
+int16_t _read_s16(uint8_t** buf, const char* filename, int line) {
+    int16_t result;
+    _lame_copy(&result, *buf, sizeof(int16_t), filename, line);
+    *buf += sizeof(int16_t);
+    return SDL_Swap16LE(result);
+}
+
+int32_t _read_s32(uint8_t** buf, const char* filename, int line) {
+    int32_t result;
+    _lame_copy(&result, *buf, sizeof(int32_t), filename, line);
+    *buf += sizeof(int32_t);
+    return SDL_Swap32LE(result);
+}
+
+int64_t _read_s64(uint8_t** buf, const char* filename, int line) {
+    int64_t result;
+    _lame_copy(&result, *buf, sizeof(int64_t), filename, line);
+    *buf += sizeof(int64_t);
+    return SDL_Swap64LE(result);
+}
+
+float _read_f32(uint8_t** buf, const char* filename, int line) {
+    float result;
+    _lame_copy(&result, *buf, sizeof(float), filename, line);
+    *buf += sizeof(float);
+    return SDL_SwapFloatLE(result);
 }
 
 struct Fixture* _create_fixture(const char* filename, int line) {

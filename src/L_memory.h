@@ -30,6 +30,24 @@ void _lame_set(void*, char, size_t, const char*, int);
         varname = 0;                                                                                                   \
     }
 
+uint8_t read_u8(uint8_t**);
+uint16_t _read_u16(uint8_t**, const char*, int);
+uint32_t _read_u32(uint8_t**, const char*, int);
+uint64_t _read_u64(uint8_t**, const char*, int);
+int8_t read_s8(uint8_t**);
+int16_t _read_s16(uint8_t**, const char*, int);
+int32_t _read_s32(uint8_t**, const char*, int);
+int64_t _read_s64(uint8_t**, const char*, int);
+float _read_f32(uint8_t**, const char*, int);
+
+#define read_u16(buf) _read_u16(buf, __FILE__, __LINE__)
+#define read_u32(buf) _read_u32(buf, __FILE__, __LINE__)
+#define read_u64(buf) _read_u64(buf, __FILE__, __LINE__)
+#define read_s16(buf) _read_s16(buf, __FILE__, __LINE__)
+#define read_s32(buf) _read_s32(buf, __FILE__, __LINE__)
+#define read_s64(buf) _read_s64(buf, __FILE__, __LINE__)
+#define read_f32(buf) _read_f32(buf, __FILE__, __LINE__)
+
 /*
    This is a handle system I made on a whim. It's called "bumbling smartass".
 
