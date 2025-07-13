@@ -14,6 +14,9 @@ struct Track;
 
 #include "L_audio.h" // IWYU pragma: keep
 
+#define BBMOD_VERSION_MAJOR 3
+#define BBMOD_VERSION_MINOR 4
+
 #define BEGIN_ASSET(assettype, hidtype)                                                                                \
     typedef HandleID hidtype;                                                                                          \
     struct assettype {                                                                                                 \
@@ -105,10 +108,6 @@ void asset_teardown();
 
 void clear_assets(bool);
 
-struct Glyph {
-    GLfloat size[2], offset[2], uvs[4], advance;
-};
-
 typedef FMOD_SOUND Sample;
 typedef FMOD_SOUND Stream;
 
@@ -146,8 +145,36 @@ BEGIN_ASSET(Material, MaterialID)
     GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin
 END_ASSET(materials, material, Material, MaterialID)
 
+struct Submodel {
+    GLuint vao, vbo;
+    struct WorldVertex* vertices;
+    size_t num_vertices;
+
+    MaterialID material;
+};
+
+struct Node {
+    const char* name;
+
+    struct Node* parent;
+    struct Node* children;
+    size_t num_children;
+
+    bool bone;
+    versor dq[2];
+};
+
 BEGIN_ASSET(Model, ModelID)
+    struct Submodel* submodels;
+    size_t num_submodels;
+
+    struct Node* root_node;
+    size_t num_nodes;
 END_ASSET(models, model, Model, ModelID)
+
+struct Glyph {
+    GLfloat size[2], offset[2], uvs[4], advance;
+};
 
 BEGIN_ASSET(Font, FontID)
     TextureID texture;

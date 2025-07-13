@@ -194,10 +194,13 @@ void video_init() {
     world_batch.filter = true;
 
     glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CW);
 
     // Build matrices
     glm_translate_x(forward_axis, 1);
-    glm_translate_z(up_axis, 1);
+    glm_translate_z(up_axis, -1);
 
     glm_ortho(0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0, -1000, 1000, projection_matrix);
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
@@ -566,10 +569,10 @@ void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
     GLfloat x2 = x + surface->size[0];
     GLfloat y2 = y + surface->size[1];
     main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
-    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
     main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
     main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
 }
 
@@ -583,10 +586,10 @@ void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
     GLfloat x2 = x1 + texture->size[0];
     GLfloat y2 = y1 + texture->size[1];
     main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
-    main_vertex(x2, y2, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[3]);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
     main_vertex(x1, y1, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[1]);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[3]);
     main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
 }
 
@@ -635,10 +638,10 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
         GLfloat x2 = x1 + (glyph->size[0] * scale);
         GLfloat y2 = y1 + (glyph->size[1] * scale);
         main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
-        main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
-        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
-        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
         main_vertex(x1, y1, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[1]);
+        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+        main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+        main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
         main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
 
         cx += glyph->advance * scale;
@@ -703,10 +706,10 @@ void main_string_wrap(
                 GLfloat x2 = x1 + (glyph->size[0] * scale);
                 GLfloat y2 = y1 + (glyph->size[1] * scale);
                 main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
-                main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
-                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
-                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
                 main_vertex(x1, y1, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[1]);
+                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+                main_vertex(x2, y1, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[1]);
+                main_vertex(x2, y2, z, 255, 255, 255, 255, glyph->uvs[2], glyph->uvs[3]);
                 main_vertex(x1, y2, z, 255, 255, 255, 255, glyph->uvs[0], glyph->uvs[3]);
             }
 
@@ -839,11 +842,11 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
 
     set_surface(camera->surface);
     clear_color(0.5, 0.5, 0.5, 1);
-    clear_depth(0);
+    clear_depth(1);
     clear_stencil(0);
 
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_GEQUAL);
+    glDepthFunc(GL_LESS);
 
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -879,13 +882,45 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     // Render room
     set_render_stage(RT_WORLD);
     set_shader(NULL);
+
+    const struct Model* bolt = fetch_model("bolt");
+    if (bolt != NULL) {
+        set_mat4_uniform("u_model_matrix", &model_matrix);
+        set_mat4_uniform("u_view_matrix", &view_matrix);
+        set_mat4_uniform("u_projection_matrix", &projection_matrix);
+        set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+
+        set_vec4_uniform("u_stencil", 1, 1, 1, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, blank_texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        set_int_uniform("u_texture", 0);
+        set_float_uniform("u_alpha_test", 0);
+
+        glBlendFuncSeparate(
+            world_batch.blend_src[0], world_batch.blend_dest[0], world_batch.blend_src[1], world_batch.blend_dest[1]
+        );
+
+        for (size_t i = 0; i < bolt->num_submodels; i++) {
+            const struct Submodel* submodel = &(bolt->submodels[i]);
+            glBindVertexArray(submodel->vao);
+            glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
+            glBufferSubData(
+                GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices
+            );
+            glDrawArrays(GL_TRIANGLES, 0, submodel->num_vertices);
+        }
+    }
+
     set_world_texture(fetch_texture("dumdum"));
-    world_vertex(-256, 256, 0, 0, 0, 1, 255, 0, 0, 255, 0, 1);
-    world_vertex(256, 256, 0, 0, 0, 1, 0, 255, 0, 255, 1, 1);
-    world_vertex(256, -256, 0, 0, 0, 1, 0, 0, 255, 255, 1, 0);
-    world_vertex(256, -256, 0, 0, 0, 1, 255, 0, 0, 255, 1, 0);
-    world_vertex(-256, -256, 0, 0, 0, 1, 0, 255, 0, 255, 0, 0);
-    world_vertex(-256, 256, 0, 0, 0, 1, 0, 0, 255, 255, 0, 1);
+    world_vertex(-256, 256, 0, 0, 0, -1, 255, 0, 0, 255, 0, 1);
+    world_vertex(256, 256, 0, 0, 0, -1, 0, 255, 0, 255, 1, 1);
+    world_vertex(256, -256, 0, 0, 0, -1, 0, 0, 255, 255, 1, 0);
+    world_vertex(256, -256, 0, 0, 0, -1, 255, 0, 0, 255, 1, 0);
+    world_vertex(-256, -256, 0, 0, 0, -1, 0, 255, 0, 255, 0, 0);
+    world_vertex(-256, 256, 0, 0, 0, -1, 0, 0, 255, 255, 0, 1);
     submit_world_batch();
 
     glDisable(GL_STENCIL_TEST);

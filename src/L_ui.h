@@ -4,7 +4,7 @@
 #include "L_memory.h"
 #include "L_script.h" // IWYU pragma: keep
 
-#define UI_Z 50
+#define UI_Z -50
 
 typedef HandleID UIID;
 

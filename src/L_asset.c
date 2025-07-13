@@ -247,8 +247,271 @@ void destroy_material(struct Material* material) {}
 
 // Models
 SOURCE_ASSET(models, model, struct Model*, ModelID);
-void load_model(const char* name) {}
-void destroy_model(struct Model* model) {}
+
+void load_model(const char* name) {
+    if (get_model(name) != NULL)
+        return;
+
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "models/%s.bbmod", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
+    if (file == NULL) {
+        WARN("Model \"%s\" not found", name);
+        return;
+    }
+
+    void* buffer = SDL_LoadFile(file, NULL);
+    if (buffer == NULL) {
+        WTF("Model \"%s\" load fail: %s", name, SDL_GetError());
+        return;
+    }
+    uint8_t* cursor = (uint8_t*)buffer;
+
+    // File header
+    bool has_minor;
+    if (SDL_strcmp((const char*)cursor, "bbmod") == 0) {
+        has_minor = false;
+        cursor += sizeof("bbmod");
+    } else if (SDL_strcmp((const char*)cursor, "BBMOD") == 0) {
+        has_minor = true;
+        cursor += sizeof("BBMOD");
+    } else {
+        FATAL("Invalid header in model \"%s\"");
+    }
+
+    uint8_t major = read_u8(&cursor);
+    uint8_t minor = 0;
+    if (major != BBMOD_VERSION_MAJOR)
+        FATAL("Bad BBMOD major version in model \"%s\" (%u =/= %u)", name, major, BBMOD_VERSION_MAJOR);
+    if (has_minor) {
+        uint8_t minor = read_u8(&cursor);
+        if (minor < 2)
+            FATAL(
+                "Bad BBMOD version in model \"%s\" (%u.%u < %u.%u)", name, major, minor, BBMOD_VERSION_MAJOR,
+                BBMOD_VERSION_MINOR
+            );
+        if (minor > BBMOD_VERSION_MINOR)
+            FATAL(
+                "Bad BBMOD version in model \"%s\" (%u.%u > %u.%u)", name, major, minor, BBMOD_VERSION_MAJOR,
+                BBMOD_VERSION_MINOR
+            );
+    }
+
+    // Model struct
+    struct Model* model = lame_alloc(sizeof(struct Model));
+
+    // General
+    model->hid = (ModelID)create_handle(model_handles, model);
+    model->name = SDL_strdup(name);
+    model->transient = false;
+
+    // Submodels
+    if ((model->num_submodels = read_u32(&cursor)) > 0) {
+        model->submodels = lame_alloc(model->num_submodels * sizeof(struct Submodel));
+        for (size_t i = 0; i < model->num_submodels; i++) {
+            struct Submodel* submodel = &(model->submodels[i]);
+
+            // Material index
+            read_u32(&cursor);
+
+            // Bounding box
+            read_f32(&cursor);
+            read_f32(&cursor);
+            read_f32(&cursor);
+            read_f32(&cursor);
+            read_f32(&cursor);
+            read_f32(&cursor);
+
+            /* Vertex format
+               lameo only needs the following attributes:
+               - Position
+               - Normals
+               - UVs
+               - Secondary UVs
+               - Colors
+               - Bone Indices
+               - Bone Weights
+
+               The rest are bogus:
+                - Tangents
+                - Indices */
+            bool has_position = read_u8(&cursor);
+            bool has_normals = read_u8(&cursor);
+            bool has_uvs = read_u8(&cursor);
+            bool has_uvs2 = read_u8(&cursor);
+            bool has_color = read_u8(&cursor);
+            bool has_tangents = read_u8(&cursor);
+            bool has_bones = read_u8(&cursor);
+            bool has_id = read_u8(&cursor);
+            read_u32(&cursor); // Skip primitive type (it's always GL_TRIANGLES)
+
+            // Vertices
+            submodel->num_vertices = read_u32(&cursor);
+            submodel->vertices = lame_alloc(submodel->num_vertices * sizeof(struct WorldVertex));
+
+            for (size_t j = 0; j < submodel->num_vertices; j++) {
+                struct WorldVertex* vertex = &(submodel->vertices[j]);
+
+                if (has_position) {
+                    vertex->position[0] = read_f32(&cursor);
+                    vertex->position[1] = read_f32(&cursor);
+                    vertex->position[2] = read_f32(&cursor);
+                } else {
+                    vertex->position[0] = vertex->position[1] = vertex->position[2] = 0;
+                }
+
+                if (has_normals) {
+                    vertex->normal[0] = read_f32(&cursor);
+                    vertex->normal[1] = read_f32(&cursor);
+                    vertex->normal[2] = read_f32(&cursor);
+                } else {
+                    vertex->normal[0] = vertex->normal[1] = vertex->normal[2] = 0;
+                }
+
+                if (has_uvs) {
+                    vertex->uv[0] = read_f32(&cursor);
+                    vertex->uv[1] = read_f32(&cursor);
+                } else {
+                    vertex->uv[0] = vertex->uv[1] = 0;
+                }
+
+                if (has_uvs2) {
+                    vertex->uv[2] = read_f32(&cursor);
+                    vertex->uv[3] = read_f32(&cursor);
+                } else {
+                    vertex->uv[2] = vertex->uv[3] = 0;
+                }
+
+                if (has_color) {
+                    vertex->color[0] = read_u8(&cursor);
+                    vertex->color[1] = read_u8(&cursor);
+                    vertex->color[2] = read_u8(&cursor);
+                    vertex->color[3] = read_u8(&cursor);
+                } else {
+                    vertex->color[0] = SDL_rand(256);
+                    vertex->color[1] = SDL_rand(256);
+                    vertex->color[2] = SDL_rand(256);
+                    vertex->color[3] = 255;
+                }
+
+                if (has_tangents) {
+                    read_f32(&cursor);
+                    read_f32(&cursor);
+                    read_f32(&cursor);
+                    read_f32(&cursor);
+                }
+
+                if (has_bones) {
+                    vertex->bone_index[0] = read_f32(&cursor);
+                    vertex->bone_index[1] = read_f32(&cursor);
+                    vertex->bone_index[2] = read_f32(&cursor);
+                    vertex->bone_index[3] = read_f32(&cursor);
+
+                    vertex->bone_weight[0] = read_f32(&cursor);
+                    vertex->bone_weight[1] = read_f32(&cursor);
+                    vertex->bone_weight[2] = read_f32(&cursor);
+                    vertex->bone_weight[3] = read_f32(&cursor);
+                } else {
+                    vertex->bone_index[0] = vertex->bone_index[1] = vertex->bone_index[2] = vertex->bone_index[3] = 0;
+                    vertex->bone_weight[0] = vertex->bone_weight[1] = vertex->bone_weight[2] = vertex->bone_weight[3] =
+                        0;
+                }
+            }
+
+            // VAO and VBO
+            glGenVertexArrays(1, &submodel->vao);
+            glBindVertexArray(submodel->vao);
+            glEnableVertexArrayAttrib(submodel->vao, VATT_POSITION);
+            glVertexArrayAttribFormat(submodel->vao, VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
+            glEnableVertexArrayAttrib(submodel->vao, VATT_NORMAL);
+            glVertexArrayAttribFormat(submodel->vao, VATT_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3);
+            glEnableVertexArrayAttrib(submodel->vao, VATT_COLOR);
+            glVertexArrayAttribFormat(submodel->vao, VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(GLubyte) * 4);
+            glEnableVertexArrayAttrib(submodel->vao, VATT_UV);
+            glVertexArrayAttribFormat(submodel->vao, VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
+            glEnableVertexArrayAttrib(submodel->vao, VATT_BONE_INDEX);
+            glVertexArrayAttribFormat(
+                submodel->vao, VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(GLubyte) * 4
+            );
+            glEnableVertexArrayAttrib(submodel->vao, VATT_BONE_WEIGHT);
+            glVertexArrayAttribFormat(submodel->vao, VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
+
+            glGenBuffers(1, &submodel->vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
+            glBufferData(
+                GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices, GL_STATIC_DRAW
+            );
+
+            glEnableVertexAttribArray(VATT_POSITION);
+            glVertexAttribPointer(
+                VATT_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
+                (void*)offsetof(struct WorldVertex, position)
+            );
+
+            glEnableVertexAttribArray(VATT_NORMAL);
+            glVertexAttribPointer(
+                VATT_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
+                (void*)offsetof(struct WorldVertex, normal)
+            );
+
+            glEnableVertexAttribArray(VATT_COLOR);
+            glVertexAttribPointer(
+                VATT_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(struct WorldVertex),
+                (void*)offsetof(struct WorldVertex, color)
+            );
+
+            glEnableVertexAttribArray(VATT_UV);
+            glVertexAttribPointer(
+                VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex), (void*)offsetof(struct WorldVertex, uv)
+            );
+
+            glEnableVertexAttribArray(VATT_BONE_INDEX);
+            glVertexAttribPointer(
+                VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(struct WorldVertex),
+                (void*)offsetof(struct WorldVertex, bone_index)
+            );
+
+            glEnableVertexAttribArray(VATT_BONE_WEIGHT);
+            glVertexAttribPointer(
+                VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
+                (void*)offsetof(struct WorldVertex, bone_weight)
+            );
+
+            INFO("Loaded submodel %u with %u vertices", i, submodel->num_vertices);
+        }
+    } else {
+        model->submodels = NULL;
+    }
+
+    // Nodes
+    model->num_nodes = 0;
+    model->root_node = NULL;
+
+    lame_free(&buffer);
+
+    model->userdata = create_pointer_ref("model", model);
+    ASSET_SANITY_PUSH(model, models);
+    INFO("Loaded model \"%s\" (%u)", name, model->hid);
+}
+
+void destroy_model(struct Model* model) {
+    ASSET_SANITY_POP(model, models);
+    unreference_pointer(&model->userdata);
+
+    if (model->submodels != NULL) {
+        for (size_t i = 0; i < model->num_submodels; i++) {
+            struct Submodel* submodel = &(model->submodels[i]);
+            glDeleteVertexArrays(1, &submodel->vao);
+            glDeleteBuffers(1, &submodel->vbo);
+            lame_free(&submodel->vertices);
+        }
+        lame_free(&model->submodels);
+    }
+
+    INFO("Freed model \"%s\" (%u)", model->name, model->hid);
+    destroy_handle(model_handles, model->hid);
+    lame_free(&model->name);
+    lame_free(&model);
+}
 
 // Fonts
 SOURCE_ASSET(fonts, font, struct Font*, FontID);

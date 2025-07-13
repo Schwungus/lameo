@@ -1,7 +1,7 @@
 -- Camera
 define_actor("Camera", nil, {
     create = function (this)
-        this:create_camera()
+        this:create_camera():set_active()
     end,
 
     create_camera = function (this, camera)
@@ -52,6 +52,5 @@ define_ui("Pause", nil, {
         main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
         local paused = localized("paused")
         main_string(paused, nil, 16, (DEFAULT_DISPLAY_WIDTH - string_width(paused, nil, 16)) / 2, (DEFAULT_DISPLAY_HEIGHT - string_height(paused, 16)) / 2, UI_Z)
-        this.surface:main(32, 32, UI_Z)
     end,
 })
