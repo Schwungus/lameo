@@ -375,3 +375,38 @@ bool actor_is_ancestor(struct Actor* actor, const char* name) {
 
     return false;
 }
+
+void set_actor_pos(struct Actor* actor, float x, float y, float z) {
+    if (actor->flags & AF_BUMPABLE) {
+        // Unlink
+        struct BumpMap* bump = &(actor->room->bump);
+        struct Actor** chunks = bump->chunks;
+        if (chunks[actor->bump_index] == actor)
+            chunks[actor->bump_index] = actor->previous_bump;
+        if (actor->previous_bump != NULL)
+            actor->previous_bump->next_bump = actor->next_bump;
+        if (actor->next_bump != NULL)
+            actor->next_bump->previous_bump = actor->previous_bump;
+
+        actor->pos[0] = x;
+        actor->pos[1] = y;
+        actor->pos[2] = z;
+
+        // Link
+        size_t bump_x = (x - bump->pos[0]) / BUMP_CHUNK_SIZE;
+        size_t bump_y = (y - bump->pos[1]) / BUMP_CHUNK_SIZE;
+        actor->bump_index =
+            SDL_clamp(bump_x, 0, bump->size[0] - 1) + (bump->size[0] * SDL_clamp(bump_y, 0, bump->size[1] - 1));
+        if (chunks[actor->bump_index] != NULL)
+            chunks[actor->bump_index]->next_bump = actor;
+        actor->previous_bump = chunks[actor->bump_index];
+        actor->next_bump = NULL;
+        chunks[actor->bump_index] = actor;
+
+        return;
+    }
+
+    actor->pos[0] = x;
+    actor->pos[1] = y;
+    actor->pos[2] = z;
+}

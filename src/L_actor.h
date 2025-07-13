@@ -157,3 +157,5 @@ void destroy_actor_camera(struct Actor*);
 
 struct Actor* hid_to_actor(ActorID);
 bool actor_is_ancestor(struct Actor*, const char*);
+
+void set_actor_pos(struct Actor*, float, float, float);
