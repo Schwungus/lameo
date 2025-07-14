@@ -44,13 +44,14 @@ void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // Window
-    window = SDL_CreateWindow("lameo", DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, SDL_WINDOW_OPENGL);
-    if (window == NULL)
+    if ((window = SDL_CreateWindow(
+             SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING), DEFAULT_DISPLAY_WIDTH,
+             DEFAULT_DISPLAY_HEIGHT, SDL_WINDOW_OPENGL
+         )) == NULL)
         FATAL("Window fail: %s", SDL_GetError());
 
     // OpenGL
-    gpu = SDL_GL_CreateContext(window);
-    if (gpu == NULL)
+    if ((gpu = SDL_GL_CreateContext(window)) == NULL || !SDL_GL_MakeCurrent(window, gpu))
         FATAL("GPU fail: %s", SDL_GetError());
     SDL_GL_SetSwapInterval(0);
 
