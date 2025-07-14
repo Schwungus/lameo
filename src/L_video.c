@@ -73,8 +73,7 @@ void video_init() {
     // Blank texture
     glGenTextures(1, &blank_texture);
     glBindTexture(GL_TEXTURE_2D, blank_texture);
-    const uint8_t pixel[4] = {255, 255, 255, 255};
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const uint8_t[]){255, 255, 255, 255});
 
     // Main batch
     glGenVertexArrays(1, &main_batch.vao);
@@ -856,9 +855,9 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     // Build matrices
     static mat4 lookie;
     glm_mat4_identity(lookie);
-    glm_spin(lookie, deg_to_rad(camera->angle[0]), GLM_ZUP);
-    glm_spin(lookie, deg_to_rad(camera->angle[1]), GLM_YUP);
-    glm_spin(lookie, deg_to_rad(camera->angle[2]), GLM_XUP);
+    glm_spin(lookie, glm_rad(camera->angle[0]), GLM_ZUP);
+    glm_spin(lookie, glm_rad(camera->angle[1]), GLM_YUP);
+    glm_spin(lookie, glm_rad(camera->angle[2]), GLM_XUP);
 
     static mat4 forward_matrix, up_matrix;
     static vec3 forward_vector, up_vector;
@@ -875,7 +874,7 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     if (camera->flags & CF_ORTHOGONAL)
         glm_ortho(0, width, height, 0, 1, 32000, projection_matrix);
     else
-        glm_perspective(deg_to_rad(camera->fov), (float)width / (float)height, 1, 32000, projection_matrix);
+        glm_perspective(glm_rad(camera->fov), (float)width / (float)height, 1, 32000, projection_matrix);
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
@@ -883,35 +882,19 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     set_render_stage(RT_WORLD);
     set_shader(NULL);
 
-    const struct Model* bolt = fetch_model("bolt");
-    if (bolt != NULL) {
-        set_mat4_uniform("u_model_matrix", &model_matrix);
-        set_mat4_uniform("u_view_matrix", &view_matrix);
-        set_mat4_uniform("u_projection_matrix", &projection_matrix);
-        set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+    struct Room* room = camera->actor->room;
+    if (room->model != NULL)
+        draw_model_instance(room->model);
 
-        set_vec4_uniform("u_stencil", 1, 1, 1, 0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, blank_texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        set_int_uniform("u_texture", 0);
-        set_float_uniform("u_alpha_test", 0);
-
-        glBlendFuncSeparate(
-            world_batch.blend_src[0], world_batch.blend_dest[0], world_batch.blend_src[1], world_batch.blend_dest[1]
-        );
-
-        for (size_t i = 0; i < bolt->num_submodels; i++) {
-            const struct Submodel* submodel = &(bolt->submodels[i]);
-            glBindVertexArray(submodel->vao);
-            glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
-            glBufferSubData(
-                GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices
-            );
-            glDrawArrays(GL_TRIANGLES, 0, submodel->num_vertices);
+    struct Actor* actor = room->actors;
+    while (actor != NULL) {
+        if (actor->flags & AF_VISIBLE) {
+            if (actor->model != NULL)
+                draw_model_instance(actor->model);
+            if (actor->type->draw != LUA_NOREF)
+                execute_ref_in(actor->type->draw, actor->userdata, actor->type->name);
         }
+        actor = actor->previous_neighbor;
     }
 
     set_world_texture(fetch_texture("dumdum"));
@@ -1110,4 +1093,66 @@ void clear_depth(GLfloat depth) {
 void clear_stencil(GLint stencil) {
     glClearStencil(stencil);
     glClear(GL_STENCIL_BUFFER_BIT);
+}
+
+// Model Instance
+struct ModelInstance* create_model_instance(struct Model* model) {
+    struct ModelInstance* inst = lame_alloc(sizeof(struct ModelInstance));
+
+    inst->model = model;
+    inst->userdata = create_pointer_ref("model_instance", inst);
+    glm_vec3_zero(inst->pos);
+    glm_vec3_zero(inst->angle);
+    glm_vec3_one(inst->scale);
+
+    return inst;
+}
+
+void destroy_model_instance(struct ModelInstance* inst) {
+    unreference_pointer(&(inst->userdata));
+    lame_free(&inst);
+}
+
+void submit_model_instance(struct ModelInstance* inst) {
+    set_vec4_uniform("u_stencil", 1, 1, 1, 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, blank_texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    set_int_uniform("u_texture", 0);
+    set_float_uniform("u_alpha_test", 0);
+
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
+
+    struct Model* model = inst->model;
+    for (size_t i = 0; i < model->num_submodels; i++) {
+        const struct Submodel* submodel = &(model->submodels[i]);
+        glBindVertexArray(submodel->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices);
+        glDrawArrays(GL_TRIANGLES, 0, submodel->num_vertices);
+    }
+}
+
+void draw_model_instance(struct ModelInstance* inst) {
+    glm_mat4_identity(model_matrix);
+    glm_scale(model_matrix, inst->scale);
+    glm_spin(model_matrix, glm_rad(inst->angle[0]), GLM_ZUP);
+    glm_spin(model_matrix, glm_rad(inst->angle[1]), GLM_YUP);
+    glm_spin(model_matrix, glm_rad(inst->angle[2]), GLM_XUP);
+    glm_translated(model_matrix, inst->pos);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
+
+    set_mat4_uniform("u_model_matrix", &model_matrix);
+    set_mat4_uniform("u_view_matrix", &view_matrix);
+    set_mat4_uniform("u_projection_matrix", &projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+
+    submit_model_instance(inst);
+
+    glm_mat4_identity(model_matrix);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 }

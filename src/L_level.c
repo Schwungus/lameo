@@ -83,7 +83,14 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
             glm_vec2_zero(room->bump.pos);
             room->bump.size[0] = room->bump.size[1] = 1;
 
+            room->model = NULL;
+
             // Properties
+            if (yyjson_is_str(roomval = yyjson_obj_get(roomdef, "model"))) {
+                struct Model* model = fetch_model(yyjson_get_str(roomval));
+                if (model != NULL)
+                    room->model = create_model_instance(model);
+            }
 
             // Actors
             if (yyjson_is_arr(roomval = yyjson_obj_get(roomdef, "actors"))) {

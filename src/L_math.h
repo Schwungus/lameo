@@ -14,7 +14,8 @@
         matrix[3][2], matrix[3][3]                                                                                     \
     );
 
-#define deg_to_rad(deg) ((deg) * (SDL_PI_F / 180))
-#define rad_to_deg(rad) ((rad) * (180 / SDL_PI_F))
+// Dual Quaternions
+typedef float DualQuaternion[8];
 
-float lerp(float, float, float);
+#define DQ_IDENTITY (DualQuaternion){0, 0, 0, 1, 0, 0, 0, 0}
+#define DQ_IDENTITY_INIT {0, 0, 0, 1, 0, 0, 0, 0}

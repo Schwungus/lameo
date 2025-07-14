@@ -32,6 +32,8 @@ struct Room {
     struct RoomActor* room_actors; // List of room actors (previous-order)
     struct Actor* actors;          // List of actors (previous-order)
     struct BumpMap bump;
+
+    struct ModelInstance* model;
 };
 
 struct RoomActor {

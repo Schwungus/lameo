@@ -9,6 +9,7 @@ struct Font;
 struct Sound;
 struct Track;
 
+#include "L_math.h"
 #include "L_memory.h"
 #include "L_video.h" // IWYU pragma: keep
 
@@ -150,7 +151,7 @@ struct Submodel {
     struct WorldVertex* vertices;
     size_t num_vertices;
 
-    MaterialID material;
+    size_t material;
 };
 
 struct Node {
@@ -161,7 +162,7 @@ struct Node {
     size_t num_children;
 
     bool bone;
-    versor dq[2];
+    DualQuaternion dq;
 };
 
 BEGIN_ASSET(Model, ModelID)
@@ -170,7 +171,15 @@ BEGIN_ASSET(Model, ModelID)
 
     struct Node* root_node;
     size_t num_nodes;
+
+    DualQuaternion* bone_offsets;
+    size_t num_bones;
+
+    MaterialID* materials;
+    size_t num_materials;
 END_ASSET(models, model, Model, ModelID)
+
+void destroy_node(struct Node*);
 
 struct Glyph {
     GLfloat size[2], offset[2], uvs[4], advance;

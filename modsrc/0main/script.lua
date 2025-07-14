@@ -26,6 +26,7 @@ define_actor("Main", nil, {
         this.dummy = dummy
         dummy = math.fmod(dummy + 8, 160)
         this.dummy2 = 0
+        this:create_model(fetch_model("bollard"))
     end,
 
     on_destroy = function (this)
@@ -34,6 +35,7 @@ define_actor("Main", nil, {
 
     tick = function (this)
         this.dummy2 = this.dummy2 + (this.dummy * 0.1)
+        this:set_pos(this:get_x() - (this:get_roll() * 0.01))
     end,
 
     draw_ui = function (this)

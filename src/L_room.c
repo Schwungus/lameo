@@ -69,6 +69,8 @@ void destroy_room(struct Room* room) {
     if (room->bump.chunks != NULL)
         lame_free(&(room->bump.chunks));
 
+    CLOSE_POINTER(room->model, destroy_model_instance);
+
     lame_free(&room);
 }
 

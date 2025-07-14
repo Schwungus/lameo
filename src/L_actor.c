@@ -1,7 +1,5 @@
 #include "L_actor.h"
 #include "L_log.h"
-#include "L_memory.h"
-#include "L_video.h"
 
 static struct HashMap* actor_types = NULL;
 static struct Actor* actors = NULL;
@@ -177,6 +175,7 @@ struct Actor* create_actor_from_type(
     actor->hid = hid;
     actor->type = type;
     actor->camera = NULL;
+    actor->model = NULL;
 
     if (actors != NULL)
         actors->next = actor;
@@ -260,9 +259,26 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
     return actor->camera;
 }
 
+struct ModelInstance* create_actor_model(struct Actor* actor, struct Model* model) {
+    if (actor->model != NULL)
+        return actor->model;
+
+    struct ModelInstance* inst = create_model_instance(model);
+    glm_vec3_copy(actor->pos, inst->pos);
+    glm_vec3_copy(actor->angle, inst->angle);
+
+    return (actor->model = inst);
+}
+
 void tick_actor(struct Actor* actor) {
     if (actor->type->tick != LUA_NOREF)
         execute_ref_in(actor->type->tick, actor->userdata, actor->type->name);
+
+    struct ModelInstance* model = actor->model;
+    if (model != NULL) {
+        glm_vec3_copy(actor->pos, model->pos);
+        glm_vec3_copy(actor->angle, model->angle);
+    }
 
     struct ActorCamera* camera = actor->camera;
     if (camera != NULL) {
@@ -320,6 +336,7 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     }
 
     destroy_actor_camera(actor);
+    destroy_actor_model(actor);
 
     if (actor->player != NULL && actor->player->actor == actor)
         actor->player->actor = NULL;
@@ -359,6 +376,10 @@ void destroy_actor_camera(struct Actor* actor) {
     unreference(&camera->table);
     unreference_pointer(&camera->userdata);
     lame_free(&actor->camera);
+}
+
+void destroy_actor_model(struct Actor* actor) {
+    CLOSE_POINTER(actor->model, destroy_model_instance);
 }
 
 struct Actor* hid_to_actor(ActorID hid) {

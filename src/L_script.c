@@ -279,6 +279,28 @@ SCRIPT_FUNCTION(actor_destroy_camera) {
     return 0;
 }
 
+SCRIPT_FUNCTION(actor_get_model) {
+    struct Actor* actor = s_check_actor(L, 1);
+    if (actor->model == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, actor->model->userdata);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_create_model) {
+    struct Actor* actor = s_check_actor(L, 1);
+    struct Model* model = s_check_model(L, 2);
+    create_actor_model(actor, model);
+    return s_actor_get_model(L);
+}
+
+SCRIPT_FUNCTION(actor_destroy_model) {
+    struct Actor* actor = s_check_actor(L, 1);
+    destroy_actor_model(actor);
+    return 0;
+}
+
 SCRIPT_FUNCTION(actor_get_pos) {
     struct Actor* actor = s_check_actor(L, 1);
     lua_pushnumber(L, actor->pos[0]);
@@ -305,6 +327,15 @@ SCRIPT_FUNCTION(actor_get_pos_z) {
     return 1;
 }
 
+SCRIPT_FUNCTION(actor_set_pos) {
+    struct Actor* actor = s_check_actor(L, 1);
+    const float x = luaL_checknumber(L, 2);
+    const float y = luaL_optnumber(L, 3, actor->pos[1]);
+    const float z = luaL_optnumber(L, 4, actor->pos[2]);
+    set_actor_pos(actor, x, y, z);
+    return 0;
+}
+
 SCRIPT_FUNCTION(actor_get_vel) {
     struct Actor* actor = s_check_actor(L, 1);
     lua_pushnumber(L, actor->vel[0]);
@@ -329,6 +360,48 @@ SCRIPT_FUNCTION(actor_get_vel_z) {
     struct Actor* actor = s_check_actor(L, 1);
     lua_pushnumber(L, actor->vel[2]);
     return 1;
+}
+
+SCRIPT_FUNCTION(actor_set_vel) {
+    struct Actor* actor = s_check_actor(L, 1);
+    actor->vel[0] = luaL_checknumber(L, 2);
+    actor->vel[1] = luaL_optnumber(L, 3, actor->vel[1]);
+    actor->vel[2] = luaL_optnumber(L, 4, actor->vel[2]);
+    return 0;
+}
+
+SCRIPT_FUNCTION(actor_get_angle) {
+    struct Actor* actor = s_check_actor(L, 1);
+    lua_pushnumber(L, actor->angle[0]);
+    lua_pushnumber(L, actor->angle[1]);
+    lua_pushnumber(L, actor->angle[2]);
+    return 3;
+}
+
+SCRIPT_FUNCTION(actor_get_angle_x) {
+    struct Actor* actor = s_check_actor(L, 1);
+    lua_pushnumber(L, actor->angle[0]);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_get_angle_y) {
+    struct Actor* actor = s_check_actor(L, 1);
+    lua_pushnumber(L, actor->angle[1]);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_get_angle_z) {
+    struct Actor* actor = s_check_actor(L, 1);
+    lua_pushnumber(L, actor->angle[2]);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_set_angle) {
+    struct Actor* actor = s_check_actor(L, 1);
+    actor->angle[0] = luaL_checknumber(L, 2);
+    actor->angle[1] = luaL_optnumber(L, 3, actor->angle[1]);
+    actor->angle[2] = luaL_optnumber(L, 4, actor->angle[2]);
+    return 0;
 }
 
 SCRIPT_FUNCTION(camera_index) {
@@ -578,6 +651,9 @@ void script_init() {
     EXPOSE_FUNCTION(clear_depth);
     EXPOSE_FUNCTION(clear_stencil);
 
+    luaL_newmetatable(context, "model_instance");
+    lua_pop(context, 1);
+
     // Audio
     EXPOSE_FUNCTION(play_ui_sound);
 
@@ -590,15 +666,27 @@ void script_init() {
         {"create_camera", s_actor_create_camera},
         {"destroy_camera", s_actor_destroy_camera},
 
+        {"get_model", s_actor_get_model},
+        {"create_model", s_actor_create_model},
+        {"destroy_model", s_actor_destroy_model},
+
         {"get_pos", s_actor_get_pos},
-        {"get_pos_x", s_actor_get_pos_x},
-        {"get_pos_y", s_actor_get_pos_y},
-        {"get_pos_z", s_actor_get_pos_z},
+        {"get_x", s_actor_get_pos_x},
+        {"get_y", s_actor_get_pos_y},
+        {"get_z", s_actor_get_pos_z},
+        {"set_pos", s_actor_set_pos},
 
         {"get_vel", s_actor_get_vel},
-        {"get_vel_x", s_actor_get_vel_x},
-        {"get_vel_y", s_actor_get_vel_y},
-        {"get_vel_z", s_actor_get_vel_z},
+        {"get_x_vel", s_actor_get_vel_x},
+        {"get_y_vel", s_actor_get_vel_y},
+        {"get_z_vel", s_actor_get_vel_z},
+        {"set_vel", s_actor_set_vel},
+
+        {"get_angle", s_actor_get_angle},
+        {"get_yaw", s_actor_get_angle_x},
+        {"get_pitch", s_actor_get_angle_y},
+        {"get_roll", s_actor_get_angle_z},
+        {"set_angle", s_actor_set_angle},
 
         {NULL, NULL},
     };

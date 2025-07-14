@@ -1,9 +1,11 @@
 #pragma once
 
+#include "L_asset.h"
 #include "L_math.h" // IWYU pragma: keep
 #include "L_memory.h"
 #include "L_player.h"
 #include "L_script.h" // IWYU pragma: keep
+#include "L_video.h"
 
 #include "L_room.h" // L_room.h relies on ACTOR_NAME_MAX, so only include after that's defined
 
@@ -112,6 +114,7 @@ struct Actor {
     ActorID hid;
     struct ActorType* type;
     struct ActorCamera* camera;
+    struct ModelInstance* model;
     int userdata;
 
     struct Actor *previous, *next;                   // Position in global list (previous-order)
@@ -149,11 +152,13 @@ struct Actor* create_actor_from_type(
     struct Room*, struct RoomActor*, struct ActorType*, bool, float, float, float, float, float, float, uint16_t
 );
 struct ActorCamera* create_actor_camera(struct Actor*);
+struct ModelInstance* create_actor_model(struct Actor*, struct Model*);
 void tick_actor(struct Actor*);
 void draw_actor(struct Actor*);
 void destroy_actor_later(struct Actor*, bool);
 void destroy_actor(struct Actor*, bool, bool);
 void destroy_actor_camera(struct Actor*);
+void destroy_actor_model(struct Actor*);
 
 struct Actor* hid_to_actor(ActorID);
 bool actor_is_ancestor(struct Actor*, const char*);

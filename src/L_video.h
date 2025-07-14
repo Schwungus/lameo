@@ -92,6 +92,12 @@ struct Surface {
     uint16_t size[2];
 };
 
+struct ModelInstance {
+    struct Model* model;
+    int userdata;
+    vec3 pos, angle, scale;
+};
+
 void video_init();
 void video_update();
 void video_teardown();
@@ -183,3 +189,9 @@ void resize_surface(struct Surface*, uint16_t, uint16_t);
 void clear_color(GLfloat, GLfloat, GLfloat, GLfloat);
 void clear_depth(GLfloat);
 void clear_stencil(GLint);
+
+// Model Instances
+struct ModelInstance* create_model_instance(struct Model*);
+void destroy_model_instance(struct ModelInstance*);
+void submit_model_instance(struct ModelInstance*);
+void draw_model_instance(struct ModelInstance*);

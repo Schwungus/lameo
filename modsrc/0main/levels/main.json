@@ -3,14 +3,7 @@
         {
             "id": 0,
             "actors": [
-                { "type": "Main", "x": 169.0, "y": 0.0 },
-                { "type": "Main", "x": -320.0, "y": 94.0 },
-                { "type": "Main", "x": 547.0, "y": -12.0 },
-                { "type": "Main", "x": 93.0, "y": 983.0 },
-                { "type": "Main", "x": 49.0, "y": -324.0 },
-                { "type": "Main", "x": 48.0, "y": 201.0 },
-                { "type": "Main", "x": -349.0, "y": 12.0 },
-                { "type": "Main", "x": -943.0, "y": 64.0 },
+                { "type": "Main" },
                 {
                     "type": "Camera",
                     "x": -28.0,
@@ -26,7 +19,15 @@
             "id": 25,
             "actors": [
                 {
+                    "type": "Camera",
+                    "x": -56.0,
+                    "z": -7.0
+                },
+                {
                     "type": "Main",
+                    "y": -20.0,
+                    "yaw": -15.0,
+                    "roll": 15.0,
                     "disposable": true
                 },
                 {
@@ -35,6 +36,9 @@
                 },
                 {
                     "type": "Main",
+                    "y": 20.0,
+                    "yaw": 15.0,
+                    "roll": -15.0,
                     "disposable": true
                 }
             ]

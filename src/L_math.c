@@ -1,5 +1,1 @@
-#include "L_math.h"
-
-float lerp(float a, float b, float c) {
-    return a + ((b - a) * c);
-}
+#include "L_math.h" // IWYU pragma: keep

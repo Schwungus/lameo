@@ -2,7 +2,7 @@
 
 #include "L_audio.h"
 #include "L_log.h"
-#include "L_math.h"
+#include "L_math.h" // IWYU pragma: keep
 #include "L_memory.h"
 
 #define MAX_CHANNELS 256
@@ -90,7 +90,7 @@ FMOD_CHANNEL* play_ui_sound(struct Sound* sound, bool loop, uint32_t offset, flo
     FMOD_System_PlaySound(speaker, sample, ui_group, true, &instance);
     FMOD_Channel_SetMode(instance, loop ? FMOD_LOOP_NORMAL : FMOD_LOOP_OFF);
     FMOD_Channel_SetPosition(instance, offset, FMOD_TIMEUNIT_MS);
-    FMOD_Channel_SetPitch(instance, pitch * lerp(sound->pitch[0], sound->pitch[1], SDL_randf()));
+    FMOD_Channel_SetPitch(instance, pitch * glm_lerp(sound->pitch[0], sound->pitch[1], SDL_randf()));
     FMOD_Channel_SetVolume(instance, gain * sound->gain);
     FMOD_Channel_SetPaused(instance, false);
     return instance;

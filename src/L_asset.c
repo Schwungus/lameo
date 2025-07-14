@@ -387,10 +387,7 @@ void load_model(const char* name) {
                     vertex->color[2] = read_u8(&cursor);
                     vertex->color[3] = read_u8(&cursor);
                 } else {
-                    vertex->color[0] = SDL_rand(256);
-                    vertex->color[1] = SDL_rand(256);
-                    vertex->color[2] = SDL_rand(256);
-                    vertex->color[3] = 255;
+                    vertex->color[0] = vertex->color[1] = vertex->color[2] = vertex->color[3] = 255;
                 }
 
                 if (has_tangents) {
