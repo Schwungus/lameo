@@ -44,11 +44,8 @@ void load_shader(const char* name) {
     // Fragment shader
     SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "shaders/%s.fs", name);
     file = get_mod_file(asset_file_helper, NULL);
-    if (file == NULL) {
-        WARN("Fragment shader for \"%s\" not found", name);
-        glDeleteShader(vertex);
-        return;
-    }
+    if (file == NULL)
+        FATAL("Fragment shader for \"%s\" not found", name);
 
     GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -64,8 +61,6 @@ void load_shader(const char* name) {
         glGetShaderInfoLog(fragment, 1024, NULL, code);
         FATAL("Shader \"%s\" fragment fail:\n%s", name, code);
     }
-    // Hold on to "code", we still have to attach the shaders.
-    // lame_free(&code);
 
     // Shader struct
     struct Shader* shader = lame_alloc(sizeof(struct Shader));
@@ -93,7 +88,7 @@ void load_shader(const char* name) {
         glGetProgramInfoLog(shader->program, 1024, NULL, code);
         FATAL("Shader \"%s\" program fail:\n%s", name, code);
     }
-    lame_free(&code); // Now we're good
+    lame_free(&code);
 
     glDeleteShader(vertex);
     glDeleteShader(fragment);

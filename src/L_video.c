@@ -58,6 +58,10 @@ void video_init() {
     if (version == 0)
         FATAL("Failed to load OpenGL functions");
     INFO("GLAD version: %d.%d", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+    if (!GLAD_GL_VERSION_3_3 || !GLAD_GL_EXT_framebuffer_object ||
+        !(GLAD_GL_ARB_shader_objects && GLAD_GL_ARB_vertex_shader && GLAD_GL_ARB_fragment_shader &&
+          GLAD_GL_ARB_vertex_program && GLAD_GL_ARB_fragment_program))
+        FATAL("Unsupported OpenGL version\nAt least OpenGL 3.3 with framebuffer and shader support is required.");
 
     INFO("OpenGL vendor: %s", glGetString(GL_VENDOR));
     INFO("OpenGL version: %s", glGetString(GL_VERSION));
