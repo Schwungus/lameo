@@ -12,14 +12,14 @@ void unload_level() {
 
     for (size_t i = 0; level->rooms->count > 0 && i < level->rooms->capacity; i++) {
         struct IKeyValuePair* kvp = &level->rooms->items[i];
-        if (!kvp->occupied)
+        if (kvp->state != IKVP_OCCUPIED)
             continue;
 
         struct Room* room = kvp->value;
         if (room != NULL)
             destroy_room(room);
         kvp->value = NULL;
-        kvp->occupied = false;
+        kvp->state = IKVP_DELETED;
 
         level->rooms->count--;
     }

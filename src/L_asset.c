@@ -237,11 +237,103 @@ void destroy_texture(struct Texture* texture) {
 
 // Materials
 SOURCE_ASSET(materials, material, struct Material*, MaterialID);
-void load_material(const char* name) {}
-void destroy_material(struct Material* material) {}
+
+void load_material(const char* name) {
+    if (get_material(name) != NULL)
+        return;
+
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "materials/%s.*", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
+    if (file == NULL)
+        WARN("Material \"%s\" not found, making a placeholder", name);
+
+    // Material struct
+    struct Material* material = lame_alloc(sizeof(struct Material));
+
+    // General
+    material->hid = (MaterialID)create_handle(material_handles, material);
+    material->name = SDL_strdup(name);
+    material->transient = false;
+
+    // Textures
+    material->textures[0] = material->textures[1] = NULL;
+    material->num_textures[0] = material->num_textures[1] = 0;
+    glm_vec2_zero(material->texture_speed);
+
+    // Properties
+    glm_vec4_one(material->color);
+    material->alpha_test = 0.5;
+    material->bright = 0;
+    glm_vec2_zero(material->scroll);
+    material->specular[0] = 0;
+    material->specular[1] = 1;
+    material->rimlight[0] = 0;
+    material->rimlight[1] = 1;
+    material->half_lambert = false;
+    material->cel = 0;
+    glm_vec3_zero(material->wind);
+
+    material->userdata = create_pointer_ref("material", material);
+    ASSET_SANITY_PUSH(material, materials);
+    INFO("Loaded material \"%s\" (%u)", name, material->hid);
+}
+
+void destroy_material(struct Material* material) {
+    ASSET_SANITY_POP(material, materials);
+    unreference_pointer(&material->userdata);
+
+    FREE_POINTER(material->textures[0]);
+    FREE_POINTER(material->textures[1]);
+
+    INFO("Freed material \"%s\" (%u)", material->name, material->hid);
+    destroy_handle(material_handles, material->hid);
+    lame_free(&material->name);
+    lame_free(&material);
+}
 
 // Models
 SOURCE_ASSET(models, model, struct Model*, ModelID);
+
+static struct Node* read_node(uint8_t** cursor, struct Node* parent) {
+    struct Node* node = lame_alloc(sizeof(struct Node));
+    node->name = read_string(cursor);
+    node->index = read_f32(cursor);
+    node->bone = read_bool(cursor);
+
+    node->dq[0] = read_u32(cursor);
+    node->dq[1] = read_u32(cursor);
+    node->dq[2] = read_u32(cursor);
+    node->dq[3] = read_u32(cursor);
+    node->dq[4] = read_u32(cursor);
+    node->dq[5] = read_u32(cursor);
+    node->dq[6] = read_u32(cursor);
+    node->dq[7] = read_u32(cursor);
+
+    for (size_t i = read_u32(cursor); i > 0; i--) // Mesh count
+        read_u32(cursor);                         // Mesh index
+
+    node->parent = parent;
+    if ((node->num_children = read_u32(cursor)) > 0) {
+        node->children = lame_alloc(node->num_children * sizeof(struct Node*));
+        for (size_t i = 0; i < node->num_children; i++)
+            node->children[i] = read_node(cursor, node);
+    } else {
+        node->children = NULL;
+    }
+
+    return node;
+}
+
+static void destroy_node(struct Node* node) {
+    if (node->children != NULL) {
+        for (size_t i = 0; i < node->num_children; i++)
+            destroy_node(node->children[i]);
+        lame_free(&(node->children));
+    }
+
+    lame_free(&(node->name));
+    lame_free(&node);
+}
 
 void load_model(const char* name) {
     if (get_model(name) != NULL)
@@ -306,7 +398,7 @@ void load_model(const char* name) {
             struct Submodel* submodel = &(model->submodels[i]);
 
             // Material index
-            read_u32(&cursor);
+            submodel->material = read_u32(&cursor);
 
             // Bounding box
             read_f32(&cursor);
@@ -329,14 +421,14 @@ void load_model(const char* name) {
                The rest are bogus:
                 - Tangents
                 - Indices */
-            bool has_position = read_u8(&cursor);
-            bool has_normals = read_u8(&cursor);
-            bool has_uvs = read_u8(&cursor);
-            bool has_uvs2 = read_u8(&cursor);
-            bool has_color = read_u8(&cursor);
-            bool has_tangents = read_u8(&cursor);
-            bool has_bones = read_u8(&cursor);
-            bool has_id = read_u8(&cursor);
+            bool has_position = read_bool(&cursor);
+            bool has_normals = read_bool(&cursor);
+            bool has_uvs = read_bool(&cursor);
+            bool has_uvs2 = read_bool(&cursor);
+            bool has_color = read_bool(&cursor);
+            bool has_tangents = read_bool(&cursor);
+            bool has_bones = read_bool(&cursor);
+            bool has_id = read_bool(&cursor);
             read_u32(&cursor); // Skip primitive type (it's always GL_TRIANGLES)
 
             // Vertices
@@ -351,7 +443,7 @@ void load_model(const char* name) {
                     vertex->position[1] = read_f32(&cursor);
                     vertex->position[2] = read_f32(&cursor);
                 } else {
-                    vertex->position[0] = vertex->position[1] = vertex->position[2] = 0;
+                    glm_vec3_zero(vertex->position);
                 }
 
                 if (has_normals) {
@@ -359,7 +451,8 @@ void load_model(const char* name) {
                     vertex->normal[1] = read_f32(&cursor);
                     vertex->normal[2] = read_f32(&cursor);
                 } else {
-                    vertex->normal[0] = vertex->normal[1] = vertex->normal[2] = 0;
+                    vertex->normal[0] = vertex->normal[1] = 0;
+                    vertex->normal[2] = -1;
                 }
 
                 if (has_uvs) {
@@ -404,8 +497,7 @@ void load_model(const char* name) {
                     vertex->bone_weight[3] = read_f32(&cursor);
                 } else {
                     vertex->bone_index[0] = vertex->bone_index[1] = vertex->bone_index[2] = vertex->bone_index[3] = 0;
-                    vertex->bone_weight[0] = vertex->bone_weight[1] = vertex->bone_weight[2] = vertex->bone_weight[3] =
-                        0;
+                    glm_vec4_zero(vertex->bone_weight);
                 }
             }
 
@@ -467,16 +559,43 @@ void load_model(const char* name) {
                 VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
                 (void*)offsetof(struct WorldVertex, bone_weight)
             );
-
-            INFO("Loaded submodel %u with %u vertices", i, submodel->num_vertices);
         }
     } else {
         model->submodels = NULL;
     }
 
     // Nodes
-    model->num_nodes = 0;
-    model->root_node = NULL;
+    model->root_node = ((model->num_nodes = read_u32(&cursor)) > 0) ? read_node(&cursor, NULL) : NULL;
+
+    // Bones
+    if ((model->num_bones = read_u32(&cursor)) > 0) {
+        model->bone_offsets = lame_alloc(model->num_bones * sizeof(DualQuaternion));
+        for (size_t i = 0; i < model->num_bones; i++) {
+            DualQuaternion* dq = &(model->bone_offsets[(size_t)read_f32(&cursor)]);
+            (*dq)[0] = read_f32(&cursor);
+            (*dq)[1] = read_f32(&cursor);
+            (*dq)[2] = read_f32(&cursor);
+            (*dq)[3] = read_f32(&cursor);
+            (*dq)[4] = read_f32(&cursor);
+            (*dq)[5] = read_f32(&cursor);
+            (*dq)[6] = read_f32(&cursor);
+            (*dq)[7] = read_f32(&cursor);
+        }
+    } else {
+        model->bone_offsets = NULL;
+    }
+
+    // Materials
+    if ((model->num_materials = read_u32(&cursor)) > 0) {
+        model->materials = lame_alloc(model->num_materials * sizeof(MaterialID));
+        for (size_t i = 0; i < model->num_materials; i++) {
+            const char* material_name = read_string(&cursor);
+            model->materials[i] = fetch_material_hid(material_name);
+            lame_free(&material_name);
+        }
+    } else {
+        model->materials = NULL;
+    }
 
     lame_free(&buffer);
 
@@ -498,6 +617,10 @@ void destroy_model(struct Model* model) {
         }
         lame_free(&model->submodels);
     }
+
+    CLOSE_POINTER(model->root_node, destroy_node);
+    FREE_POINTER(model->bone_offsets);
+    FREE_POINTER(model->materials);
 
     INFO("Freed model \"%s\" (%u)", model->name, model->hid);
     destroy_handle(model_handles, model->hid);

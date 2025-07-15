@@ -36,6 +36,7 @@ void actor_teardown() {
         }
 
         lame_free(&kvp->key);
+        kvp->key = HASH_TOMBSTONE;
         actor_types->count--;
     }
 

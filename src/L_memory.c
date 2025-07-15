@@ -107,6 +107,15 @@ float _read_f32(uint8_t** buf, const char* filename, int line) {
     return SDL_SwapFloatLE(result);
 }
 
+char* read_string(uint8_t** buf) {
+    uint8_t* cursor = *buf;
+    while (read_u8(&cursor) != '\0') {}
+    char* str = SDL_strndup((const char*)(*buf), (cursor - *buf) - 1);
+    *buf = cursor;
+
+    return str;
+}
+
 struct Fixture* _create_fixture(const char* filename, int line) {
     struct Fixture* fixture = _lame_alloc(sizeof(struct Fixture), filename, line);
     fixture->handles = _lame_alloc(sizeof(struct Handle), filename, line);
@@ -236,7 +245,7 @@ void* hid_to_pointer(struct Fixture* fixture, HandleID hid) {
 // Abstract hash maps
 // You can either free values manually or nuke them alongside the maps.
 // https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function
-#define HASH_CAPACITY 16
+#define HASH_CAPACITY 2
 #define FNV_OFFSET 0x811c9dc5
 #define FNV_PRIME 0x01000193
 
@@ -251,7 +260,7 @@ static uint32_t hash_key(const char* key) {
 
 struct HashMap* _create_hash_map(const char* filename, int line) {
     struct HashMap* map = _lame_alloc(sizeof(struct HashMap), filename, line);
-    map->count = 0;
+    map->count = map->length = 0;
     map->capacity = HASH_CAPACITY;
 
     const size_t size = HASH_CAPACITY * sizeof(struct KeyValuePair);
@@ -264,7 +273,7 @@ struct HashMap* _create_hash_map(const char* filename, int line) {
 void _destroy_hash_map(struct HashMap* map, bool nuke, const char* filename, int line) {
     for (size_t i = 0; i < map->capacity; i++) {
         struct KeyValuePair* kvp = &map->items[i];
-        if (kvp->key != NULL)
+        if (kvp->key != NULL && kvp->key != HASH_TOMBSTONE)
             _lame_free((void**)&kvp->key, filename, line);
         if (nuke && kvp->value != NULL)
             _lame_free(&kvp->value, filename, line);
@@ -274,25 +283,14 @@ void _destroy_hash_map(struct HashMap* map, bool nuke, const char* filename, int
     _lame_free((void**)&map, filename, line);
 }
 
-bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, const char* filename, int line) {
-    if (map->count >= map->capacity / 2) {
-        const size_t new_capacity = map->capacity * 2;
-        if (new_capacity < map->capacity)
-            log_fatal(src_basename(filename), line, "Capacity overflow in HashMap");
-
-        const size_t old_capacity = map->capacity;
-        _lame_realloc((void**)&map->items, new_capacity * sizeof(struct KeyValuePair), filename, line);
-        _lame_set(
-            map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct KeyValuePair), filename, line
-        );
-        map->capacity = new_capacity;
-        log_generic(src_basename(filename), line, "Increased HashMap capacity to %u", new_capacity);
-    }
-
-    size_t index = (size_t)hash_key(key) % map->capacity;
-    struct KeyValuePair* kvp = &map->items[index];
+static bool to_hash_map_direct(
+    struct KeyValuePair* items, size_t* count, size_t* length, size_t capacity, const char* key, void* value, bool nuke,
+    const char* filename, int line
+) {
+    size_t index = (size_t)hash_key(key) % capacity;
+    struct KeyValuePair* kvp = &(items[index]);
     while (kvp->key != NULL) {
-        if (SDL_strcmp(key, kvp->key) == 0) {
+        if (kvp->key != HASH_TOMBSTONE && SDL_strcmp(key, kvp->key) == 0) {
             if (kvp->value != NULL) {
                 if (nuke)
                     _lame_free(&kvp->value, filename, line);
@@ -303,21 +301,59 @@ bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, 
             return true;
         }
 
-        index = (index + 1) % map->capacity;
-        kvp = &map->items[index];
+        index = (index + 1) % capacity;
+        kvp = &(items[index]);
     }
 
-    map->items[index].key = SDL_strdup(key);
-    map->items[index].value = value;
-    map->count++;
+    items[index].key = count == NULL ? (char*)key : SDL_strdup(key);
+    items[index].value = value;
+    if (count != NULL) {
+        (*count)++;
+        (*length)++;
+    }
     return true;
+}
+
+static void expand_hash_map(struct HashMap* map, const char* filename, int line) {
+    const size_t new_capacity = map->capacity * 2;
+    if (new_capacity < map->capacity)
+        log_fatal(src_basename(filename), line, "Capacity overflow in HashMap");
+
+    const size_t old_capacity = map->capacity;
+    const size_t new_size = new_capacity * sizeof(struct KeyValuePair);
+    struct KeyValuePair* items = _lame_alloc(new_size, filename, line);
+    _lame_set(items, 0, new_size, filename, line);
+
+    for (size_t i = 0; i < map->capacity; i++) {
+        struct KeyValuePair* kvp = &(map->items[i]);
+        if (kvp->key != NULL) {
+            if (kvp->key == HASH_TOMBSTONE)
+                map->length--;
+            else
+                to_hash_map_direct(items, NULL, NULL, new_capacity, kvp->key, kvp->value, false, filename, line);
+        }
+    }
+
+    _lame_free((void**)&(map->items), filename, line);
+    map->items = items;
+    map->capacity = new_capacity;
+    log_generic(src_basename(filename), line, "Increased HashMap capacity to %u", new_capacity);
+}
+
+bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, const char* filename, int line) {
+    if (map->length >= map->capacity / 2)
+        expand_hash_map(map, filename, line);
+
+    return to_hash_map_direct(
+        map->items, &(map->count), &(map->length), map->capacity, key, value, nuke, filename, line
+    );
 }
 
 void* from_hash_map(struct HashMap* map, const char* key) {
     size_t index = (size_t)hash_key(key) % map->capacity;
     const struct KeyValuePair* kvp = &map->items[index];
     while (kvp->key != NULL) {
-        if (SDL_strcmp(key, kvp->key) == 0)
+        if (kvp->key != HASH_TOMBSTONE && SDL_strcmp(key, kvp->key) == 0)
             return kvp->value;
 
         index = (index + 1) % map->capacity;
@@ -331,8 +367,9 @@ void* _pop_hash_map(struct HashMap* map, const char* key, bool nuke, const char*
     size_t index = (size_t)hash_key(key) % map->capacity;
     struct KeyValuePair* kvp = &map->items[index];
     while (kvp->key != NULL) {
-        if (SDL_strcmp(key, kvp->key) == 0) {
-            _lame_free((void**)&kvp->key, filename, line);
+        if (kvp->key != HASH_TOMBSTONE && SDL_strcmp(key, kvp->key) == 0) {
+            _lame_free((void**)(&(kvp->key)), filename, line);
+            kvp->key = HASH_TOMBSTONE;
             void* value = kvp->value;
             kvp->value = NULL;
             if (nuke && value != NULL)
@@ -359,7 +396,7 @@ static uint32_t int_hash_key(uint32_t key) {
 
 struct IntMap* _create_int_map(const char* filename, int line) {
     struct IntMap* map = _lame_alloc(sizeof(struct IntMap), filename, line);
-    map->count = 0;
+    map->count = map->length = 0;
     map->capacity = HASH_CAPACITY;
 
     const size_t size = HASH_CAPACITY * sizeof(struct IKeyValuePair);
@@ -380,25 +417,14 @@ void _destroy_int_map(struct IntMap* map, bool nuke, const char* filename, int l
     _lame_free((void**)&map, filename, line);
 }
 
-bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const char* filename, int line) {
-    if (map->count >= map->capacity / 2) {
-        const size_t new_capacity = map->capacity * 2;
-        if (new_capacity < map->capacity)
-            log_fatal(src_basename(filename), line, "Capacity overflow in IntMap");
-
-        const size_t old_capacity = map->capacity;
-        _lame_realloc((void**)&map->items, new_capacity * sizeof(struct IKeyValuePair), filename, line);
-        _lame_set(
-            map->items + old_capacity, 0, (new_capacity - old_capacity) * sizeof(struct IKeyValuePair), filename, line
-        );
-        map->capacity = new_capacity;
-        log_generic(src_basename(filename), line, "Increased IntMap capacity to %u", new_capacity);
-    }
-
-    size_t index = (size_t)int_hash_key(key) % map->capacity;
-    struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->occupied) {
-        if (key == kvp->key) {
+static bool to_int_map_direct(
+    struct IKeyValuePair* items, size_t* count, size_t* length, size_t capacity, uint32_t key, void* value, bool nuke,
+    const char* filename, int line
+) {
+    size_t index = (size_t)int_hash_key(key) % capacity;
+    struct IKeyValuePair* kvp = &(items[index]);
+    while (kvp->state != IKVP_NONE) {
+        if (kvp->state != IKVP_DELETED && key == kvp->key) {
             if (kvp->value != NULL) {
                 if (nuke)
                     _lame_free(&kvp->value, filename, line);
@@ -409,22 +435,60 @@ bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const
             return true;
         }
 
-        index = (index + 1) % map->capacity;
-        kvp = &map->items[index];
+        index = (index + 1) % capacity;
+        kvp = &(items[index]);
     }
 
-    map->items[index].occupied = true;
-    map->items[index].key = key;
-    map->items[index].value = value;
-    map->count++;
+    items[index].state = IKVP_OCCUPIED;
+    items[index].key = key;
+    items[index].value = value;
+    if (count != NULL) {
+        (*count)++;
+        (*length)++;
+    }
     return true;
+}
+
+static void expand_int_map(struct IntMap* map, const char* filename, int line) {
+    const size_t new_capacity = map->capacity * 2;
+    if (new_capacity < map->capacity)
+        log_fatal(src_basename(filename), line, "Capacity overflow in IntMap");
+
+    const size_t old_capacity = map->capacity;
+    const size_t new_size = new_capacity * sizeof(struct IKeyValuePair);
+    struct IKeyValuePair* items = _lame_alloc(new_size, filename, line);
+    _lame_set(items, 0, new_size, filename, line);
+
+    for (size_t i = 0; i < map->capacity; i++) {
+        struct IKeyValuePair* kvp = &(map->items[i]);
+        if (kvp->state != IKVP_NONE) {
+            if (kvp->state == IKVP_DELETED)
+                map->length--;
+            else
+                to_int_map_direct(items, NULL, NULL, new_capacity, kvp->key, kvp->value, false, filename, line);
+        }
+    }
+
+    _lame_free((void**)&(map->items), filename, line);
+    map->items = items;
+    map->capacity = new_capacity;
+    log_generic(src_basename(filename), line, "Increased IntMap capacity to %u", new_capacity);
+}
+
+bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const char* filename, int line) {
+    if (map->length >= map->capacity / 2)
+        expand_int_map(map, filename, line);
+
+    return to_int_map_direct(
+        map->items, &(map->count), &(map->length), map->capacity, key, value, nuke, filename, line
+    );
 }
 
 void* from_int_map(struct IntMap* map, uint32_t key) {
     size_t index = (size_t)int_hash_key(key) % map->capacity;
     const struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->occupied) {
-        if (key == kvp->key)
+    while (kvp->state != IKVP_NONE) {
+        if (kvp->state != IKVP_DELETED && key == kvp->key)
             return kvp->value;
 
         index = (index + 1) % map->capacity;
@@ -437,9 +501,10 @@ void* from_int_map(struct IntMap* map, uint32_t key) {
 void* _pop_int_map(struct IntMap* map, uint32_t key, bool nuke, const char* filename, int line) {
     size_t index = (size_t)int_hash_key(key) % map->capacity;
     struct IKeyValuePair* kvp = &map->items[index];
-    while (kvp->occupied) {
-        if (key == kvp->key) {
-            kvp->occupied = false;
+    while (kvp->state != IKVP_NONE) {
+        if (kvp->state != IKVP_DELETED && key == kvp->key) {
+            _lame_free((void**)(&(kvp->key)), filename, line);
+            kvp->state = IKVP_DELETED;
             void* value = kvp->value;
             kvp->value = NULL;
             if (nuke && value != NULL)

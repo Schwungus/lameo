@@ -26,7 +26,7 @@ define_actor("Main", nil, {
         this.dummy = dummy
         dummy = math.fmod(dummy + 8, 160)
         this.dummy2 = 0
-        this:create_model(fetch_model("bollard"))
+        this:create_model(fetch_model("video"))
     end,
 
     on_destroy = function (this)

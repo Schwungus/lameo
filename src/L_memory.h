@@ -39,7 +39,9 @@ int16_t _read_s16(uint8_t**, const char*, int);
 int32_t _read_s32(uint8_t**, const char*, int);
 int64_t _read_s64(uint8_t**, const char*, int);
 float _read_f32(uint8_t**, const char*, int);
+char* read_string(uint8_t**);
 
+#define read_bool(buf) (bool)read_u8(buf)
 #define read_u16(buf) _read_u16(buf, __FILE__, __LINE__)
 #define read_u32(buf) _read_u32(buf, __FILE__, __LINE__)
 #define read_u64(buf) _read_u64(buf, __FILE__, __LINE__)
@@ -100,6 +102,8 @@ struct Handle* hid_to_handle(struct Fixture*, HandleID);
 void* hid_to_pointer(struct Fixture*, HandleID);
 
 // Hash maps
+#define HASH_TOMBSTONE ((char*)-1)
+
 struct KeyValuePair {
     char* key;
     void* value;
@@ -107,7 +111,7 @@ struct KeyValuePair {
 
 struct HashMap {
     struct KeyValuePair* items;
-    size_t count, capacity;
+    size_t count, length, capacity;
 };
 
 struct HashMap* _create_hash_map(const char*, int);
@@ -122,15 +126,21 @@ void* _pop_hash_map(struct HashMap*, const char*, bool, const char*, int);
 // #define from_hash_map(map, key) _from_hash_map(map, key, __FILE__, __LINE__)
 #define pop_hash_map(map, key, nuke) _pop_hash_map(map, key, nuke, __FILE__, __LINE__)
 
+enum IKVPState {
+    IKVP_NONE,
+    IKVP_OCCUPIED,
+    IKVP_DELETED,
+};
+
 struct IKeyValuePair {
-    bool occupied;
+    enum IKVPState state;
     uint32_t key;
     void* value;
 };
 
 struct IntMap {
     struct IKeyValuePair* items;
-    size_t count, capacity;
+    size_t count, length, capacity;
 };
 
 struct IntMap* _create_int_map(const char*, int);

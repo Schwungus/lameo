@@ -88,7 +88,7 @@ struct Track;
     void clear_##mapname(bool teardown) {                                                                              \
         for (size_t i = 0; mapname->count > 0 && i < mapname->capacity; i++) {                                         \
             struct KeyValuePair* kvp = &mapname->items[i];                                                             \
-            if (kvp->key == NULL)                                                                                      \
+            if (kvp->key == NULL || kvp->key == HASH_TOMBSTONE)                                                        \
                 continue;                                                                                              \
             assettype asset = kvp->value;                                                                              \
             if (asset != NULL && (!asset->transient || teardown))                                                      \
@@ -131,19 +131,19 @@ BEGIN_ASSET(Texture, TextureID)
 END_ASSET(textures, texture, Texture, TextureID)
 
 BEGIN_ASSET(Material, MaterialID)
-    TextureID* textures[2]; // (0) Base and (1) blend textures
+    TextureID* textures[2]; // (0) Base and (1) blend textures [u_texture, u_blend_texture]
     size_t num_textures[2]; // (0) Base and (1) blend texture count
     float texture_speed[2]; // Cycle factor between (0) base and (1) blend textures per millisecond
 
-    GLfloat color[4];       // Multiply texture by this color
-    GLfloat alpha_test;     // Test texture alpha with this threshold
-    GLfloat bright;         // Ineffectiveness of light on material
-    GLfloat scroll[2];      // Full texture scrolls per millisecond
-    GLfloat specular[2];    // (0) Specular factor and (1) exponent
-    GLfloat rimlight[2];    // (0) Rimlight factor and (1) exponent
-    GLboolean half_lambert; // Enable half-lambert shading on this material
-    GLfloat cel;            // Cel-shading factor
-    GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin
+    GLfloat color[4];       // Multiply texture by this color [u_material_color]
+    GLfloat alpha_test;     // Test texture alpha with this threshold [u_alpha_test]
+    GLfloat bright;         // Ineffectiveness of light on material [u_bright]
+    GLfloat scroll[2];      // Full texture scrolls per millisecond [u_scroll]
+    GLfloat specular[2];    // (0) Specular factor and (1) exponent [u_specular]
+    GLfloat rimlight[2];    // (0) Rimlight factor and (1) exponent [u_rimlight]
+    GLboolean half_lambert; // Enable half-lambert shading on this material [u_half_lambert]
+    GLfloat cel;            // Cel-shading factor [u_cel]
+    GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin [u_wind]
 END_ASSET(materials, material, Material, MaterialID)
 
 struct Submodel {
@@ -156,9 +156,10 @@ struct Submodel {
 
 struct Node {
     const char* name;
+    size_t index;
 
     struct Node* parent;
-    struct Node* children;
+    struct Node** children;
     size_t num_children;
 
     bool bone;

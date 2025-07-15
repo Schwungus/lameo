@@ -23,7 +23,7 @@ void ui_teardown() {
 
     for (size_t i = 0; ui_types->count > 0 && i < ui_types->capacity; i++) {
         struct KeyValuePair* kvp = &ui_types->items[i];
-        if (kvp->key == NULL)
+        if (kvp->key == NULL || kvp->key == HASH_TOMBSTONE)
             continue;
 
         struct UIType* type = kvp->value;
@@ -38,6 +38,8 @@ void ui_teardown() {
         }
 
         lame_free(&kvp->key);
+        kvp->key = HASH_TOMBSTONE;
+
         ui_types->count--;
     }
 
