@@ -701,6 +701,11 @@ void destroy_model(struct Model* model) {
     lame_free(&model);
 }
 
+// Animations
+SOURCE_ASSET(animations, animation, struct Animation*, AnimationID);
+void load_animation(const char* name) {}
+void destroy_animation(struct Animation* animation) {}
+
 // Fonts
 SOURCE_ASSET(fonts, font, struct Font*, FontID);
 
@@ -1018,6 +1023,7 @@ void asset_init() {
     textures_init();
     materials_init();
     models_init();
+    animations_init();
     fonts_init();
     sounds_init();
     music_init();
@@ -1032,6 +1038,7 @@ void asset_teardown() {
     textures_teardown();
     materials_teardown();
     models_teardown();
+    animations_teardown();
     fonts_teardown();
     sounds_teardown();
     music_teardown();
@@ -1044,6 +1051,7 @@ void clear_assets(bool teardown) {
     clear_textures(teardown);
     clear_materials(teardown);
     clear_models(teardown);
+    clear_animations(teardown);
     clear_fonts(teardown);
     clear_sounds(teardown);
     clear_music(teardown);

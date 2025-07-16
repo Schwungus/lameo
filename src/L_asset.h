@@ -112,6 +112,12 @@ void clear_assets(bool);
 typedef FMOD_SOUND Sample;
 typedef FMOD_SOUND Stream;
 
+enum BoneSpaces {
+    BS_PARENT = 1 << 0,
+    BS_WORLD = 1 << 1,
+    BS_BONE = 1 << 2,
+};
+
 // manual formatting.....
 // clang-format off
 
@@ -182,6 +188,15 @@ BEGIN_ASSET(Model, ModelID)
 END_ASSET(models, model, Model, ModelID)
 
 void destroy_node(struct Node*);
+
+BEGIN_ASSET(Animation, AnimationID)
+    size_t num_frames;
+    float frame_speed;
+
+    DualQuaternion* parent_frames;
+    DualQuaternion* world_frames;
+    DualQuaternion* bone_frames;
+END_ASSET(animations, animation, Animation, AnimationID)
 
 struct Glyph {
     GLfloat size[2], offset[2], uvs[4], advance;
