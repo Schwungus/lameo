@@ -96,6 +96,8 @@ struct ModelInstance {
     struct Model* model;
     int userdata;
     vec3 pos, angle, scale;
+
+    bool* hidden;
 };
 
 void video_init();
@@ -147,6 +149,7 @@ void set_main_texture_direct(GLuint);
 void set_main_filter(bool);
 
 void main_vertex(GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte, GLfloat, GLfloat);
+void main_rectangle(GLfloat, GLfloat, GLfloat, GLfloat, GLfloat, GLubyte, GLubyte, GLubyte, GLubyte);
 void main_surface(struct Surface*, GLfloat, GLfloat, GLfloat);
 void main_sprite(struct Texture*, GLfloat, GLfloat, GLfloat);
 void main_material_sprite(struct Material*, GLfloat, GLfloat, GLfloat);

@@ -135,6 +135,7 @@ BEGIN_ASSET(Material, MaterialID)
     size_t num_textures[2]; // (0) Base and (1) blend texture count
     float texture_speed[2]; // Cycle factor between (0) base and (1) blend textures per millisecond
 
+    bool filter;            // Apply texture filtering
     GLfloat color[4];       // Multiply texture by this color [u_material_color]
     GLfloat alpha_test;     // Test texture alpha with this threshold [u_alpha_test]
     GLfloat bright;         // Ineffectiveness of light on material [u_bright]

@@ -26,7 +26,10 @@ define_actor("Main", nil, {
         this.dummy = dummy
         dummy = math.fmod(dummy + 8, 160)
         this.dummy2 = 0
-        this:create_model(fetch_model("video"))
+        local model = this:create_model(fetch_model("video"))
+        model:set_hidden(8, 1)
+        model:set_hidden(9, 1)
+        model:set_hidden(10, 1)
     end,
 
     on_destroy = function (this)
@@ -51,7 +54,7 @@ define_ui("Pause", nil, {
     end,
 
     draw = function (this)
-        main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 1, 0, 0, 0, 128)
+        main_rectangle(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, UI_Z, 0, 0, 0, 128)
         local paused = localized("paused")
         main_string(paused, nil, 16, (DEFAULT_DISPLAY_WIDTH - string_width(paused, nil, 16)) / 2, (DEFAULT_DISPLAY_HEIGHT - string_height(paused, 16)) / 2, UI_Z)
     end,

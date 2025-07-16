@@ -83,8 +83,6 @@ SCRIPT_FUNCTION(set_main_alpha) {
 }
 
 SCRIPT_FUNCTION(main_rectangle) {
-    set_main_texture(NULL);
-
     const GLfloat x1 = luaL_checknumber(L, 1);
     const GLfloat y1 = luaL_checknumber(L, 2);
     const GLfloat x2 = luaL_checknumber(L, 3);
@@ -95,12 +93,7 @@ SCRIPT_FUNCTION(main_rectangle) {
     const GLfloat b = luaL_optinteger(L, 8, 255);
     const GLfloat a = luaL_optinteger(L, 9, 255);
 
-    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
-    main_vertex(x2, y2, z, r, g, b, a, 1, 1);
-    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
-    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
-    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
-    main_vertex(x1, y1, z, r, g, b, a, 0, 0);
+    main_rectangle(x1, y1, x2, y2, z, r, g, b, a);
 
     return 0;
 }
@@ -193,6 +186,22 @@ SCRIPT_FUNCTION(clear_depth) {
 SCRIPT_FUNCTION(clear_stencil) {
     const GLint stencil = luaL_optinteger(L, 1, 0);
     clear_stencil(stencil);
+    return 0;
+}
+
+// Model Instance
+SCRIPT_CHECKER(model_instance, struct ModelInstance*);
+SCRIPT_TESTER(model_instance, struct ModelInstance*);
+
+SCRIPT_FUNCTION(model_instance_set_hidden) {
+    struct ModelInstance* inst = s_check_model_instance(L, 1);
+    const lua_Integer index = luaL_checkinteger(L, 2);
+    const bool hidden = luaL_checkinteger(L, 3);
+
+    if (index < 0 || index >= inst->model->num_submodels)
+        luaL_argerror(L, 3, "invalid submodel index");
+    inst->hidden[index] = hidden;
+
     return 0;
 }
 
@@ -652,6 +661,13 @@ void script_init() {
     EXPOSE_FUNCTION(clear_stencil);
 
     luaL_newmetatable(context, "model_instance");
+    static const luaL_Reg model_instance_methods[] = {
+        {"set_hidden", s_model_instance_set_hidden},
+        {NULL, NULL},
+    };
+    luaL_setfuncs(context, model_instance_methods, 0);
+    lua_pushvalue(context, -1);
+    lua_setfield(context, -2, "__index");
     lua_pop(context, 1);
 
     // Audio

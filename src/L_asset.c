@@ -261,6 +261,7 @@ void load_material(const char* name) {
     glm_vec2_zero(material->texture_speed);
 
     // Properties
+    material->filter = true;
     glm_vec4_one(material->color);
     material->alpha_test = 0.5;
     material->bright = 0;
@@ -272,6 +273,78 @@ void load_material(const char* name) {
     material->half_lambert = false;
     material->cel = 0;
     glm_vec3_zero(material->wind);
+
+    if (file != NULL) {
+        yyjson_doc* json = load_json(file);
+        if (json != NULL) {
+            yyjson_val* root = yyjson_doc_get_root(json);
+            if (yyjson_is_obj(root)) {
+                yyjson_val* value = yyjson_obj_get(root, "texture");
+                if (yyjson_is_str(value)) {
+                    TextureID* textures = lame_alloc(sizeof(TextureID));
+                    textures[0] = fetch_texture_hid(yyjson_get_str(value));
+                    material->textures[0] = textures;
+                    material->num_textures[0] = 1;
+                }
+
+                if (yyjson_is_str(value = yyjson_obj_get(root, "blend_texture"))) {
+                    TextureID* textures = lame_alloc(sizeof(TextureID));
+                    textures[0] = fetch_texture_hid(yyjson_get_str(value));
+                    material->textures[1] = textures;
+                    material->num_textures[1] = 1;
+                }
+
+                if (yyjson_is_real(value = yyjson_obj_get(root, "texture_speed")))
+                    material->texture_speed[0] = yyjson_get_real(value);
+                if (yyjson_is_real(value = yyjson_obj_get(root, "blend_texture_speed")))
+                    material->texture_speed[1] = yyjson_get_real(value);
+                if (yyjson_is_bool(value = yyjson_obj_get(root, "filter")))
+                    material->filter = yyjson_get_bool(value);
+
+                if (yyjson_is_arr(value = yyjson_obj_get(root, "color")) && yyjson_arr_size(value) >= 4) {
+                    material->color[0] = yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->color[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->color[2] = yyjson_get_real(yyjson_arr_get(value, 2));
+                    material->color[3] = yyjson_get_real(yyjson_arr_get(value, 3));
+                }
+
+                if (yyjson_is_real(value = yyjson_obj_get(root, "alpha_test")))
+                    material->alpha_test = yyjson_get_real(value);
+                if (yyjson_is_real(value = yyjson_obj_get(root, "bright")))
+                    material->bright = yyjson_get_real(value);
+
+                if (yyjson_is_arr(value = yyjson_obj_get(root, "scroll")) && yyjson_arr_size(value) >= 2) {
+                    material->scroll[0] = yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->scroll[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                }
+
+                if (yyjson_is_arr(value = yyjson_obj_get(root, "specular")) && yyjson_arr_size(value) >= 2) {
+                    material->specular[0] = yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->specular[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                }
+
+                if (yyjson_is_arr(value = yyjson_obj_get(root, "rimlight")) && yyjson_arr_size(value) >= 2) {
+                    material->rimlight[0] = yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->rimlight[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                }
+
+                if (yyjson_is_bool(value = yyjson_obj_get(root, "half_lambert")))
+                    material->half_lambert = yyjson_get_bool(value);
+                if (yyjson_is_real(value = yyjson_obj_get(root, "cel")))
+                    material->cel = yyjson_get_real(value);
+
+                if (yyjson_is_arr(value = yyjson_obj_get(root, "wind")) && yyjson_arr_size(value) >= 3) {
+                    material->wind[0] = yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->wind[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->wind[2] = yyjson_get_real(yyjson_arr_get(value, 2));
+                }
+            } else {
+                WTF("Expected material \"%s\" root as object, got %s", name, yyjson_get_type_desc(root));
+            }
+
+            yyjson_doc_free(json);
+        }
+    }
 
     material->userdata = create_pointer_ref("material", material);
     ASSET_SANITY_PUSH(material, materials);

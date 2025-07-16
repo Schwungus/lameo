@@ -13,7 +13,7 @@ uniform mat4 u_projection_matrix;
 uniform mat4 u_mvp_matrix;
 
 void main() {
-    gl_Position = u_mvp_matrix * vec4(i_position, 1.);
+    gl_Position = u_mvp_matrix * vec4(i_position, 1.0);
 
     v_color = i_color;
     v_uv = i_uv;

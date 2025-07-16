@@ -291,7 +291,7 @@ void video_update() {
             execute_ref_in(ui_top->type->draw, ui_top->userdata, ui_top->type->name);
     }
 
-    submit_batch();
+    submit_main_batch();
 
     // If Steam Overlay hooks on to the application, MSVC debugger may cause a
     // breakpoint here. Otherwise the program itself runs without a problem.
@@ -563,6 +563,18 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
       u, v};
 }
 
+void main_rectangle(
+    GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a
+) {
+    set_main_texture_direct(blank_texture);
+    main_vertex(x1, y2, z, r, g, b, a, 0, 0);
+    main_vertex(x1, y1, z, r, g, b, a, 0, 1);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 1);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 1);
+    main_vertex(x2, y2, z, r, g, b, a, 1, 0);
+    main_vertex(x1, y2, z, r, g, b, a, 0, 0);
+}
+
 void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
     if (surface->texture[SURFACE_COLOR_TEXTURE] == 0)
         return;
@@ -758,6 +770,8 @@ void submit_world_batch() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     set_int_uniform("u_texture", 0);
+    set_int_uniform("u_has_blend_texture", 0);
+    set_int_uniform("u_blend_texture", 1);
     set_float_uniform("u_alpha_test", world_batch.alpha_test);
 
     // Apply blend mode
@@ -904,10 +918,10 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
 
     set_world_texture(fetch_texture("dumdum"));
     world_vertex(-256, 256, 0, 0, 0, -1, 255, 0, 0, 255, 0, 1);
-    world_vertex(256, 256, 0, 0, 0, -1, 0, 255, 0, 255, 1, 1);
+    world_vertex(256, 256, 0, 0, 0, -1, 0, 255, 0, 128, 1, 1);
     world_vertex(256, -256, 0, 0, 0, -1, 0, 0, 255, 255, 1, 0);
     world_vertex(256, -256, 0, 0, 0, -1, 255, 0, 0, 255, 1, 0);
-    world_vertex(-256, -256, 0, 0, 0, -1, 0, 255, 0, 255, 0, 0);
+    world_vertex(-256, -256, 0, 0, 0, -1, 0, 255, 0, 128, 0, 0);
     world_vertex(-256, 256, 0, 0, 0, -1, 0, 0, 255, 255, 0, 1);
     submit_world_batch();
 
@@ -1110,29 +1124,60 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     glm_vec3_zero(inst->angle);
     glm_vec3_one(inst->scale);
 
+    inst->hidden = lame_alloc(model->num_submodels * sizeof(bool));
+    lame_set(inst->hidden, 0, model->num_submodels * sizeof(bool));
+
     return inst;
 }
 
 void destroy_model_instance(struct ModelInstance* inst) {
     unreference_pointer(&(inst->userdata));
+    lame_free(&(inst->hidden));
     lame_free(&inst);
 }
 
 void submit_model_instance(struct ModelInstance* inst) {
-    set_vec4_uniform("u_stencil", 1, 1, 1, 0);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, blank_texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    set_int_uniform("u_texture", 0);
-    set_float_uniform("u_alpha_test", 0);
-
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
+
+    set_int_uniform("u_texture", 0);
+    set_int_uniform("u_blend_texture", 1);
+    set_vec4_uniform("u_stencil", 1, 1, 1, 0);
 
     struct Model* model = inst->model;
     for (size_t i = 0; i < model->num_submodels; i++) {
+        if (inst->hidden[i])
+            continue;
+
         const struct Submodel* submodel = &(model->submodels[i]);
+        const struct Material* material = hid_to_material(model->materials[submodel->material]);
+        if (material == NULL)
+            continue;
+        const struct Texture* texture =
+            material->textures[0] == NULL
+                ? NULL
+                : hid_to_texture(material->textures[0][(size_t
+                  )SDL_fmod(draw_time * material->texture_speed[0], material->num_textures[0])]);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture == NULL ? blank_texture : texture->texture);
+        const GLint filter = material->filter ? GL_LINEAR : GL_NEAREST;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+
+        if (material->textures[1] != NULL) {
+            const struct Texture* blend_texture = hid_to_texture(material->textures[1][(size_t
+            )SDL_fmod(draw_time * material->texture_speed[1], material->num_textures[1])]);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+            set_int_uniform("u_has_blend_texture", 1);
+        } else {
+            set_int_uniform("u_has_blend_texture", 0);
+        }
+
+        set_float_uniform("u_alpha_test", material->alpha_test);
+
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices);

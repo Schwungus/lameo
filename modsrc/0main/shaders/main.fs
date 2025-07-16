@@ -11,9 +11,10 @@ uniform vec4 u_stencil;
 
 void main() {
     vec4 sample = texture(u_texture, v_uv);
-    if (u_alpha_test > 0.) {
-        if (sample.a < u_alpha_test) discard;
-        sample.a = 1;
+    if (u_alpha_test > 0.0) {
+        if (sample.a < u_alpha_test)
+            discard;
+        sample.a = 1.;
     }
 
     o_color = v_color * sample;
