@@ -112,8 +112,9 @@ void activate_room(struct Room* room) {
 void deactivate_room(struct Room* room) {
     struct Actor* it = room->actors;
     while (it != NULL) {
+        struct Actor* next = it->previous_neighbor;
         if (!(it->flags & AF_PERSISTENT) && (it->base == NULL || !(it->base->flags & RAF_PERSISTENT)))
             destroy_actor(it, false, false);
-        it = (it == room->actors) ? it->previous : room->actors;
+        it = next;
     }
 }

@@ -107,7 +107,7 @@ SCRIPT_FUNCTION(main_string) {
     const GLfloat y = luaL_checknumber(L, 5);
     const GLfloat z = luaL_checknumber(L, 6);
 
-    main_string(str, NULL, size, x, y, z);
+    main_string(str, font, size, x, y, z);
 
     return 0;
 }

@@ -110,7 +110,7 @@ static void iterate_reset_cvar(void* userdata, SDL_PropertiesID props, const cha
 
 bool reset_cvar(const char* name) {
     if (name == NULL) {
-        bool result;
+        bool result = true;
         SDL_EnumerateProperties(default_cvars, iterate_reset_cvar, &result);
         return result;
     }
