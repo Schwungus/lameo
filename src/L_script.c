@@ -59,7 +59,6 @@ SCRIPT_ASSET(shaders, shader, struct Shader*, ShaderID);
 SCRIPT_ASSET(textures, texture, struct Texture*, TextureID);
 SCRIPT_ASSET(materials, material, struct Material*, MaterialID);
 SCRIPT_ASSET(models, model, struct Model*, ModelID);
-SCRIPT_ASSET(animations, animation, struct Animation*, AnimationID);
 SCRIPT_ASSET(fonts, font, struct Font*, FontID);
 SCRIPT_ASSET(sounds, sound, struct Sound*, SoundID);
 SCRIPT_ASSET(music, track, struct Track*, TrackID);
@@ -769,7 +768,6 @@ void script_init() {
     EXPOSE_ASSET(textures, texture);
     EXPOSE_ASSET(materials, material);
     EXPOSE_ASSET(models, model);
-    EXPOSE_ASSET(animations, animation);
     EXPOSE_ASSET(fonts, font);
     EXPOSE_ASSET(sounds, sound);
     EXPOSE_ASSET(music, track);
