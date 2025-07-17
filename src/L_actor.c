@@ -18,7 +18,7 @@ void actor_teardown() {
 
     for (size_t i = 0; actor_types->count > 0 && i < actor_types->capacity; i++) {
         struct KeyValuePair* kvp = &actor_types->items[i];
-        if (kvp->key == NULL)
+        if (kvp->key == NULL || kvp->key == HASH_TOMBSTONE)
             continue;
 
         struct ActorType* type = kvp->value;
@@ -342,8 +342,8 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (actor->player != NULL && actor->player->actor == actor)
         actor->player->actor = NULL;
 
-    unreference(&actor->table);
-    unreference_pointer(&actor->userdata);
+    unreference_pointer(&(actor->userdata));
+    unreference(&(actor->table));
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);
 }
@@ -372,11 +372,11 @@ void destroy_actor_camera(struct Actor* actor) {
 
     if (camera->surface != NULL)
         dispose_surface(camera->surface);
-    unreference(&camera->surface_ref);
+    unreference(&(camera->surface_ref));
 
-    unreference(&camera->table);
-    unreference_pointer(&camera->userdata);
-    lame_free(&actor->camera);
+    unreference_pointer(&(camera->userdata));
+    unreference(&(camera->table));
+    lame_free(&(actor->camera));
 }
 
 void destroy_actor_model(struct Actor* actor) {

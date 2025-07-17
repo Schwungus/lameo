@@ -59,6 +59,7 @@ SCRIPT_ASSET(shaders, shader, struct Shader*, ShaderID);
 SCRIPT_ASSET(textures, texture, struct Texture*, TextureID);
 SCRIPT_ASSET(materials, material, struct Material*, MaterialID);
 SCRIPT_ASSET(models, model, struct Model*, ModelID);
+SCRIPT_ASSET(animations, animation, struct Animation*, AnimationID);
 SCRIPT_ASSET(fonts, font, struct Font*, FontID);
 SCRIPT_ASSET(sounds, sound, struct Sound*, SoundID);
 SCRIPT_ASSET(music, track, struct Track*, TrackID);
@@ -768,6 +769,7 @@ void script_init() {
     EXPOSE_ASSET(textures, texture);
     EXPOSE_ASSET(materials, material);
     EXPOSE_ASSET(models, model);
+    EXPOSE_ASSET(animations, animation);
     EXPOSE_ASSET(fonts, font);
     EXPOSE_ASSET(sounds, sound);
     EXPOSE_ASSET(music, track);
@@ -825,7 +827,7 @@ int create_pointer_ref(const char* type, void* ptr) {
 
 int function_ref(int idx, const char* name) {
     lua_getfield(context, idx, name);
-    if (lua_isfunction(context, idx))
+    if (lua_isfunction(context, -1))
         return create_ref();
     lua_pop(context, 1);
     return LUA_NOREF;

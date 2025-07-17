@@ -113,14 +113,14 @@ void load_shader(const char* name) {
 
 void destroy_shader(struct Shader* shader) {
     ASSET_SANITY_POP(shader, shaders);
-    unreference_pointer(&shader->userdata);
+    unreference_pointer(&(shader->userdata));
 
     glDeleteProgram(shader->program);
     SDL_DestroyProperties(shader->uniforms);
 
     INFO("Freed shader \"%s\" (%u)", shader->name, shader->hid);
     destroy_handle(shader_handles, shader->hid);
-    lame_free(&shader->name);
+    lame_free(&(shader->name));
     lame_free(&shader);
 }
 
@@ -140,7 +140,7 @@ void load_texture(const char* name) {
 
     SDL_Surface* surface = IMG_Load(file);
     if (surface == NULL) {
-        WTF("Texture \"%s\" image fail: %s", SDL_GetError());
+        WTF("Texture \"%s\" image fail: %s", name, SDL_GetError());
         return;
     }
 
@@ -219,19 +219,19 @@ void load_texture(const char* name) {
 
 void destroy_texture(struct Texture* texture) {
     ASSET_SANITY_POP(texture, textures);
-    unreference_pointer(&texture->userdata);
+    unreference_pointer(&(texture->userdata));
 
     if (texture->children != NULL) {
         for (int i = 0; i < texture->num_children; i++)
             destroy_texture_hid(texture->children[i]);
-        lame_free(&texture->children);
+        lame_free(&(texture->children));
     }
     if (texture->parent == NULL)
-        glDeleteTextures(1, &texture->texture);
+        glDeleteTextures(1, &(texture->texture));
 
     INFO("Freed texture \"%s\" (%u)", texture->name, texture->hid);
     destroy_handle(texture_handles, texture->hid);
-    lame_free(&texture->name);
+    lame_free(&(texture->name));
     lame_free(&texture);
 }
 
@@ -353,14 +353,14 @@ void load_material(const char* name) {
 
 void destroy_material(struct Material* material) {
     ASSET_SANITY_POP(material, materials);
-    unreference_pointer(&material->userdata);
+    unreference_pointer(&(material->userdata));
 
     FREE_POINTER(material->textures[0]);
     FREE_POINTER(material->textures[1]);
 
     INFO("Freed material \"%s\" (%u)", material->name, material->hid);
     destroy_handle(material_handles, material->hid);
-    lame_free(&material->name);
+    lame_free(&(material->name));
     lame_free(&material);
 }
 
@@ -679,16 +679,16 @@ void load_model(const char* name) {
 
 void destroy_model(struct Model* model) {
     ASSET_SANITY_POP(model, models);
-    unreference_pointer(&model->userdata);
+    unreference_pointer(&(model->userdata));
 
     if (model->submodels != NULL) {
         for (size_t i = 0; i < model->num_submodels; i++) {
             struct Submodel* submodel = &(model->submodels[i]);
-            glDeleteVertexArrays(1, &submodel->vao);
-            glDeleteBuffers(1, &submodel->vbo);
-            lame_free(&submodel->vertices);
+            glDeleteVertexArrays(1, &(submodel->vao));
+            glDeleteBuffers(1, &(submodel->vbo));
+            lame_free(&(submodel->vertices));
         }
-        lame_free(&model->submodels);
+        lame_free(&(model->submodels));
     }
 
     CLOSE_POINTER(model->root_node, destroy_node);
@@ -697,14 +697,58 @@ void destroy_model(struct Model* model) {
 
     INFO("Freed model \"%s\" (%u)", model->name, model->hid);
     destroy_handle(model_handles, model->hid);
-    lame_free(&model->name);
+    lame_free(&(model->name));
     lame_free(&model);
 }
 
 // Animations
 SOURCE_ASSET(animations, animation, struct Animation*, AnimationID);
-void load_animation(const char* name) {}
-void destroy_animation(struct Animation* animation) {}
+
+void load_animation(const char* name) {
+    if (get_animation(name) != NULL)
+        return;
+
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "animations/%s.bbanim", name);
+    const char* file = get_mod_file(asset_file_helper, NULL);
+    if (file == NULL) {
+        WARN("Animation \"%s\" not found", name);
+        return;
+    }
+
+    // void* buffer = SDL_LoadFile(file, NULL);
+    // if (buffer == NULL) {
+    //     WTF("Animation \"%s\" load fail: %s", SDL_GetError());
+    //     return;
+    // }
+    // lame_free(&buffer);
+
+    // Model struct
+    struct Animation* animation = lame_alloc(sizeof(struct Animation));
+
+    // General
+    animation->hid = (AnimationID)create_handle(animation_handles, animation);
+    animation->name = SDL_strdup(name);
+    animation->transient = false;
+
+    // Data
+    animation->num_frames = 0;
+    animation->frame_speed = 0;
+    animation->parent_frames = animation->world_frames = animation->bone_frames = NULL;
+
+    animation->userdata = create_pointer_ref("animation", animation);
+    ASSET_SANITY_PUSH(animation, animations);
+    INFO("Loaded animation \"%s\" (%u)", name, animation->hid);
+}
+
+void destroy_animation(struct Animation* animation) {
+    ASSET_SANITY_POP(animation, animations);
+    unreference_pointer(&(animation->userdata));
+
+    INFO("Freed animation \"%s\" (%u)", animation->name, animation->hid);
+    destroy_handle(animation_handles, animation->hid);
+    lame_free(&(animation->name));
+    lame_free(&animation);
+}
 
 // Fonts
 SOURCE_ASSET(fonts, font, struct Font*, FontID);
@@ -788,7 +832,7 @@ void load_font(const char* name) {
             } else {
                 size_t old_num = font->num_glyphs;
                 font->num_glyphs = gid + 1;
-                lame_realloc(&font->glyphs, font->num_glyphs * sizeof(struct Glyph*));
+                lame_realloc(&(font->glyphs), font->num_glyphs * sizeof(struct Glyph*));
                 lame_set(font->glyphs + old_num, 0, (font->num_glyphs - old_num) * sizeof(struct Glyph*));
             }
         }
@@ -819,17 +863,17 @@ void load_font(const char* name) {
 
 void destroy_font(struct Font* font) {
     ASSET_SANITY_POP(font, fonts);
-    unreference_pointer(&font->userdata);
+    unreference_pointer(&(font->userdata));
 
     if (font->glyphs != NULL) {
         for (size_t i = 0; i < font->num_glyphs; i++)
             FREE_POINTER(font->glyphs[i]);
-        lame_free(&font->glyphs);
+        lame_free(&(font->glyphs));
     }
 
     INFO("Freed font \"%s\" (%u)", font->name, font->hid);
     destroy_handle(font_handles, font->hid);
-    lame_free(&font->name);
+    lame_free(&(font->name));
     lame_free(&font);
 }
 
@@ -963,18 +1007,18 @@ sound_loaded:
 
 void destroy_sound(struct Sound* sound) {
     ASSET_SANITY_POP(sound, sounds);
-    unreference_pointer(&sound->userdata);
+    unreference_pointer(&(sound->userdata));
 
     if (sound->samples != NULL) {
         for (size_t i = 0; i < sound->num_samples; i++)
             if (sound->samples[i] != NULL)
                 destroy_sample(sound->samples[i]);
-        lame_free(&sound->samples);
+        lame_free(&(sound->samples));
     }
 
     INFO("Freed sound \"%s\" (%u)", sound->name, sound->hid);
     destroy_handle(sound_handles, sound->hid);
-    lame_free(&sound->name);
+    lame_free(&(sound->name));
     lame_free(&sound);
 }
 
@@ -1009,12 +1053,12 @@ void load_track(const char* name) {
 
 void destroy_track(struct Track* track) {
     ASSET_SANITY_POP(track, music);
-    unreference_pointer(&track->userdata);
+    unreference_pointer(&(track->userdata));
 
     destroy_stream(track->stream);
     INFO("Freed track \"%s\" (%u)", track->name, track->hid);
     destroy_handle(track_handles, track->hid);
-    lame_free(&track->name);
+    lame_free(&(track->name));
     lame_free(&track);
 }
 

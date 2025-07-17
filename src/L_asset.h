@@ -5,6 +5,7 @@ struct Shader;
 struct Texture;
 struct Material;
 struct Model;
+struct Animation;
 struct Font;
 struct Sound;
 struct Track;

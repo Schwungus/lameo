@@ -16,7 +16,6 @@ void* _lame_alloc(size_t size, const char* filename, int line) {
 void _lame_free(void** ptr, const char* filename, int line) {
     if (ptr == NULL || *ptr == NULL)
         log_fatal(src_basename(filename), line, "Freeing a null pointer?");
-
     SDL_free(*ptr);
     *ptr = NULL;
 }
@@ -503,7 +502,6 @@ void* _pop_int_map(struct IntMap* map, uint32_t key, bool nuke, const char* file
     struct IKeyValuePair* kvp = &map->items[index];
     while (kvp->state != IKVP_NONE) {
         if (kvp->state != IKVP_DELETED && key == kvp->key) {
-            _lame_free((void**)(&(kvp->key)), filename, line);
             kvp->state = IKVP_DELETED;
             void* value = kvp->value;
             kvp->value = NULL;

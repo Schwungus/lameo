@@ -19,14 +19,22 @@ define_actor("Main", nil, {
         load_texture("logo/sdl")
         load_texture("logo/fmod")
         load_texture("logo/lua")
-        load_sound("logo/schwungus")
+        load_texture("dummy")
+        load_texture("dumdum")
+        load_model("video")
+        load_animation("video/idle")
+        load_sound("tick")
+        load_sound("pause")
+        load_sound("unpause")
+        load_track("sample")
     end,
 
     create = function (this)
         this.dummy = dummy
         dummy = math.fmod(dummy + 8, 160)
         this.dummy2 = 0
-        local model = this:create_model(fetch_model("video"))
+
+        local model = this:create_model(get_model("video"))
         model:set_hidden(8, 1)
         model:set_hidden(9, 1)
         model:set_hidden(10, 1)
