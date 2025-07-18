@@ -758,7 +758,7 @@ void submit_world_batch() {
     glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * world_batch.vertex_count, world_batch.vertices);
 
-    // Apply stencil
+    set_int_uniform("u_animated", 0);
     set_vec4_uniform(
         "u_stencil", world_batch.stencil[0], world_batch.stencil[1], world_batch.stencil[2], world_batch.stencil[3]
     );
@@ -1142,6 +1142,8 @@ void submit_model_instance(struct ModelInstance* inst) {
     set_int_uniform("u_texture", 0);
     set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_stencil", 1, 1, 1, 0);
+
+    set_int_uniform("u_animated", 0);
 
     struct Model* model = inst->model;
     for (size_t i = 0; i < model->num_submodels; i++) {

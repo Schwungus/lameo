@@ -18,23 +18,23 @@ void handler_init() {
 void handler_teardown() {
     struct Handler* handler = handlers;
     while (handler != NULL) {
-        unreference(&handler->on_register);
-        unreference(&handler->on_start);
+        unreference(&(handler->on_register));
+        unreference(&(handler->on_start));
 
-        unreference(&handler->player_activated);
-        unreference(&handler->player_deactivated);
+        unreference(&(handler->player_activated));
+        unreference(&(handler->player_deactivated));
 
-        unreference(&handler->level_loading);
-        unreference(&handler->level_started);
+        unreference(&(handler->level_loading));
+        unreference(&(handler->level_started));
 
-        unreference(&handler->room_activated);
-        unreference(&handler->room_deactivated);
-        unreference(&handler->room_changed);
+        unreference(&(handler->room_activated));
+        unreference(&(handler->room_deactivated));
+        unreference(&(handler->room_changed));
 
-        unreference(&handler->ui_signalled);
+        unreference(&(handler->ui_signalled));
 
         struct Handler* temp = handler->next;
-        lame_free(&handler->name);
+        lame_free(&(handler->name));
         lame_free(&handler);
         handler = temp;
     }

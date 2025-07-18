@@ -821,7 +821,7 @@ int create_table_ref() {
 }
 
 int create_pointer_ref(const char* type, void* ptr) {
-    *(void**)(userdata_alloc(type, sizeof(void*))) = ptr;
+    *((void**)(userdata_alloc(type, sizeof(void*)))) = ptr;
     return create_ref();
 }
 
@@ -840,7 +840,7 @@ void unreference(int* ref) {
 
 void unreference_pointer(int* ref) {
     lua_rawgeti(context, LUA_REGISTRYINDEX, *ref);
-    *(void**)(lua_touserdata(context, -1)) = NULL;
+    *((void**)(lua_touserdata(context, -1))) = NULL;
     unreference(ref);
 }
 

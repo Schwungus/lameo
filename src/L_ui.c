@@ -28,16 +28,16 @@ void ui_teardown() {
 
         struct UIType* type = kvp->value;
         if (type != NULL) {
-            lame_free(&type->name);
-            unreference(&type->load);
-            unreference(&type->create);
-            unreference(&type->cleanup);
-            unreference(&type->tick);
-            unreference(&type->draw);
-            lame_free(&kvp->value);
+            lame_free(&(type->name));
+            unreference(&(type->load));
+            unreference(&(type->create));
+            unreference(&(type->cleanup));
+            unreference(&(type->tick));
+            unreference(&(type->draw));
+            lame_free(&(kvp->value));
         }
 
-        lame_free(&kvp->key);
+        lame_free(&(kvp->key));
         kvp->key = HASH_TOMBSTONE;
 
         ui_types->count--;
@@ -71,15 +71,15 @@ int define_ui(lua_State* L) {
     } else {
         WARN("Redefining UI \"%s\"", name);
         if (type->parent == NULL || type->load != parent->load)
-            unreference(&type->load);
+            unreference(&(type->load));
         if (type->parent == NULL || type->create != parent->create)
-            unreference(&type->create);
+            unreference(&(type->create));
         if (type->parent == NULL || type->cleanup != parent->cleanup)
-            unreference(&type->cleanup);
+            unreference(&(type->cleanup));
         if (type->parent == NULL || type->tick != parent->tick)
-            unreference(&type->tick);
+            unreference(&(type->tick));
         if (type->parent == NULL || type->draw != parent->draw)
-            unreference(&type->draw);
+            unreference(&(type->draw));
     }
 
     type->parent = parent;
@@ -164,6 +164,9 @@ void destroy_ui(struct UI* ui) {
     if (ui->type->cleanup != LUA_NOREF)
         execute_ref_in(ui->type->cleanup, ui->userdata, ui->type->name);
 
+    unreference_pointer(&(ui->userdata));
+    unreference(&(ui->table));
+
     if (ui_root == ui)
         ui_root = NULL;
     if (ui_top == ui)
@@ -173,9 +176,6 @@ void destroy_ui(struct UI* ui) {
         ui->parent->child = NULL;
     if (ui->child != NULL)
         destroy_ui(ui->child);
-
-    unreference(&ui->table);
-    unreference_pointer(&ui->userdata);
 
     destroy_handle(ui_handles, ui->hid);
     lame_free(&ui);

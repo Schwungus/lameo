@@ -1,5 +1,7 @@
 #version 330 core
 
+#define MAX_BONES 128
+
 layout (location = 0) in vec3 i_position;
 layout (location = 1) in vec3 i_normal;
 layout (location = 2) in vec4 i_color;
@@ -15,8 +17,11 @@ uniform mat4 u_view_matrix;
 uniform mat4 u_projection_matrix;
 uniform mat4 u_mvp_matrix;
 
+uniform bool u_animated;
+uniform vec4 u_sample[2 * MAX_BONES];
+
 void main() {
-    gl_Position = u_mvp_matrix * vec4(i_position, 1.);
+    gl_Position = u_mvp_matrix * vec4(i_position, 1.0);
 
     v_color = i_color;
     v_uv = i_uv;

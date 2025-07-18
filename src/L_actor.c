@@ -23,16 +23,18 @@ void actor_teardown() {
 
         struct ActorType* type = kvp->value;
         if (type != NULL) {
-            lame_free(&type->name);
-            unreference(&type->load);
-            unreference(&type->create);
-            unreference(&type->on_destroy);
-            unreference(&type->cleanup);
-            unreference(&type->tick);
-            unreference(&type->draw);
-            unreference(&type->draw_screen);
-            unreference(&type->draw_ui);
-            lame_free(&kvp->value);
+            lame_free(&(type->name));
+            unreference(&(type->load));
+            unreference(&(type->create));
+            unreference(&(type->create_camera));
+            unreference(&(type->on_destroy));
+            unreference(&(type->cleanup));
+            unreference(&(type->tick));
+            unreference(&(type->tick_camera));
+            unreference(&(type->draw));
+            unreference(&(type->draw_screen));
+            unreference(&(type->draw_ui));
+            lame_free(&(kvp->value));
         }
 
         lame_free(&kvp->key);
@@ -68,25 +70,25 @@ int define_actor(lua_State* L) {
     } else {
         WARN("Redefining Actor \"%s\"", name);
         if (type->parent == NULL || type->load != parent->load)
-            unreference(&type->load);
+            unreference(&(type->load));
         if (type->parent == NULL || type->create != parent->create)
-            unreference(&type->create);
+            unreference(&(type->create));
         if (type->parent == NULL || type->create_camera != parent->create_camera)
-            unreference(&type->create_camera);
+            unreference(&(type->create_camera));
         if (type->parent == NULL || type->on_destroy != parent->on_destroy)
-            unreference(&type->on_destroy);
+            unreference(&(type->on_destroy));
         if (type->parent == NULL || type->cleanup != parent->cleanup)
-            unreference(&type->cleanup);
+            unreference(&(type->cleanup));
         if (type->parent == NULL || type->tick != parent->tick)
-            unreference(&type->tick);
+            unreference(&(type->tick));
         if (type->parent == NULL || type->tick_camera != parent->tick_camera)
-            unreference(&type->tick_camera);
+            unreference(&(type->tick_camera));
         if (type->parent == NULL || type->draw != parent->draw)
-            unreference(&type->draw);
+            unreference(&(type->draw));
         if (type->parent == NULL || type->draw_screen != parent->draw_screen)
-            unreference(&type->draw_screen);
+            unreference(&(type->draw_screen));
         if (type->parent == NULL || type->draw_ui != parent->draw_ui)
-            unreference(&type->draw_ui);
+            unreference(&(type->draw_ui));
     }
 
     type->parent = parent;
@@ -306,6 +308,9 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (actor->type->cleanup != LUA_NOREF)
         execute_ref_in(actor->type->cleanup, actor->userdata, actor->type->name);
 
+    unreference_pointer(&(actor->userdata));
+    unreference(&(actor->table));
+
     if (actor->base != NULL) {
         if (dispose && ((actor->flags & AF_DISPOSABLE) || (actor->base->flags & RAF_DISPOSABLE)))
             actor->base->flags |= RAF_DISPOSED;
@@ -342,8 +347,6 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (actor->player != NULL && actor->player->actor == actor)
         actor->player->actor = NULL;
 
-    unreference_pointer(&(actor->userdata));
-    unreference(&(actor->table));
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);
 }
@@ -352,6 +355,9 @@ void destroy_actor_camera(struct Actor* actor) {
     struct ActorCamera* camera = actor->camera;
     if (camera == NULL)
         return;
+
+    unreference_pointer(&(camera->userdata));
+    unreference(&(camera->table));
 
     if (get_active_camera() == camera)
         set_active_camera(camera->child);
@@ -374,8 +380,6 @@ void destroy_actor_camera(struct Actor* actor) {
         dispose_surface(camera->surface);
     unreference(&(camera->surface_ref));
 
-    unreference_pointer(&(camera->userdata));
-    unreference(&(camera->table));
     lame_free(&(actor->camera));
 }
 

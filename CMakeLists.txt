@@ -115,7 +115,6 @@ file(GLOB_RECURSE HEADERS ${SOURCE_DIR}/*.h)
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBS})
-target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS=1)
 caulk_register(${PROJECT_NAME})
 add_custom_command(
     TARGET ${PROJECT_NAME}
