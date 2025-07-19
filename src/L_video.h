@@ -16,6 +16,8 @@
 #define SURFACE_COLOR_TEXTURE 0
 #define SURFACE_DEPTH_TEXTURE 1
 
+#define MAX_BONES 128
+
 enum FullscreenModes {
     FSM_WINDOWED,
     FSM_FULLSCREEN,
@@ -55,7 +57,7 @@ struct WorldVertex {
     GLfloat normal[3];
     GLubyte color[4];
     GLfloat uv[4];
-    GLubyte bone_index[4];
+    GLfloat bone_index[4];
     GLfloat bone_weight[4];
 };
 
@@ -98,6 +100,11 @@ struct ModelInstance {
     vec3 pos, angle, scale;
 
     bool* hidden;
+
+    struct Animation* animation;
+    bool loop;
+    float frame, frame_speed;
+    DualQuaternion node_transforms[MAX_BONES], sample[MAX_BONES];
 };
 
 void video_init();
@@ -196,5 +203,6 @@ void clear_stencil(GLint);
 // Model Instances
 struct ModelInstance* create_model_instance(struct Model*);
 void destroy_model_instance(struct ModelInstance*);
+void set_model_instance_animation(struct ModelInstance*, struct Animation*, float, bool);
 void submit_model_instance(struct ModelInstance*);
 void draw_model_instance(struct ModelInstance*);

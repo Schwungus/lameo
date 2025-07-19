@@ -139,7 +139,7 @@ void video_init() {
     glEnableVertexArrayAttrib(world_batch.vao, VATT_UV);
     glVertexArrayAttribFormat(world_batch.vao, VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
     glEnableVertexArrayAttrib(world_batch.vao, VATT_BONE_INDEX);
-    glVertexArrayAttribFormat(world_batch.vao, VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(GLubyte) * 4);
+    glVertexArrayAttribFormat(world_batch.vao, VATT_BONE_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
     glEnableVertexArrayAttrib(world_batch.vao, VATT_BONE_WEIGHT);
     glVertexArrayAttribFormat(world_batch.vao, VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
 
@@ -173,7 +173,7 @@ void video_init() {
 
     glEnableVertexAttribArray(VATT_BONE_INDEX);
     glVertexAttribPointer(
-        VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(struct WorldVertex),
+        VATT_BONE_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
         (void*)offsetof(struct WorldVertex, bone_index)
     );
 
@@ -558,9 +558,10 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
         glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
     }
 
-    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex
-    ){x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
-      u, v};
+    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){
+        x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
+        u, v
+    };
 }
 
 void main_rectangle(
@@ -1127,6 +1128,11 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->hidden = lame_alloc(model->num_submodels * sizeof(bool));
     lame_set(inst->hidden, 0, model->num_submodels * sizeof(bool));
 
+    inst->animation = NULL;
+    inst->loop = false;
+    inst->frame = 0;
+    inst->frame_speed = 1;
+
     return inst;
 }
 
@@ -1136,6 +1142,20 @@ void destroy_model_instance(struct ModelInstance* inst) {
     lame_free(&inst);
 }
 
+/*static void animate_model_instance(struct ModelInstance* inst) {
+    struct Animation* animation = inst->animation;
+    if (animation == NULL || animation->bone_frames == NULL)
+        return;
+
+    lame_copy(inst->sample, animation->bone_frames[0], animation->num_bones * sizeof(DualQuaternion));
+}*/
+
+void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
+    inst->animation = animation;
+    inst->frame = frame;
+    inst->loop = loop;
+}
+
 void submit_model_instance(struct ModelInstance* inst) {
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
 
@@ -1143,7 +1163,15 @@ void submit_model_instance(struct ModelInstance* inst) {
     set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_stencil", 1, 1, 1, 0);
 
-    set_int_uniform("u_animated", 0);
+    if (inst->animation != NULL && inst->animation->bone_frames != NULL) {
+        set_int_uniform("u_animated", 1);
+        glUniform4fv(
+            (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_sample[0]", -1)), 2 * inst->animation->num_bones,
+            (const GLfloat*)(inst->animation->bone_frames[0])
+        );
+    } else {
+        set_int_uniform("u_animated", 0);
+    }
 
     struct Model* model = inst->model;
     for (size_t i = 0; i < model->num_submodels; i++) {
@@ -1154,11 +1182,11 @@ void submit_model_instance(struct ModelInstance* inst) {
         const struct Material* material = hid_to_material(model->materials[submodel->material]);
         if (material == NULL)
             continue;
-        const struct Texture* texture =
-            material->textures[0] == NULL
-                ? NULL
-                : hid_to_texture(material->textures[0][(size_t
-                  )SDL_fmod(draw_time * material->texture_speed[0], material->num_textures[0])]);
+        const struct Texture* texture = material->textures[0] == NULL
+                                            ? NULL
+                                            : hid_to_texture(material->textures[0][(size_t)SDL_fmod(
+                                                  draw_time * material->texture_speed[0], material->num_textures[0]
+                                              )]);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture == NULL ? blank_texture : texture->texture);
@@ -1167,8 +1195,10 @@ void submit_model_instance(struct ModelInstance* inst) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
         if (material->textures[1] != NULL) {
-            const struct Texture* blend_texture = hid_to_texture(material->textures[1][(size_t
-            )SDL_fmod(draw_time * material->texture_speed[1], material->num_textures[1])]);
+            const struct Texture* blend_texture = hid_to_texture(
+                material
+                    ->textures[1][(size_t)SDL_fmod(draw_time * material->texture_speed[1], material->num_textures[1])]
+            );
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);

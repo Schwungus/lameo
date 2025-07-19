@@ -14,6 +14,12 @@
         matrix[3][2], matrix[3][3]                                                                                     \
     );
 
+#define PRINT_DQ(dq)                                                                                                   \
+    INFO(                                                                                                              \
+        #dq ": \n%.2f, %.2f, %.2f, %.2f\n%.2f, %.2f, %.2f, %.2f", dq[0], dq[1], dq[2], dq[3], dq[4], dq[5], dq[6],     \
+        dq[7]                                                                                                          \
+    );
+
 // Dual Quaternions
 typedef float DualQuaternion[8];
 

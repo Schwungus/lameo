@@ -97,12 +97,11 @@ void load_shader(const char* name) {
     // Uniforms
     if ((shader->uniforms = SDL_CreateProperties()) == 0)
         FATAL("Shader \"%s\" uniforms fail: %s", name, SDL_GetError());
-    GLsizei unum, ulen;
+    GLsizei unum;
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &unum);
-    glGetProgramiv(shader->program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &ulen);
     for (GLsizei i = 0; i < unum; i++) {
         GLchar uname[256];
-        glGetActiveUniform(shader->program, i, ulen, NULL, NULL, NULL, uname);
+        glGetActiveUniform(shader->program, i, 256, NULL, NULL, NULL, uname);
         if (!SDL_SetNumberProperty(shader->uniforms, uname, (Sint64)glGetUniformLocation(shader->program, uname)))
             FATAL("Shader \"%s\" uniform \"%s\" fail: %s", name, uname, SDL_GetError());
     }
@@ -564,14 +563,17 @@ void load_model(const char* name) {
                     vertex->bone_index[1] = read_f32(&cursor);
                     vertex->bone_index[2] = read_f32(&cursor);
                     vertex->bone_index[3] = read_f32(&cursor);
-
                     vertex->bone_weight[0] = read_f32(&cursor);
                     vertex->bone_weight[1] = read_f32(&cursor);
                     vertex->bone_weight[2] = read_f32(&cursor);
                     vertex->bone_weight[3] = read_f32(&cursor);
                 } else {
-                    vertex->bone_index[0] = vertex->bone_index[1] = vertex->bone_index[2] = vertex->bone_index[3] = 0;
+                    glm_vec4_zero(vertex->bone_index);
                     glm_vec4_zero(vertex->bone_weight);
+                }
+
+                if (has_id) {
+                    read_f32(&cursor);
                 }
             }
 
@@ -587,9 +589,7 @@ void load_model(const char* name) {
             glEnableVertexArrayAttrib(submodel->vao, VATT_UV);
             glVertexArrayAttribFormat(submodel->vao, VATT_UV, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
             glEnableVertexArrayAttrib(submodel->vao, VATT_BONE_INDEX);
-            glVertexArrayAttribFormat(
-                submodel->vao, VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(GLubyte) * 4
-            );
+            glVertexArrayAttribFormat(submodel->vao, VATT_BONE_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
             glEnableVertexArrayAttrib(submodel->vao, VATT_BONE_WEIGHT);
             glVertexArrayAttribFormat(submodel->vao, VATT_BONE_WEIGHT, 4, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 4);
 
@@ -624,7 +624,7 @@ void load_model(const char* name) {
 
             glEnableVertexAttribArray(VATT_BONE_INDEX);
             glVertexAttribPointer(
-                VATT_BONE_INDEX, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(struct WorldVertex),
+                VATT_BONE_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(struct WorldVertex),
                 (void*)offsetof(struct WorldVertex, bone_index)
             );
 
@@ -775,9 +775,13 @@ void load_animation(const char* name) {
         animation->num_bones
     );
 
-    if (spaces & BS_PARENT) {
-        animation->parent_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
-        for (size_t i = 0; i < animation->num_frames; i++) {
+    animation->parent_frames =
+        (spaces & BS_PARENT) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+    animation->world_frames = (spaces & BS_WORLD) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+    animation->bone_frames = (spaces & BS_BONE) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+
+    for (size_t i = 0; i < animation->num_frames; i++) {
+        if (animation->parent_frames != NULL) {
             DualQuaternion* frame = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             for (size_t j = 0; j < animation->num_nodes; j++) {
                 frame[j][0] = read_f32(&cursor);
@@ -791,13 +795,8 @@ void load_animation(const char* name) {
             }
             animation->parent_frames[i] = frame;
         }
-    } else {
-        animation->parent_frames = NULL;
-    }
 
-    if (spaces & BS_WORLD) {
-        animation->world_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
-        for (size_t i = 0; i < animation->num_frames; i++) {
+        if (animation->world_frames != NULL) {
             DualQuaternion* frame = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             for (size_t j = 0; j < animation->num_nodes; j++) {
                 frame[j][0] = read_f32(&cursor);
@@ -811,13 +810,8 @@ void load_animation(const char* name) {
             }
             animation->world_frames[i] = frame;
         }
-    } else {
-        animation->world_frames = NULL;
-    }
 
-    if (spaces & BS_BONE) {
-        animation->bone_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
-        for (size_t i = 0; i < animation->num_frames; i++) {
+        if (animation->bone_frames != NULL) {
             DualQuaternion* frame = lame_alloc(animation->num_bones * sizeof(DualQuaternion));
             for (size_t j = 0; j < animation->num_bones; j++) {
                 frame[j][0] = read_f32(&cursor);
@@ -831,8 +825,6 @@ void load_animation(const char* name) {
             }
             animation->bone_frames[i] = frame;
         }
-    } else {
-        animation->bone_frames = NULL;
     }
 
     lame_free(&buffer);

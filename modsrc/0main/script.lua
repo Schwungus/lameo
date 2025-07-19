@@ -29,6 +29,9 @@ define_actor("Main", nil, {
         model:set_hidden(8, 1)
         model:set_hidden(9, 1)
         model:set_hidden(10, 1)
+        if ((this.dummy % 25) < 9) then
+            model:set_animation(get_animation("video/idle"))
+        end
     end,
 
     on_destroy = function (this)

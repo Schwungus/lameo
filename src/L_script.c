@@ -206,6 +206,17 @@ SCRIPT_FUNCTION(model_instance_set_hidden) {
     return 0;
 }
 
+SCRIPT_FUNCTION(model_instance_set_animation) {
+    struct ModelInstance* inst = s_check_model_instance(L, 1);
+    struct Animation* animation = luaL_opt(L, s_check_animation, 2, NULL);
+    const float frame = luaL_optnumber(L, 3, 0);
+    const bool loop = luaL_optinteger(L, 4, 0);
+
+    set_model_instance_animation(inst, animation, frame, loop);
+
+    return 0;
+}
+
 // Audio
 SCRIPT_FUNCTION(play_ui_sound) {
     struct Sound* sound = luaL_opt(L, s_check_sound, 1, NULL);
@@ -664,6 +675,7 @@ void script_init() {
     luaL_newmetatable(context, "model_instance");
     static const luaL_Reg model_instance_methods[] = {
         {"set_hidden", s_model_instance_set_hidden},
+        {"set_animation", s_model_instance_set_animation},
         {NULL, NULL},
     };
     luaL_setfuncs(context, model_instance_methods, 0);
