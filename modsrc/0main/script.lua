@@ -16,17 +16,8 @@ dummy = 0
 
 define_actor("Main", nil, {
     load = function()
-        load_texture("logo/sdl")
-        load_texture("logo/fmod")
-        load_texture("logo/lua")
-        load_texture("dummy")
-        load_texture("dumdum")
         load_model("video")
         load_animation("video/idle")
-        load_sound("tick")
-        load_sound("pause")
-        load_sound("unpause")
-        load_track("sample")
     end,
 
     create = function (this)

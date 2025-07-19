@@ -780,6 +780,8 @@ void script_init() {
 }
 
 void script_teardown() {
+    // May segfault, but it doesn't matter as the game is already over halfway
+    // closed at this point.
     CLOSE_HANDLE(context, lua_close);
 
     INFO("Closed");
