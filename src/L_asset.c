@@ -6,6 +6,7 @@
 #include "L_memory.h"
 #include "L_mod.h"
 #include "L_script.h"
+#include "L_tick.h"
 
 static char asset_file_helper[FILE_PATH_MAX];
 
@@ -424,7 +425,7 @@ void load_model(const char* name) {
         WTF("Model \"%s\" load fail: %s", name, SDL_GetError());
         return;
     }
-    uint8_t* cursor = (uint8_t*)buffer;
+    uint8_t* cursor = buffer;
 
     // File header
     bool has_minor;
@@ -715,14 +716,44 @@ void load_animation(const char* name) {
         return;
     }
 
-    // void* buffer = SDL_LoadFile(file, NULL);
-    // if (buffer == NULL) {
-    //     WTF("Animation \"%s\" load fail: %s", SDL_GetError());
-    //     return;
-    // }
-    // lame_free(&buffer);
+    void* buffer = SDL_LoadFile(file, NULL);
+    if (buffer == NULL) {
+        WTF("Animation \"%s\" load fail: %s", SDL_GetError());
+        return;
+    }
+    uint8_t* cursor = buffer;
 
-    // Model struct
+    // File header
+    bool has_minor;
+    if (SDL_strcmp((const char*)cursor, "bbanim") == 0) {
+        has_minor = false;
+        cursor += sizeof("bbanim");
+    } else if (SDL_strcmp((const char*)cursor, "BBANIM") == 0) {
+        has_minor = true;
+        cursor += sizeof("BBANIM");
+    } else {
+        FATAL("Invalid header in animation \"%s\"");
+    }
+
+    uint8_t major = read_u8(&cursor);
+    uint8_t minor = 0;
+    if (major != BBMOD_VERSION_MAJOR)
+        FATAL("Bad BBMOD major version in animation \"%s\" (%u =/= %u)", name, major, BBMOD_VERSION_MAJOR);
+    if (has_minor) {
+        uint8_t minor = read_u8(&cursor);
+        if (minor < 2)
+            FATAL(
+                "Bad BBMOD version in animation \"%s\" (%u.%u < %u.%u)", name, major, minor, BBMOD_VERSION_MAJOR,
+                BBMOD_VERSION_MINOR
+            );
+        if (minor > BBMOD_VERSION_MINOR)
+            FATAL(
+                "Bad BBMOD version in animation \"%s\" (%u.%u > %u.%u)", name, major, minor, BBMOD_VERSION_MAJOR,
+                BBMOD_VERSION_MINOR
+            );
+    }
+
+    // Animation struct
     struct Animation* animation = lame_alloc(sizeof(struct Animation));
 
     // General
@@ -731,9 +762,80 @@ void load_animation(const char* name) {
     animation->transient = false;
 
     // Data
-    animation->num_frames = 0;
-    animation->frame_speed = 0;
-    animation->parent_frames = animation->world_frames = animation->bone_frames = NULL;
+    enum BoneSpaces spaces = (enum BoneSpaces)(read_u8(&cursor));
+    animation->num_frames = (size_t)(read_f64(&cursor));
+    animation->frame_speed = (float)(read_f64(&cursor) / (double)TICKRATE);
+
+    animation->num_nodes = (size_t)(read_u32(&cursor));
+    animation->num_bones = (size_t)(read_u32(&cursor));
+
+    INFO("PARENT %u, WORLD %u, BONE %u", spaces & BS_PARENT, spaces & BS_WORLD, spaces & BS_BONE);
+    INFO(
+        "%u frames (+%.3f), %u nodes, %u bones", animation->num_frames, animation->frame_speed, animation->num_nodes,
+        animation->num_bones
+    );
+
+    if (spaces & BS_PARENT) {
+        animation->parent_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+        for (size_t i = 0; i < animation->num_frames; i++) {
+            DualQuaternion* frame = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            for (size_t j = 0; j < animation->num_nodes; j++) {
+                frame[j][0] = read_f32(&cursor);
+                frame[j][1] = read_f32(&cursor);
+                frame[j][2] = read_f32(&cursor);
+                frame[j][3] = read_f32(&cursor);
+                frame[j][4] = read_f32(&cursor);
+                frame[j][5] = read_f32(&cursor);
+                frame[j][6] = read_f32(&cursor);
+                frame[j][7] = read_f32(&cursor);
+            }
+            animation->parent_frames[i] = frame;
+        }
+    } else {
+        animation->parent_frames = NULL;
+    }
+
+    if (spaces & BS_WORLD) {
+        animation->world_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+        for (size_t i = 0; i < animation->num_frames; i++) {
+            DualQuaternion* frame = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            for (size_t j = 0; j < animation->num_nodes; j++) {
+                frame[j][0] = read_f32(&cursor);
+                frame[j][1] = read_f32(&cursor);
+                frame[j][2] = read_f32(&cursor);
+                frame[j][3] = read_f32(&cursor);
+                frame[j][4] = read_f32(&cursor);
+                frame[j][5] = read_f32(&cursor);
+                frame[j][6] = read_f32(&cursor);
+                frame[j][7] = read_f32(&cursor);
+            }
+            animation->world_frames[i] = frame;
+        }
+    } else {
+        animation->world_frames = NULL;
+    }
+
+    if (spaces & BS_BONE) {
+        animation->bone_frames = lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+        for (size_t i = 0; i < animation->num_frames; i++) {
+            DualQuaternion* frame = lame_alloc(animation->num_bones * sizeof(DualQuaternion));
+            for (size_t j = 0; j < animation->num_bones; j++) {
+                frame[j][0] = read_f32(&cursor);
+                frame[j][1] = read_f32(&cursor);
+                frame[j][2] = read_f32(&cursor);
+                frame[j][3] = read_f32(&cursor);
+                frame[j][4] = read_f32(&cursor);
+                frame[j][5] = read_f32(&cursor);
+                frame[j][6] = read_f32(&cursor);
+                frame[j][7] = read_f32(&cursor);
+            }
+            animation->bone_frames[i] = frame;
+        }
+    } else {
+        animation->bone_frames = NULL;
+    }
+
+    lame_free(&buffer);
 
     animation->userdata = create_pointer_ref("animation", animation);
     ASSET_SANITY_PUSH(animation, animations);
@@ -743,6 +845,22 @@ void load_animation(const char* name) {
 void destroy_animation(struct Animation* animation) {
     ASSET_SANITY_POP(animation, animations);
     unreference_pointer(&(animation->userdata));
+
+    if (animation->parent_frames != NULL) {
+        for (size_t i = 0; i < animation->num_frames; i++)
+            lame_free(&(animation->parent_frames[i]));
+        lame_free(&(animation->parent_frames));
+    }
+    if (animation->world_frames != NULL) {
+        for (size_t i = 0; i < animation->num_frames; i++)
+            lame_free(&(animation->world_frames[i]));
+        lame_free(&(animation->world_frames));
+    }
+    if (animation->bone_frames != NULL) {
+        for (size_t i = 0; i < animation->num_frames; i++)
+            lame_free(&(animation->bone_frames[i]));
+        lame_free(&(animation->bone_frames));
+    }
 
     INFO("Freed animation \"%s\" (%u)", animation->name, animation->hid);
     destroy_handle(animation_handles, animation->hid);

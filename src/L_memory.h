@@ -39,6 +39,7 @@ int16_t _read_s16(uint8_t**, const char*, int);
 int32_t _read_s32(uint8_t**, const char*, int);
 int64_t _read_s64(uint8_t**, const char*, int);
 float _read_f32(uint8_t**, const char*, int);
+double _read_f64(uint8_t**, const char*, int);
 char* read_string(uint8_t**);
 
 #define read_bool(buf) (bool)read_u8(buf)
@@ -49,6 +50,7 @@ char* read_string(uint8_t**);
 #define read_s32(buf) _read_s32(buf, __FILE__, __LINE__)
 #define read_s64(buf) _read_s64(buf, __FILE__, __LINE__)
 #define read_f32(buf) _read_f32(buf, __FILE__, __LINE__)
+#define read_f64(buf) _read_f64(buf, __FILE__, __LINE__)
 
 /*
    This is a handle system I made on a whim. It's called "bumbling smartass".

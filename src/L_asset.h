@@ -194,9 +194,10 @@ BEGIN_ASSET(Animation, AnimationID)
     size_t num_frames;
     float frame_speed;
 
-    DualQuaternion* parent_frames;
-    DualQuaternion* world_frames;
-    DualQuaternion* bone_frames;
+    size_t num_nodes, num_bones;
+    DualQuaternion** parent_frames;
+    DualQuaternion** world_frames;
+    DualQuaternion** bone_frames;
 END_ASSET(animations, animation, Animation, AnimationID)
 
 struct Glyph {

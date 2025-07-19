@@ -106,6 +106,13 @@ float _read_f32(uint8_t** buf, const char* filename, int line) {
     return SDL_SwapFloatLE(result);
 }
 
+double _read_f64(uint8_t** buf, const char* filename, int line) {
+    double result;
+    _lame_copy(&result, *buf, sizeof(double), filename, line);
+    *buf += sizeof(double);
+    return SDL_Swap64LE(result);
+}
+
 char* read_string(uint8_t** buf) {
     uint8_t* cursor = *buf;
     while (read_u8(&cursor) != '\0') {}
