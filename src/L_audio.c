@@ -11,6 +11,12 @@ static FMOD_SYSTEM* speaker = NULL;
 static FMOD_CHANNELGROUP *sound_group = NULL, *world_group = NULL, *ui_group = NULL;
 static FMOD_CHANNELGROUP* music_group = NULL;
 
+static FMOD_RESULT
+audio_debug_callback(FMOD_DEBUG_FLAGS flags, const char* file, int line, const char* func, const char* message) {
+    log_generic(src_basename(file), line, "%s: %s", func, message);
+    return FMOD_OK;
+}
+
 void audio_init() {
     // Debug
     FMOD_Debug_Initialize(FMOD_DEBUG_LEVEL_WARNING, FMOD_DEBUG_MODE_CALLBACK, audio_debug_callback, NULL);
@@ -57,12 +63,6 @@ void audio_teardown() {
     CLOSE_POINTER(speaker, FMOD_System_Release);
 
     INFO("Closed");
-}
-
-FMOD_RESULT
-audio_debug_callback(FMOD_DEBUG_FLAGS flags, const char* file, int line, const char* func, const char* message) {
-    log_generic(src_basename(file), line, "%s: %s", func, message);
-    return FMOD_OK;
 }
 
 // Sound
