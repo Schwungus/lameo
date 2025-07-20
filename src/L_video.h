@@ -104,6 +104,8 @@ struct ModelInstance {
     struct Animation* animation;
     bool loop;
     float frame, frame_speed;
+
+    versor node_rotations[MAX_BONES];
     DualQuaternion node_transforms[MAX_BONES], sample[MAX_BONES];
 };
 
@@ -204,6 +206,7 @@ void clear_stencil(GLint);
 struct ModelInstance* create_model_instance(struct Model*);
 void destroy_model_instance(struct ModelInstance*);
 void set_model_instance_animation(struct ModelInstance*, struct Animation*, float, bool);
+void rotate_model_instance_node(struct ModelInstance*, size_t, versor);
 void tick_model_instance(struct ModelInstance*);
 void submit_model_instance(struct ModelInstance*);
 void draw_model_instance(struct ModelInstance*);

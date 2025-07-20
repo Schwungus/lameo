@@ -1165,6 +1165,10 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->frame = 0;
     inst->frame_speed = 1;
 
+    for (size_t i = 0; i < MAX_BONES; i++)
+        glm_quat_identity(inst->node_rotations[i]);
+    rotate_model_instance_node(inst, 3, (versor){0.25f, 0, 0, 0.75f});
+
     return inst;
 }
 
@@ -1205,21 +1209,28 @@ static void animate_model_instance(struct ModelInstance* inst) {
             //       iterations here.
 
             size_t idx = node->index;
-            struct Node* parent = node->parent;
-            if (parent == NULL) {
-                // No parent transform -> just copy the node transform
-                inst->node_transforms[idx][0] = frame[idx][0];
-                inst->node_transforms[idx][1] = frame[idx][1];
-                inst->node_transforms[idx][2] = frame[idx][2];
-                inst->node_transforms[idx][3] = frame[idx][3];
-                inst->node_transforms[idx][4] = frame[idx][4];
-                inst->node_transforms[idx][5] = frame[idx][5];
-                inst->node_transforms[idx][6] = frame[idx][6];
-                inst->node_transforms[idx][7] = frame[idx][7];
-            } else {
-                // Multiply node transform with parent's transform
-                dq_mul(frame[idx], inst->node_transforms[parent->index], inst->node_transforms[idx]);
-            }
+            static DualQuaternion ndq;
+            ndq[0] = frame[idx][0];
+            ndq[1] = frame[idx][1];
+            ndq[2] = frame[idx][2];
+            ndq[3] = frame[idx][3];
+            ndq[4] = frame[idx][4];
+            ndq[5] = frame[idx][5];
+            ndq[6] = frame[idx][6];
+            ndq[7] = frame[idx][7];
+            glm_quat_mul(inst->node_rotations[idx], ndq, ndq);
+
+            if (node->parent != NULL)
+                dq_mul(ndq, inst->node_transforms[node->parent->index], ndq);
+            inst->node_transforms[idx][0] = ndq[0];
+            inst->node_transforms[idx][1] = ndq[1];
+            inst->node_transforms[idx][2] = ndq[2];
+            inst->node_transforms[idx][3] = ndq[3];
+            inst->node_transforms[idx][4] = ndq[4];
+            inst->node_transforms[idx][5] = ndq[5];
+            inst->node_transforms[idx][6] = ndq[6];
+            inst->node_transforms[idx][7] = ndq[7];
+
             if (node->bone)
                 dq_mul(model->bone_offsets[idx], inst->node_transforms[idx], inst->sample[idx]);
 
@@ -1234,6 +1245,10 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
     inst->frame = frame;
     inst->loop = loop;
     animate_model_instance(inst);
+}
+
+void rotate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
+    glm_quat_copy(quat, inst->node_rotations[node_index]);
 }
 
 void tick_model_instance(struct ModelInstance* inst) {
