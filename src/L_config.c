@@ -10,9 +10,11 @@ static char config_path[FILE_PATH_MAX], controls_path[FILE_PATH_MAX];
 static SDL_PropertiesID cvars = 0, default_cvars = 0;
 
 void config_init(const char* confpath, const char* contpath) {
-    if ((cvars = SDL_CreateProperties()) == 0)
+    cvars = SDL_CreateProperties();
+    if (cvars == 0)
         FATAL("CVars fail: %s", SDL_GetError());
-    if ((default_cvars = SDL_CreateProperties()) == 0)
+    default_cvars = SDL_CreateProperties();
+    if (default_cvars == 0)
         FATAL("Default CVars fail: %s", SDL_GetError());
 
     SDL_SetStringProperty(default_cvars, "data_path", get_base_path("data"));
@@ -134,7 +136,7 @@ void apply_cvar(const char* name) {
     if (name == NULL || (SDL_strcmp(name, "vid_width") == 0 || SDL_strcmp(name, "vid_height") == 0 ||
                          SDL_strcmp(name, "vid_fullscreen") == 0 || SDL_strcmp(name, "vid_vsync") == 0))
         set_display(
-            get_int_cvar("vid_width"), get_int_cvar("vid_height"), get_int_cvar("vid_fullscreen"),
+            (int)get_int_cvar("vid_width"), (int)get_int_cvar("vid_height"), get_int_cvar("vid_fullscreen"),
             get_bool_cvar("vid_vsync")
         );
 

@@ -2,7 +2,7 @@
 
 void update_bump_map(struct BumpMap* bump, vec2 pos) {
     if (bump->chunks == NULL) {
-        *(bump->chunks = lame_alloc(sizeof(struct Actor*))) = NULL;
+        *(bump->chunks = (struct Actor**)lame_alloc(sizeof(struct Actor*))) = NULL;
         glm_vec2_copy(pos, bump->pos);
         bump->size[0] = bump->size[1] = 1;
 
@@ -16,31 +16,31 @@ void update_bump_map(struct BumpMap* bump, vec2 pos) {
     bool update = false;
     float old_x1 = bump->pos[0];
     float old_y1 = bump->pos[1];
-    float old_x2 = bump->pos[0] + (bump->size[0] * BUMP_CHUNK_SIZE);
-    float old_y2 = bump->pos[1] + (bump->size[1] * BUMP_CHUNK_SIZE);
+    float old_x2 = bump->pos[0] + (float)(bump->size[0] * BUMP_CHUNK_SIZE);
+    float old_y2 = bump->pos[1] + (float)(bump->size[1] * BUMP_CHUNK_SIZE);
 
     if (pos[0] < old_x1) {
         bump->pos[0] = pos[0];
-        bump->size[0] = SDL_ceil((old_x2 - pos[0]) / (float)BUMP_CHUNK_SIZE);
+        bump->size[0] = (size_t)SDL_ceil((old_x2 - pos[0]) / (float)BUMP_CHUNK_SIZE);
         update = true;
     } else if (pos[0] > old_x2) {
-        bump->size[0] += SDL_ceil((pos[0] - old_x2) / (float)BUMP_CHUNK_SIZE);
+        bump->size[0] += (size_t)SDL_ceil((pos[0] - old_x2) / (float)BUMP_CHUNK_SIZE);
         update = true;
     }
 
     if (pos[1] < old_y1) {
         bump->pos[1] = pos[1];
-        bump->size[1] = SDL_ceil((old_y2 - pos[1]) / (float)BUMP_CHUNK_SIZE);
+        bump->size[1] = (size_t)SDL_ceil((old_y2 - pos[1]) / (float)BUMP_CHUNK_SIZE);
         update = true;
     } else if (pos[1] > old_y2) {
-        bump->size[1] += SDL_ceil((pos[1] - old_y2) / (float)BUMP_CHUNK_SIZE);
+        bump->size[1] += (size_t)SDL_ceil((pos[1] - old_y2) / (float)BUMP_CHUNK_SIZE);
         update = true;
     }
 
     if (update) {
         const size_t size = bump->size[0] * bump->size[1] * sizeof(struct Actor*);
         lame_realloc(&bump->chunks, size);
-        lame_set(bump->chunks, 0, size);
+        lame_set((void*)bump->chunks, 0, size);
 
         INFO(
             "Updated bump %u (pos (%.2f, %.2f) size %ux%u)", bump, bump->pos[0], bump->pos[1], bump->size[0],

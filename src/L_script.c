@@ -68,9 +68,9 @@ SCRIPT_ASSET(music, track, struct Track*, TrackID);
 SCRIPT_GETTER(get_draw_time, integer);
 
 SCRIPT_FUNCTION(set_main_color) {
-    const GLfloat r = luaL_checknumber(L, 1);
-    const GLfloat g = luaL_checknumber(L, 2);
-    const GLfloat b = luaL_checknumber(L, 3);
+    const GLfloat r = (GLfloat)luaL_checknumber(L, 1);
+    const GLfloat g = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat b = (GLfloat)luaL_checknumber(L, 3);
 
     set_main_color(r, g, b);
 
@@ -78,21 +78,21 @@ SCRIPT_FUNCTION(set_main_color) {
 }
 
 SCRIPT_FUNCTION(set_main_alpha) {
-    const GLfloat a = luaL_checknumber(L, 1);
+    const GLfloat a = (GLfloat)luaL_checknumber(L, 1);
     set_main_alpha(a);
     return 0;
 }
 
 SCRIPT_FUNCTION(main_rectangle) {
-    const GLfloat x1 = luaL_checknumber(L, 1);
-    const GLfloat y1 = luaL_checknumber(L, 2);
-    const GLfloat x2 = luaL_checknumber(L, 3);
-    const GLfloat y2 = luaL_checknumber(L, 4);
-    const GLfloat z = luaL_checknumber(L, 5);
-    const GLfloat r = luaL_optinteger(L, 6, 255);
-    const GLfloat g = luaL_optinteger(L, 7, 255);
-    const GLfloat b = luaL_optinteger(L, 8, 255);
-    const GLfloat a = luaL_optinteger(L, 9, 255);
+    const GLfloat x1 = (GLfloat)luaL_checknumber(L, 1);
+    const GLfloat y1 = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat x2 = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat y2 = (GLfloat)luaL_checknumber(L, 4);
+    const GLfloat z = (GLfloat)luaL_checknumber(L, 5);
+    const GLubyte r = (GLubyte)luaL_optinteger(L, 6, 255);
+    const GLubyte g = (GLubyte)luaL_optinteger(L, 7, 255);
+    const GLubyte b = (GLubyte)luaL_optinteger(L, 8, 255);
+    const GLubyte a = (GLubyte)luaL_optinteger(L, 9, 255);
 
     main_rectangle(x1, y1, x2, y2, z, r, g, b, a);
 
@@ -102,10 +102,10 @@ SCRIPT_FUNCTION(main_rectangle) {
 SCRIPT_FUNCTION(main_string) {
     const char* str = luaL_checkstring(L, 1);
     struct Font* font = luaL_opt(L, s_check_font, 2, NULL);
-    const GLfloat size = luaL_checknumber(L, 3);
-    const GLfloat x = luaL_checknumber(L, 4);
-    const GLfloat y = luaL_checknumber(L, 5);
-    const GLfloat z = luaL_checknumber(L, 6);
+    const GLfloat size = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat x = (GLfloat)luaL_checknumber(L, 4);
+    const GLfloat y = (GLfloat)luaL_checknumber(L, 5);
+    const GLfloat z = (GLfloat)luaL_checknumber(L, 6);
 
     main_string(str, font, size, x, y, z);
 
@@ -115,15 +115,19 @@ SCRIPT_FUNCTION(main_string) {
 SCRIPT_FUNCTION(string_width) {
     const char* str = luaL_checkstring(L, 1);
     struct Font* font = luaL_opt(L, s_check_font, 2, NULL);
-    const GLfloat size = luaL_checknumber(L, 3);
+    const GLfloat size = (GLfloat)luaL_checknumber(L, 3);
+
     lua_pushnumber(L, string_width(str, font, size));
+
     return 1;
 }
 
 SCRIPT_FUNCTION(string_height) {
     const char* str = luaL_checkstring(L, 1);
-    const GLfloat size = luaL_checknumber(L, 2);
+    const GLfloat size = (GLfloat)luaL_checknumber(L, 2);
+
     lua_pushnumber(L, string_height(str, size));
+
     return 1;
 }
 
@@ -162,30 +166,34 @@ SCRIPT_FUNCTION_DIRECT(pop_surface);
 
 SCRIPT_FUNCTION(main_surface) {
     struct Surface* surface = s_check_surface(L, 1);
-    const GLfloat x = luaL_checknumber(L, 2);
-    const GLfloat y = luaL_checknumber(L, 3);
-    const GLfloat z = luaL_checknumber(L, 4);
+    const GLfloat x = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat y = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat z = (GLfloat)luaL_checknumber(L, 4);
+
     main_surface(surface, x, y, z);
+
     return 0;
 }
 
 SCRIPT_FUNCTION(clear_color) {
-    const GLfloat r = luaL_optnumber(L, 1, 0);
-    const GLfloat g = luaL_optnumber(L, 2, 0);
-    const GLfloat b = luaL_optnumber(L, 3, 0);
-    const GLfloat a = luaL_optnumber(L, 4, 1);
+    const GLfloat r = (GLfloat)luaL_optnumber(L, 1, 0);
+    const GLfloat g = (GLfloat)luaL_optnumber(L, 2, 0);
+    const GLfloat b = (GLfloat)luaL_optnumber(L, 3, 0);
+    const GLfloat a = (GLfloat)luaL_optnumber(L, 4, 1);
+
     clear_color(r, g, b, a);
+
     return 0;
 }
 
 SCRIPT_FUNCTION(clear_depth) {
-    const GLfloat depth = luaL_optnumber(L, 1, 1);
+    const GLfloat depth = (GLfloat)luaL_optnumber(L, 1, 1);
     clear_depth(depth);
     return 0;
 }
 
 SCRIPT_FUNCTION(clear_stencil) {
-    const GLint stencil = luaL_optinteger(L, 1, 0);
+    const GLint stencil = (GLint)luaL_optinteger(L, 1, 0);
     clear_stencil(stencil);
     return 0;
 }
@@ -209,7 +217,7 @@ SCRIPT_FUNCTION(model_instance_set_hidden) {
 SCRIPT_FUNCTION(model_instance_set_animation) {
     struct ModelInstance* inst = s_check_model_instance(L, 1);
     struct Animation* animation = luaL_opt(L, s_check_animation, 2, NULL);
-    const float frame = luaL_optnumber(L, 3, 0);
+    const float frame = (float)luaL_optnumber(L, 3, 0);
     const bool loop = luaL_optinteger(L, 4, 0);
 
     set_model_instance_animation(inst, animation, frame, loop);
@@ -220,10 +228,10 @@ SCRIPT_FUNCTION(model_instance_set_animation) {
 // Audio
 SCRIPT_FUNCTION(play_ui_sound) {
     struct Sound* sound = luaL_opt(L, s_check_sound, 1, NULL);
-    const bool loop = luaL_optnumber(L, 2, false);
+    const bool loop = (bool)luaL_optnumber(L, 2, false);
     const uint32_t offset = luaL_optinteger(L, 3, 0);
-    const float pitch = luaL_optnumber(L, 4, 1);
-    const float gain = luaL_optnumber(L, 5, 1);
+    const float pitch = (float)luaL_optnumber(L, 4, 1);
+    const float gain = (float)luaL_optnumber(L, 5, 1);
 
     play_ui_sound(sound, loop, offset, pitch, gain);
 
@@ -350,10 +358,12 @@ SCRIPT_FUNCTION(actor_get_pos_z) {
 
 SCRIPT_FUNCTION(actor_set_pos) {
     struct Actor* actor = s_check_actor(L, 1);
-    const float x = luaL_checknumber(L, 2);
-    const float y = luaL_optnumber(L, 3, actor->pos[1]);
-    const float z = luaL_optnumber(L, 4, actor->pos[2]);
+    const float x = (float)luaL_checknumber(L, 2);
+    const float y = (float)luaL_optnumber(L, 3, actor->pos[1]);
+    const float z = (float)luaL_optnumber(L, 4, actor->pos[2]);
+
     set_actor_pos(actor, x, y, z);
+
     return 0;
 }
 
@@ -385,9 +395,9 @@ SCRIPT_FUNCTION(actor_get_vel_z) {
 
 SCRIPT_FUNCTION(actor_set_vel) {
     struct Actor* actor = s_check_actor(L, 1);
-    actor->vel[0] = luaL_checknumber(L, 2);
-    actor->vel[1] = luaL_optnumber(L, 3, actor->vel[1]);
-    actor->vel[2] = luaL_optnumber(L, 4, actor->vel[2]);
+    actor->vel[0] = (float)luaL_checknumber(L, 2);
+    actor->vel[1] = (float)luaL_optnumber(L, 3, actor->vel[1]);
+    actor->vel[2] = (float)luaL_optnumber(L, 4, actor->vel[2]);
     return 0;
 }
 
@@ -419,9 +429,9 @@ SCRIPT_FUNCTION(actor_get_angle_z) {
 
 SCRIPT_FUNCTION(actor_set_angle) {
     struct Actor* actor = s_check_actor(L, 1);
-    actor->angle[0] = luaL_checknumber(L, 2);
-    actor->angle[1] = luaL_optnumber(L, 3, actor->angle[1]);
-    actor->angle[2] = luaL_optnumber(L, 4, actor->angle[2]);
+    actor->angle[0] = (float)luaL_checknumber(L, 2);
+    actor->angle[1] = (float)luaL_optnumber(L, 3, actor->angle[1]);
+    actor->angle[2] = (float)luaL_optnumber(L, 4, actor->angle[2]);
     return 0;
 }
 
@@ -557,7 +567,7 @@ SCRIPT_FUNCTION(get_ui_cursor) {
 }
 
 SCRIPT_FUNCTION(get_ui_buttons) {
-    int buttons = luaL_checkinteger(L, 1);
+    int buttons = (int)luaL_checkinteger(L, 1);
     lua_pushboolean(L, get_ui_buttons(buttons));
     return 1;
 }
@@ -570,7 +580,7 @@ SCRIPT_FUNCTION(get_last_ui_cursor) {
 }
 
 SCRIPT_FUNCTION(get_last_ui_buttons) {
-    int buttons = luaL_checkinteger(L, 1);
+    int buttons = (int)luaL_checkinteger(L, 1);
     lua_pushboolean(L, get_last_ui_buttons(buttons));
     return 1;
 }

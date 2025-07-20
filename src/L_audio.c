@@ -82,7 +82,7 @@ FMOD_CHANNEL* play_ui_sound(struct Sound* sound, bool loop, uint32_t offset, flo
     if (sound == NULL || sound->samples == NULL)
         return NULL;
 
-    FMOD_SOUND* sample = sound->samples[SDL_rand(sound->num_samples)];
+    FMOD_SOUND* sample = sound->samples[(size_t)SDL_rand((int)sound->num_samples)];
     if (sample == NULL)
         return NULL;
 

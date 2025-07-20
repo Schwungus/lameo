@@ -9,25 +9,25 @@ void _lame_realloc(void**, size_t, const char*, int);
 void _lame_set(void*, char, size_t, const char*, int);
 
 #define lame_alloc(size) _lame_alloc(size, __FILE__, __LINE__)
-#define lame_free(ptr) _lame_free((void**)ptr, __FILE__, __LINE__)
+#define lame_free(ptr) _lame_free((void**)(ptr), __FILE__, __LINE__)
 #define lame_copy(dest, src, size) _lame_copy(dest, src, size, __FILE__, __LINE__)
-#define lame_realloc(ptr, size) _lame_realloc((void**)ptr, size, __FILE__, __LINE__)
+#define lame_realloc(ptr, size) _lame_realloc((void**)(ptr), size, __FILE__, __LINE__)
 #define lame_set(dest, val, size) _lame_set(dest, val, size, __FILE__, __LINE__)
 
 #define FREE_POINTER(varname)                                                                                          \
-    if (varname != NULL)                                                                                               \
-        lame_free(&varname);
+    if ((varname) != NULL)                                                                                             \
+        lame_free(&(varname));
 
 #define CLOSE_POINTER(varname, callback)                                                                               \
-    if (varname != NULL) {                                                                                             \
+    if ((varname) != NULL) {                                                                                           \
         callback(varname);                                                                                             \
-        varname = NULL;                                                                                                \
+        (varname) = NULL;                                                                                              \
     }
 
 #define CLOSE_HANDLE(varname, callback)                                                                                \
-    if (varname != 0) {                                                                                                \
+    if ((varname) != 0) {                                                                                              \
         callback(varname);                                                                                             \
-        varname = 0;                                                                                                   \
+        (varname) = 0;                                                                                                 \
     }
 
 uint8_t read_u8(uint8_t**);
@@ -97,14 +97,14 @@ void _destroy_handle(struct Fixture*, HandleID, const char*, int);
 
 #define create_fixture() _create_fixture(__FILE__, __LINE__)
 #define destroy_fixture(fixture) _destroy_fixture(fixture, __FILE__, __LINE__)
-#define create_handle(fixture, ptr) _create_handle(fixture, (void*)ptr, __FILE__, __LINE__)
-#define destroy_handle(fixture, hid) _destroy_handle(fixture, (HandleID)hid, __FILE__, __LINE__)
+#define create_handle(fixture, ptr) _create_handle(fixture, (void*)(ptr), __FILE__, __LINE__)
+#define destroy_handle(fixture, hid) _destroy_handle(fixture, (HandleID)(hid), __FILE__, __LINE__)
 
 struct Handle* hid_to_handle(struct Fixture*, HandleID);
 void* hid_to_pointer(struct Fixture*, HandleID);
 
 // Hash maps
-#define HASH_TOMBSTONE ((char*)-1)
+#define HASH_TOMBSTONE ((char*)(-1))
 
 struct KeyValuePair {
     char* key;
@@ -149,7 +149,7 @@ struct IntMap* _create_int_map(const char*, int);
 void _destroy_int_map(struct IntMap*, bool, const char*, int);
 bool _to_int_map(struct IntMap*, uint32_t, void*, bool, const char*, int);
 void* from_int_map(struct IntMap*, uint32_t);
-void* pop_int_map(struct IntMap*, uint32_t, bool, const char*, int);
+void* _pop_int_map(struct IntMap*, uint32_t, bool, const char*, int);
 
 #define create_int_map() _create_int_map(__FILE__, __LINE__)
 #define destroy_int_map(map, nuke) _destroy_int_map(map, nuke, __FILE__, __LINE__)

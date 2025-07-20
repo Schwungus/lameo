@@ -34,16 +34,16 @@
 
 #define SCRIPT_CHECKER(name, type)                                                                                     \
     static type SCRIPT_PREFIX(check_##name)(lua_State * L, int arg) {                                                  \
-        void** ptr = luaL_checkudata(L, arg, #name);                                                                   \
+        void** ptr = (void**)luaL_checkudata(L, arg, #name);                                                           \
         if (*ptr == NULL)                                                                                              \
             luaL_error(L, "Null " #name);                                                                              \
-        return *ptr;                                                                                                   \
+        return (type)(*ptr);                                                                                           \
     }
 
 #define SCRIPT_TESTER(name, type)                                                                                      \
     static type SCRIPT_PREFIX(test_##name)(lua_State * L, int arg) {                                                   \
-        void** ptr = luaL_testudata(L, arg, #name);                                                                    \
-        return (ptr != NULL && *ptr != NULL) ? *ptr : NULL;                                                            \
+        void** ptr = (void**)luaL_testudata(L, arg, #name);                                                            \
+        return (ptr != NULL && *ptr != NULL) ? (type)(*ptr) : NULL;                                                    \
     }
 
 #define SCRIPT_CHECKER_DIRECT(name, type)                                                                              \

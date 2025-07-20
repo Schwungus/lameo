@@ -140,7 +140,8 @@ void mod_init_script() {
         size_t size;
         while (mod != NULL) {
             SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%sscript.lua", mod->path);
-            if ((buffer = SDL_LoadFile(mod_file_helper, &size)) != NULL) {
+            buffer = SDL_LoadFile(mod_file_helper, &size);
+            if (buffer != NULL) {
                 SDL_snprintf(mod_file_helper, sizeof(mod_file_helper), "%s?.lua", mod->path);
                 set_import_path(mod_file_helper);
                 execute_buffer(buffer, size, mod->name);

@@ -44,14 +44,16 @@ void video_init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // Window
-    if ((window = SDL_CreateWindow(
-             SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING), DEFAULT_DISPLAY_WIDTH,
-             DEFAULT_DISPLAY_HEIGHT, SDL_WINDOW_OPENGL
-         )) == NULL)
+    window = SDL_CreateWindow(
+        SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING), DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT,
+        SDL_WINDOW_OPENGL
+    );
+    if (window == NULL)
         FATAL("Window fail: %s", SDL_GetError());
 
     // OpenGL
-    if ((gpu = SDL_GL_CreateContext(window)) == NULL || !SDL_GL_MakeCurrent(window, gpu))
+    gpu = SDL_GL_CreateContext(window);
+    if (gpu == NULL || !SDL_GL_MakeCurrent(window, gpu))
         FATAL("GPU fail: %s", SDL_GetError());
     SDL_GL_SetSwapInterval(0);
 
@@ -96,7 +98,9 @@ void video_init() {
 
     glGenBuffers(1, &main_batch.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct MainVertex) * main_batch.vertex_capacity), NULL, GL_DYNAMIC_DRAW
+    );
 
     glEnableVertexAttribArray(VATT_POSITION);
     glVertexAttribPointer(
@@ -149,7 +153,9 @@ void video_init() {
 
     glGenBuffers(1, &world_batch.vbo);
     glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * world_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct WorldVertex) * world_batch.vertex_capacity), NULL, GL_DYNAMIC_DRAW
+    );
 
     glEnableVertexAttribArray(VATT_POSITION);
     glVertexAttribPointer(
@@ -211,13 +217,20 @@ void video_init() {
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
     // Shaders
-    if (default_shaders[RT_MAIN] == NULL && (default_shaders[RT_MAIN] = fetch_shader("main")) == NULL)
-        FATAL("Main shader \"main\" not found");
-    if (default_shaders[RT_WORLD] == NULL && (default_shaders[RT_WORLD] = fetch_shader("world")) == NULL)
-        FATAL("Main shader \"world\" not found");
+    if (default_shaders[RT_MAIN] == NULL) {
+        default_shaders[RT_MAIN] = fetch_shader("main");
+        if (default_shaders[RT_MAIN] == NULL)
+            FATAL("Main shader \"main\" not found");
+    }
+    if (default_shaders[RT_WORLD] == NULL) {
+        default_shaders[RT_WORLD] = fetch_shader("world");
+        if (default_shaders[RT_WORLD] == NULL)
+            FATAL("World shader \"world\" not found");
+    }
 
     // Fonts
-    if ((default_font = fetch_font("main")) == NULL)
+    default_font = fetch_font("main");
+    if (default_font == NULL)
         FATAL("Main font \"main\" not found");
     // GROSS HACK: Font texture has to be manually made transient
     default_font->transient = true;
@@ -231,7 +244,7 @@ void video_init() {
 void video_update() {
     draw_time = SDL_GetTicks();
     if (framerate > 0) {
-        cap_wait += (float)(draw_time - last_cap_time) * ((float)framerate / 1000.);
+        cap_wait += (float)(draw_time - last_cap_time) * ((float)framerate / 1000.0f);
         last_cap_time = draw_time;
         if (cap_wait < 1)
             return;
@@ -265,8 +278,11 @@ void video_update() {
             // TODO: Splitscreen
             struct Player* player = get_active_players();
             while (player != NULL) {
-                if (player->actor != NULL && (camera = player->actor->camera) != NULL)
-                    break;
+                if (player->actor != NULL) {
+                    camera = player->actor->camera;
+                    if (camera != NULL)
+                        break;
+                }
                 player = player->previous_active;
             }
         }
@@ -382,7 +398,8 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
 void set_framerate(uint16_t fps) {
     if (framerate == fps)
         return;
-    if ((framerate = fps) > 0)
+    framerate = fps;
+    if (framerate > 0)
         INFO("Capped framerate to %d FPS", fps);
     else
         INFO("Uncapped framerate");
@@ -502,7 +519,9 @@ void submit_main_batch() {
 
     glBindVertexArray(main_batch.vao);
     glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct MainVertex) * main_batch.vertex_count, main_batch.vertices);
+    glBufferSubData(
+        GL_ARRAY_BUFFER, 0, (GLsizeiptr)(sizeof(struct MainVertex) * main_batch.vertex_count), main_batch.vertices
+    );
 
     // Apply stencil
     set_vec4_uniform(
@@ -523,7 +542,7 @@ void submit_main_batch() {
         main_batch.blend_src[0], main_batch.blend_dest[0], main_batch.blend_src[1], main_batch.blend_dest[1]
     );
 
-    glDrawArrays(GL_TRIANGLES, 0, main_batch.vertex_count);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei)main_batch.vertex_count);
     main_batch.vertex_count = 0;
 }
 
@@ -555,13 +574,20 @@ void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte 
         INFO("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
         lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
         glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(struct MainVertex) * main_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct MainVertex) * main_batch.vertex_capacity), NULL, GL_DYNAMIC_DRAW
+        );
     }
 
-    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){
-        x, y, z, main_batch.color[0] * r, main_batch.color[1] * g, main_batch.color[2] * b, main_batch.color[3] * a,
-        u, v
-    };
+    main_batch.vertices[main_batch.vertex_count++] = (struct MainVertex){x,
+                                                                         y,
+                                                                         z,
+                                                                         (GLubyte)(main_batch.color[0] * (GLfloat)r),
+                                                                         (GLubyte)(main_batch.color[1] * (GLfloat)g),
+                                                                         (GLubyte)(main_batch.color[2] * (GLfloat)b),
+                                                                         (GLubyte)(main_batch.color[3] * (GLfloat)a),
+                                                                         u,
+                                                                         v};
 }
 
 void main_rectangle(
@@ -583,8 +609,8 @@ void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
 
     GLfloat x1 = x;
     GLfloat y1 = y;
-    GLfloat x2 = x + surface->size[0];
-    GLfloat y2 = y + surface->size[1];
+    GLfloat x2 = x + (GLfloat)surface->size[0];
+    GLfloat y2 = y + (GLfloat)surface->size[1];
     main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
     main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
     main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
@@ -598,10 +624,10 @@ void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
         return;
     set_main_texture(texture);
 
-    GLfloat x1 = x - texture->offset[0];
-    GLfloat y1 = y - texture->offset[1];
-    GLfloat x2 = x1 + texture->size[0];
-    GLfloat y2 = y1 + texture->size[1];
+    GLfloat x1 = x - (GLfloat)texture->offset[0];
+    GLfloat y1 = y - (GLfloat)texture->offset[1];
+    GLfloat x2 = x1 + (GLfloat)texture->size[0];
+    GLfloat y2 = y1 + (GLfloat)texture->size[1];
     main_vertex(x1, y2, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[3]);
     main_vertex(x1, y1, z, 255, 255, 255, 255, texture->uvs[0], texture->uvs[1]);
     main_vertex(x2, y1, z, 255, 255, 255, 255, texture->uvs[2], texture->uvs[1]);
@@ -640,7 +666,7 @@ void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GL
             cy += size;
             continue;
         }
-        if (SDL_isspace(gid))
+        if (SDL_isspace((int)gid))
             gid = ' ';
         if (gid >= font->num_glyphs)
             continue;
@@ -686,11 +712,11 @@ void main_string_wrap(
         size_t last_advbytes = advbytes;
 
         size_t gid = SDL_StepUTF8(&adv, &advbytes);
-        bool space = SDL_isspace(gid);
+        bool space = SDL_isspace((int)gid);
         struct Glyph* glyph = (gid >= font->num_glyphs || gid == '\n') ? NULL : font->glyphs[space ? (gid = ' ') : gid];
         GLfloat gwidth = glyph == NULL ? 0 : (glyph->advance * scale);
 
-        i += (last_advbytes - advbytes) - 1;
+        i += (int)(last_advbytes - advbytes) - 1;
 
         if (measure) {
             if (space)
@@ -757,7 +783,9 @@ void submit_world_batch() {
 
     glBindVertexArray(world_batch.vao);
     glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * world_batch.vertex_count, world_batch.vertices);
+    glBufferSubData(
+        GL_ARRAY_BUFFER, 0, (GLsizeiptr)(sizeof(struct WorldVertex) * world_batch.vertex_count), world_batch.vertices
+    );
 
     set_int_uniform("u_animated", 0);
     set_vec4_uniform(
@@ -780,7 +808,7 @@ void submit_world_batch() {
         world_batch.blend_src[0], world_batch.blend_dest[0], world_batch.blend_src[1], world_batch.blend_dest[1]
     );
 
-    glDrawArrays(GL_TRIANGLES, 0, world_batch.vertex_count);
+    glDrawArrays(GL_TRIANGLES, 0, (GLsizei)world_batch.vertex_count);
     world_batch.vertex_count = 0;
 }
 
@@ -815,31 +843,35 @@ void world_vertex(
         INFO("Reallocated world batch VBO to %u vertices", world_batch.vertex_capacity);
         lame_realloc(&world_batch.vertices, world_batch.vertex_capacity * sizeof(struct WorldVertex));
         glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * world_batch.vertex_capacity, NULL, GL_DYNAMIC_DRAW);
+        glBufferData(
+            GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct WorldVertex) * world_batch.vertex_capacity), NULL,
+            GL_DYNAMIC_DRAW
+        );
     }
 
-    world_batch.vertices[world_batch.vertex_count++] = (struct WorldVertex){x,
-                                                                            y,
-                                                                            z,
-                                                                            nx,
-                                                                            ny,
-                                                                            nz,
-                                                                            world_batch.color[0] * r,
-                                                                            world_batch.color[1] * g,
-                                                                            world_batch.color[2] * b,
-                                                                            world_batch.color[3] * a,
-                                                                            u,
-                                                                            v,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0,
-                                                                            0};
+    world_batch.vertices[world_batch.vertex_count++] =
+        (struct WorldVertex){x,
+                             y,
+                             z,
+                             nx,
+                             ny,
+                             nz,
+                             (GLubyte)(world_batch.color[0] * (GLfloat)r),
+                             (GLubyte)(world_batch.color[1] * (GLfloat)g),
+                             (GLubyte)(world_batch.color[2] * (GLfloat)b),
+                             (GLubyte)(world_batch.color[3] * (GLfloat)a),
+                             u,
+                             v,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0,
+                             0};
 }
 
 struct ActorCamera* get_active_camera() {
@@ -860,7 +892,7 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     }
 
     set_surface(camera->surface);
-    clear_color(0.5, 0.5, 0.5, 1);
+    clear_color(0.5f, 0.5f, 0.5f, 1);
     clear_depth(1);
     clear_stencil(0);
 
@@ -956,7 +988,7 @@ GLfloat string_width(const char* str, struct Font* font, GLfloat size) {
             cy += size;
             continue;
         }
-        if (SDL_isspace(gid))
+        if (SDL_isspace((int)gid))
             gid = ' ';
         if (gid >= font->num_glyphs)
             continue;
@@ -1142,18 +1174,35 @@ void destroy_model_instance(struct ModelInstance* inst) {
     lame_free(&inst);
 }
 
-/*static void animate_model_instance(struct ModelInstance* inst) {
+static void animate_model_instance(struct ModelInstance* inst) {
     struct Animation* animation = inst->animation;
-    if (animation == NULL || animation->bone_frames == NULL)
+    if (animation == NULL)
         return;
-
-    lame_copy(inst->sample, animation->bone_frames[0], animation->num_bones * sizeof(DualQuaternion));
-}*/
+    if (animation->bone_frames != NULL) {
+        lame_copy(
+            inst->sample, animation->bone_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), animation->num_frames)],
+            animation->num_bones * sizeof(DualQuaternion)
+        );
+    } else if (animation->parent_frames != NULL) {
+        // TODO
+    }
+}
 
 void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
     inst->animation = animation;
     inst->frame = frame;
     inst->loop = loop;
+    animate_model_instance(inst);
+}
+
+void tick_model_instance(struct ModelInstance* inst) {
+    struct Animation* animation = inst->animation;
+    if (animation == NULL)
+        return;
+    inst->frame += animation->frame_speed * inst->frame_speed;
+    if (!inst->loop && SDL_fabsf(inst->frame) >= (float)(animation->num_frames - 1))
+        inst->frame = (float)(animation->num_frames - 1);
+    animate_model_instance(inst);
 }
 
 void submit_model_instance(struct ModelInstance* inst) {
@@ -1163,11 +1212,11 @@ void submit_model_instance(struct ModelInstance* inst) {
     set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_stencil", 1, 1, 1, 0);
 
-    if (inst->animation != NULL && inst->animation->bone_frames != NULL) {
+    if (inst->animation != NULL) {
         set_int_uniform("u_animated", 1);
         glUniform4fv(
-            (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_sample[0]", -1)), 2 * inst->animation->num_bones,
-            (const GLfloat*)(inst->animation->bone_frames[0])
+            (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_sample[0]", -1)),
+            (GLsizei)(2 * inst->model->num_bones), (const GLfloat*)(inst->sample)
         );
     } else {
         set_int_uniform("u_animated", 0);
@@ -1182,11 +1231,12 @@ void submit_model_instance(struct ModelInstance* inst) {
         const struct Material* material = hid_to_material(model->materials[submodel->material]);
         if (material == NULL)
             continue;
-        const struct Texture* texture = material->textures[0] == NULL
-                                            ? NULL
-                                            : hid_to_texture(material->textures[0][(size_t)SDL_fmod(
-                                                  draw_time * material->texture_speed[0], material->num_textures[0]
-                                              )]);
+        const struct Texture* texture =
+            material->textures[0] == NULL
+                ? NULL
+                : hid_to_texture(material->textures[0][(size_t)SDL_fmodf(
+                      (float)draw_time * material->texture_speed[0], (float)material->num_textures[0]
+                  )]);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture == NULL ? blank_texture : texture->texture);
@@ -1195,10 +1245,9 @@ void submit_model_instance(struct ModelInstance* inst) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
         if (material->textures[1] != NULL) {
-            const struct Texture* blend_texture = hid_to_texture(
-                material
-                    ->textures[1][(size_t)SDL_fmod(draw_time * material->texture_speed[1], material->num_textures[1])]
-            );
+            const struct Texture* blend_texture = hid_to_texture(material->textures[1][(size_t)SDL_fmodf(
+                (float)draw_time * material->texture_speed[1], (float)material->num_textures[1]
+            )]);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
@@ -1212,8 +1261,10 @@ void submit_model_instance(struct ModelInstance* inst) {
 
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices);
-        glDrawArrays(GL_TRIANGLES, 0, submodel->num_vertices);
+        glBufferSubData(
+            GL_ARRAY_BUFFER, 0, (GLsizeiptr)(sizeof(struct WorldVertex) * submodel->num_vertices), submodel->vertices
+        );
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)submodel->num_vertices);
     }
 }
 

@@ -162,7 +162,7 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
         _lame_realloc((void**)&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
         fixture->capacity = new_capacity;
 
-        for (int i = old_capacity; i < new_capacity; i++) {
+        for (size_t i = old_capacity; i < new_capacity; i++) {
             fixture->handles[i].ptr = NULL;
             fixture->handles[i].generation = 0;
         }

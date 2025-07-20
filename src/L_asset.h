@@ -48,7 +48,7 @@ struct Track;
     static struct Fixture* assetname##_handles = NULL;                                                                 \
                                                                                                                        \
     void mapname##_init() {                                                                                            \
-        mapname = create_hash_map();                                                                                   \
+        (mapname) = create_hash_map();                                                                                 \
         assetname##_handles = create_fixture();                                                                        \
     }                                                                                                                  \
                                                                                                                        \
@@ -87,8 +87,8 @@ struct Track;
     }                                                                                                                  \
                                                                                                                        \
     void clear_##mapname(bool teardown) {                                                                              \
-        for (size_t i = 0; mapname->count > 0 && i < mapname->capacity; i++) {                                         \
-            struct KeyValuePair* kvp = &mapname->items[i];                                                             \
+        for (size_t i = 0; (mapname)->count > 0 && i < (mapname)->capacity; i++) {                                     \
+            struct KeyValuePair* kvp = &(mapname)->items[i];                                                           \
             if (kvp->key == NULL || kvp->key == HASH_TOMBSTONE)                                                        \
                 continue;                                                                                              \
             assettype asset = kvp->value;                                                                              \
@@ -98,12 +98,12 @@ struct Track;
     }
 
 #define ASSET_SANITY_PUSH(varname, map)                                                                                \
-    if (!to_hash_map(map, varname->name, varname, false))                                                              \
-        FATAL(#varname " \"%s\" already in HashMap", varname->name);
+    if (!to_hash_map(map, (varname)->name, varname, false))                                                            \
+        FATAL(#varname " \"%s\" already in HashMap", (varname)->name);
 
 #define ASSET_SANITY_POP(varname, map)                                                                                 \
-    if (varname != pop_hash_map(map, varname->name, false))                                                            \
-        FATAL("Pointer mismatch when destroying " #varname " \"%s\"", varname->name);
+    if ((varname) != pop_hash_map(map, (varname)->name, false))                                                        \
+        FATAL("Pointer mismatch when destroying " #varname " \"%s\"", (varname)->name);
 
 void asset_init();
 void asset_teardown();

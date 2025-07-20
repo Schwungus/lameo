@@ -15,7 +15,8 @@ void input_init() {
     if (SDL_AddGamepadMappingsFromFile(get_base_path("gamecontrollerdb.txt")) == -1)
         WTF("Gamepad database fail: %s", SDL_GetError());
 
-    if ((verb_map = SDL_CreateProperties()) == 0)
+    verb_map = SDL_CreateProperties();
+    if (verb_map == 0)
         FATAL("Verb map fail: %s", SDL_GetError());
 
     // Internally invalid gamepad buttons are -1
@@ -153,7 +154,7 @@ void assign_verb_to_key(struct Verb* verb, SDL_Scancode key) {
     if (key != NO_KEY) {
         struct VerbList* list = &key_map[key];
         if (list->list == NULL) {
-            list->list = lame_alloc(sizeof(struct Verb*));
+            list->list = (struct Verb**)lame_alloc(sizeof(struct Verb*));
             list->size = 1;
             list->list[0] = verb;
         } else {
@@ -197,7 +198,7 @@ void assign_verb_to_mouse_button(struct Verb* verb, enum MouseButtons mouse_butt
     if (mouse_button != NO_MOUSE_BUTTON) {
         struct VerbList* list = &mouse_button_map[mouse_button];
         if (list->list == NULL) {
-            list->list = lame_alloc(sizeof(struct Verb*));
+            list->list = (struct Verb**)lame_alloc(sizeof(struct Verb*));
             list->size = 1;
             list->list[0] = verb;
         } else {
@@ -241,7 +242,7 @@ void assign_verb_to_gamepad_button(struct Verb* verb, SDL_GamepadButton gamepad_
     if (gamepad_button != NO_GAMEPAD_BUTTON) {
         struct VerbList* list = &gamepad_button_map[gamepad_button];
         if (list->list == NULL) {
-            list->list = lame_alloc(sizeof(struct Verb*));
+            list->list = (struct Verb**)lame_alloc(sizeof(struct Verb*));
             list->size = 1;
             list->list[0] = verb;
         } else {
@@ -285,7 +286,7 @@ void assign_verb_to_gamepad_axis(struct Verb* verb, SDL_GamepadAxis gamepad_axis
     if (gamepad_axis != NO_GAMEPAD_AXIS) {
         struct VerbList* list = &gamepad_axis_map[gamepad_axis];
         if (list->list == NULL) {
-            list->list = lame_alloc(sizeof(struct Verb*));
+            list->list = (struct Verb**)lame_alloc(sizeof(struct Verb*));
             list->size = 1;
             list->list[0] = verb;
         } else {
@@ -490,7 +491,11 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
     for (size_t i = 0; i < list->size; i++) {
         struct Verb* verb = list->list[i];
         if (verb != NULL) {
-            Sint16 value = verb->axis >= 0 ? SDL_max(event->value, 0) : -SDL_clamp(event->value, VERB_VALUE_MIN, 0);
+            Sint16 value;
+            if (verb->axis >= 0)
+                value = SDL_max(event->value, 0);
+            else
+                value = (Sint16)(-SDL_clamp(event->value, VERB_VALUE_MIN, 0));
             if (value < 8) {
                 if (verb->consumed)
                     verb->held = false;

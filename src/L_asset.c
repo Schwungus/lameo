@@ -95,7 +95,8 @@ void load_shader(const char* name) {
     glDeleteShader(fragment);
 
     // Uniforms
-    if ((shader->uniforms = SDL_CreateProperties()) == 0)
+    shader->uniforms = SDL_CreateProperties();
+    if (shader->uniforms == 0)
         FATAL("Shader \"%s\" uniforms fail: %s", name, SDL_GetError());
     GLsizei unum;
     glGetProgramiv(shader->program, GL_ACTIVE_UNIFORMS, &unum);
@@ -263,7 +264,7 @@ void load_material(const char* name) {
     // Properties
     material->filter = true;
     glm_vec4_one(material->color);
-    material->alpha_test = 0.5;
+    material->alpha_test = 0.5f;
     material->bright = 0;
     glm_vec2_zero(material->scroll);
     material->specular[0] = 0;
@@ -287,56 +288,69 @@ void load_material(const char* name) {
                     material->num_textures[0] = 1;
                 }
 
-                if (yyjson_is_str(value = yyjson_obj_get(root, "blend_texture"))) {
+                value = yyjson_obj_get(root, "blend_texture");
+                if (yyjson_is_str(value)) {
                     TextureID* textures = lame_alloc(sizeof(TextureID));
                     textures[0] = fetch_texture_hid(yyjson_get_str(value));
                     material->textures[1] = textures;
                     material->num_textures[1] = 1;
                 }
 
-                if (yyjson_is_real(value = yyjson_obj_get(root, "texture_speed")))
-                    material->texture_speed[0] = yyjson_get_real(value);
-                if (yyjson_is_real(value = yyjson_obj_get(root, "blend_texture_speed")))
-                    material->texture_speed[1] = yyjson_get_real(value);
-                if (yyjson_is_bool(value = yyjson_obj_get(root, "filter")))
+                value = yyjson_obj_get(root, "texture_speed");
+                if (yyjson_is_real(value))
+                    material->texture_speed[0] = (float)yyjson_get_real(value);
+                value = yyjson_obj_get(root, "blend_texture_speed");
+                if (yyjson_is_real(value))
+                    material->texture_speed[1] = (float)yyjson_get_real(value);
+                value = yyjson_obj_get(root, "filter");
+                if (yyjson_is_bool(value))
                     material->filter = yyjson_get_bool(value);
 
-                if (yyjson_is_arr(value = yyjson_obj_get(root, "color")) && yyjson_arr_size(value) >= 4) {
-                    material->color[0] = yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->color[1] = yyjson_get_real(yyjson_arr_get(value, 1));
-                    material->color[2] = yyjson_get_real(yyjson_arr_get(value, 2));
-                    material->color[3] = yyjson_get_real(yyjson_arr_get(value, 3));
+                value = yyjson_obj_get(root, "color");
+                if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 4) {
+                    material->color[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->color[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->color[2] = (float)yyjson_get_real(yyjson_arr_get(value, 2));
+                    material->color[3] = (float)yyjson_get_real(yyjson_arr_get(value, 3));
                 }
 
-                if (yyjson_is_real(value = yyjson_obj_get(root, "alpha_test")))
-                    material->alpha_test = yyjson_get_real(value);
-                if (yyjson_is_real(value = yyjson_obj_get(root, "bright")))
-                    material->bright = yyjson_get_real(value);
+                value = yyjson_obj_get(root, "alpha_test");
+                if (yyjson_is_real(value))
+                    material->alpha_test = (float)yyjson_get_real(value);
+                value = yyjson_obj_get(root, "bright");
+                if (yyjson_is_real(value))
+                    material->bright = (float)yyjson_get_real(value);
 
-                if (yyjson_is_arr(value = yyjson_obj_get(root, "scroll")) && yyjson_arr_size(value) >= 2) {
-                    material->scroll[0] = yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->scroll[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                value = yyjson_obj_get(root, "scroll");
+                if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
+                    material->scroll[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->scroll[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
                 }
 
-                if (yyjson_is_arr(value = yyjson_obj_get(root, "specular")) && yyjson_arr_size(value) >= 2) {
-                    material->specular[0] = yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->specular[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                value = yyjson_obj_get(root, "specular");
+                if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
+                    material->specular[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->specular[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
                 }
 
-                if (yyjson_is_arr(value = yyjson_obj_get(root, "rimlight")) && yyjson_arr_size(value) >= 2) {
-                    material->rimlight[0] = yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->rimlight[1] = yyjson_get_real(yyjson_arr_get(value, 1));
+                value = yyjson_obj_get(root, "rimlight");
+                if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
+                    material->rimlight[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->rimlight[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
                 }
 
-                if (yyjson_is_bool(value = yyjson_obj_get(root, "half_lambert")))
+                value = yyjson_obj_get(root, "half_lambert");
+                if (yyjson_is_bool(value))
                     material->half_lambert = yyjson_get_bool(value);
-                if (yyjson_is_real(value = yyjson_obj_get(root, "cel")))
-                    material->cel = yyjson_get_real(value);
+                value = yyjson_obj_get(root, "cel");
+                if (yyjson_is_real(value))
+                    material->cel = (float)yyjson_get_real(value);
 
-                if (yyjson_is_arr(value = yyjson_obj_get(root, "wind")) && yyjson_arr_size(value) >= 3) {
-                    material->wind[0] = yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->wind[1] = yyjson_get_real(yyjson_arr_get(value, 1));
-                    material->wind[2] = yyjson_get_real(yyjson_arr_get(value, 2));
+                value = yyjson_obj_get(root, "wind");
+                if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 3) {
+                    material->wind[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
+                    material->wind[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->wind[2] = (float)yyjson_get_real(yyjson_arr_get(value, 2));
                 }
             } else {
                 WTF("Expected material \"%s\" root as object, got %s", name, yyjson_get_type_desc(root));
@@ -386,8 +400,9 @@ static struct Node* read_node(uint8_t** cursor, struct Node* parent) {
         read_u32(cursor);                         // Mesh index
 
     node->parent = parent;
-    if ((node->num_children = read_u32(cursor)) > 0) {
-        node->children = lame_alloc(node->num_children * sizeof(struct Node*));
+    node->num_children = read_u32(cursor);
+    if ((node->num_children) > 0) {
+        node->children = (struct Node**)lame_alloc(node->num_children * sizeof(struct Node*));
         for (size_t i = 0; i < node->num_children; i++)
             node->children[i] = read_node(cursor, node);
     } else {
@@ -465,7 +480,8 @@ void load_model(const char* name) {
     model->transient = false;
 
     // Submodels
-    if ((model->num_submodels = read_u32(&cursor)) > 0) {
+    model->num_submodels = read_u32(&cursor);
+    if (model->num_submodels > 0) {
         model->submodels = lame_alloc(model->num_submodels * sizeof(struct Submodel));
         for (size_t i = 0; i < model->num_submodels; i++) {
             struct Submodel* submodel = &(model->submodels[i]);
@@ -596,7 +612,8 @@ void load_model(const char* name) {
             glGenBuffers(1, &submodel->vbo);
             glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);
             glBufferData(
-                GL_ARRAY_BUFFER, sizeof(struct WorldVertex) * submodel->num_vertices, submodel->vertices, GL_STATIC_DRAW
+                GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct WorldVertex) * submodel->num_vertices), submodel->vertices,
+                GL_STATIC_DRAW
             );
 
             glEnableVertexAttribArray(VATT_POSITION);
@@ -642,7 +659,8 @@ void load_model(const char* name) {
     model->root_node = ((model->num_nodes = read_u32(&cursor)) > 0) ? read_node(&cursor, NULL) : NULL;
 
     // Bones
-    if ((model->num_bones = read_u32(&cursor)) > 0) {
+    model->num_bones = read_u32(&cursor);
+    if (model->num_bones > 0) {
         model->bone_offsets = lame_alloc(model->num_bones * sizeof(DualQuaternion));
         for (size_t i = 0; i < model->num_bones; i++) {
             DualQuaternion* dq = &(model->bone_offsets[(size_t)read_f32(&cursor)]);
@@ -660,7 +678,8 @@ void load_model(const char* name) {
     }
 
     // Materials
-    if ((model->num_materials = read_u32(&cursor)) > 0) {
+    model->num_materials = read_u32(&cursor);
+    if (model->num_materials > 0) {
         model->materials = lame_alloc(model->num_materials * sizeof(MaterialID));
         for (size_t i = 0; i < model->num_materials; i++) {
             const char* material_name = read_string(&cursor);
@@ -776,13 +795,15 @@ void load_animation(const char* name) {
     );
 
     animation->parent_frames =
-        (spaces & BS_PARENT) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
-    animation->world_frames = (spaces & BS_WORLD) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
-    animation->bone_frames = (spaces & BS_BONE) ? lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+        (spaces & BS_PARENT) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+    animation->world_frames =
+        (spaces & BS_WORLD) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+    animation->bone_frames =
+        (spaces & BS_BONE) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
 
     for (size_t i = 0; i < animation->num_frames; i++) {
         if (animation->parent_frames != NULL) {
-            DualQuaternion* frame = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            DualQuaternion* frame = (DualQuaternion*)lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             for (size_t j = 0; j < animation->num_nodes; j++) {
                 frame[j][0] = read_f32(&cursor);
                 frame[j][1] = read_f32(&cursor);
@@ -904,7 +925,8 @@ void load_font(const char* name) {
     struct Texture* texture;
     yyjson_val* value = yyjson_obj_get(root, "texture");
     if (yyjson_is_str(value)) {
-        if ((texture = fetch_texture(yyjson_get_str(value))) == NULL)
+        texture = fetch_texture(yyjson_get_str(value));
+        if (texture == NULL)
             FATAL("Font texture \"%s\" not found", name);
         font->texture = texture->hid;
     } else {
@@ -915,7 +937,8 @@ void load_font(const char* name) {
     value = yyjson_obj_get(root, "size");
     if (!yyjson_is_uint(value))
         FATAL("Expected \"size\" as uint in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
-    if ((font->size = yyjson_get_uint(value)) <= 0)
+    font->size = (float)yyjson_get_uint(value);
+    if (font->size <= 0)
         FATAL("Expected non-zero size for font \"%s\"", name);
 
     value = yyjson_obj_get(root, "glyphs");
@@ -937,13 +960,13 @@ void load_font(const char* name) {
         if (font->num_glyphs <= gid) {
             if (font->glyphs == NULL) {
                 font->num_glyphs = gid + 1;
-                font->glyphs = lame_alloc(font->num_glyphs * sizeof(struct Glyph*));
-                lame_set(font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph*));
+                font->glyphs = (struct Glyph**)lame_alloc(font->num_glyphs * sizeof(struct Glyph*));
+                lame_set((void*)font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph*));
             } else {
                 size_t old_num = font->num_glyphs;
                 font->num_glyphs = gid + 1;
                 lame_realloc(&(font->glyphs), font->num_glyphs * sizeof(struct Glyph*));
-                lame_set(font->glyphs + old_num, 0, (font->num_glyphs - old_num) * sizeof(struct Glyph*));
+                lame_set((void*)(font->glyphs + old_num), 0, (font->num_glyphs - old_num) * sizeof(struct Glyph*));
             }
         }
 
@@ -957,10 +980,10 @@ void load_font(const char* name) {
         glyph->size[1] = (GLfloat)yyjson_get_uint(yyjson_obj_get(val, "height"));
         glyph->offset[0] = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "x_offset"));
         glyph->offset[1] = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "y_offset"));
-        glyph->uvs[0] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "x"))) / texture->size[0];
-        glyph->uvs[1] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "y"))) / texture->size[1];
-        glyph->uvs[2] = glyph->uvs[0] + (glyph->size[0] / texture->size[0]);
-        glyph->uvs[3] = glyph->uvs[1] + (glyph->size[1] / texture->size[1]);
+        glyph->uvs[0] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "x"))) / (GLfloat)texture->size[0];
+        glyph->uvs[1] = ((GLfloat)yyjson_get_uint(yyjson_obj_get(val, "y"))) / (GLfloat)texture->size[1];
+        glyph->uvs[2] = glyph->uvs[0] + (glyph->size[0] / (GLfloat)texture->size[0]);
+        glyph->uvs[3] = glyph->uvs[1] + (glyph->size[1] / (GLfloat)texture->size[1]);
         glyph->advance = (GLfloat)yyjson_get_num(yyjson_obj_get(val, "advance"));
     }
 
@@ -1021,7 +1044,8 @@ void load_sound(const char* name) {
     if (file == NULL) {
         // Fall back to just using a sample
         SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", name);
-        if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
+        file = get_mod_file(asset_file_helper, ".json");
+        if (file == NULL) {
             WARN("Sound \"%s\" not found", name);
             return;
         }
@@ -1029,7 +1053,7 @@ void load_sound(const char* name) {
         sound = create_sound(name);
 
         // Data
-        sound->samples = lame_alloc(sizeof(struct Sample*));
+        sound->samples = (Sample**)lame_alloc(sizeof(Sample*));
         sound->num_samples = 1;
         load_sample(file, &sound->samples[0]);
 
@@ -1055,11 +1079,12 @@ void load_sound(const char* name) {
     // Samples
     yyjson_val* value = yyjson_obj_get(root, "sample");
     if (yyjson_is_str(value)) {
-        sound->samples = lame_alloc(sizeof(struct Sample*));
+        sound->samples = (Sample**)lame_alloc(sizeof(Sample*));
         sound->num_samples = 1;
 
         SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", yyjson_get_str(value));
-        if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
+        file = get_mod_file(asset_file_helper, ".json");
+        if (file == NULL) {
             sound->samples[0] = NULL;
             WARN("Sample \"%s\" not found", asset_file_helper);
         } else {
@@ -1067,7 +1092,7 @@ void load_sound(const char* name) {
         }
     } else if (yyjson_is_arr(value)) {
         sound->num_samples = yyjson_arr_size(value);
-        sound->samples = lame_alloc(sound->num_samples * sizeof(struct Sample*));
+        sound->samples = (Sample**)lame_alloc(sound->num_samples * sizeof(Sample*));
 
         size_t i, n;
         yyjson_val* entry;
@@ -1082,7 +1107,8 @@ void load_sound(const char* name) {
             }
 
             SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", yyjson_get_str(entry));
-            if ((file = get_mod_file(asset_file_helper, ".json")) == NULL) {
+            file = get_mod_file(asset_file_helper, ".json");
+            if (file == NULL) {
                 sound->samples[i] = NULL;
                 WARN("Sample \"%s\" not found", asset_file_helper);
                 continue;
@@ -1094,18 +1120,19 @@ void load_sound(const char* name) {
     }
 
     // Gain
-    if (yyjson_is_num(value = yyjson_obj_get(root, "gain")))
+    value = yyjson_obj_get(root, "gain");
+    if (yyjson_is_num(value))
         sound->gain = (float)yyjson_get_num(value);
 
     // Pitch
     value = yyjson_obj_get(root, "pitch");
     if (yyjson_is_arr(value)) {
         if (yyjson_arr_size(value) >= 2) {
-            sound->pitch[0] = yyjson_get_num(yyjson_arr_get(value, 0));
-            sound->pitch[1] = yyjson_get_num(yyjson_arr_get(value, 1));
+            sound->pitch[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+            sound->pitch[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
         }
     } else if (yyjson_is_num(value)) {
-        sound->pitch[0] = sound->pitch[1] = yyjson_get_num(value);
+        sound->pitch[0] = sound->pitch[1] = (float)yyjson_get_num(value);
     }
 
     yyjson_doc_free(json);

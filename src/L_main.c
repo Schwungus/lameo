@@ -1,7 +1,6 @@
 #ifdef _MSC_VER
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
-#include <stdlib.h>
 #endif
 
 #include <SDL3/SDL_main.h>

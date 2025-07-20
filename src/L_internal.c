@@ -57,6 +57,9 @@ void loop() {
         SDL_Event event;
         while (SDL_PollEvent(&event))
             switch (event.type) {
+                default:
+                    break;
+
                 case SDL_EVENT_QUIT:
                     running = false;
                     break;

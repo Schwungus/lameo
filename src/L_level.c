@@ -86,14 +86,16 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
             room->model = NULL;
 
             // Properties
-            if (yyjson_is_str(roomval = yyjson_obj_get(roomdef, "model"))) {
+            roomval = yyjson_obj_get(roomdef, "model");
+            if (yyjson_is_str(roomval)) {
                 struct Model* model = fetch_model(yyjson_get_str(roomval));
                 if (model != NULL)
                     room->model = create_model_instance(model);
             }
 
             // Actors
-            if (yyjson_is_arr(roomval = yyjson_obj_get(roomdef, "actors"))) {
+            roomval = yyjson_obj_get(roomdef, "actors");
+            if (yyjson_is_arr(roomval)) {
                 yyjson_val* actdef;
                 size_t j, o;
                 yyjson_arr_foreach(roomval, j, o, actdef) {

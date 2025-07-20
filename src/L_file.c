@@ -7,7 +7,8 @@ static char* pref_path = NULL;
 static char user_path[FILE_PATH_MAX];
 
 void file_init() {
-    if ((pref_path = SDL_GetPrefPath("Schwungus", "lameo")) == NULL)
+    pref_path = SDL_GetPrefPath("Schwungus", "lameo");
+    if (pref_path == NULL)
         FATAL("Pref path fail: %s", SDL_GetError());
     SDL_snprintf(user_path, sizeof(user_path), "%susers/%llu/", pref_path, get_steam_id());
 

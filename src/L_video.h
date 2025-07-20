@@ -204,5 +204,6 @@ void clear_stencil(GLint);
 struct ModelInstance* create_model_instance(struct Model*);
 void destroy_model_instance(struct ModelInstance*);
 void set_model_instance_animation(struct ModelInstance*, struct Animation*, float, bool);
+void tick_model_instance(struct ModelInstance*);
 void submit_model_instance(struct ModelInstance*);
 void draw_model_instance(struct ModelInstance*);

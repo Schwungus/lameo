@@ -281,6 +281,7 @@ void tick_actor(struct Actor* actor) {
     if (model != NULL) {
         glm_vec3_copy(actor->pos, model->pos);
         glm_vec3_copy(actor->angle, model->angle);
+        tick_model_instance(model);
     }
 
     struct ActorCamera* camera = actor->camera;
@@ -419,8 +420,8 @@ void set_actor_pos(struct Actor* actor, float x, float y, float z) {
         actor->pos[2] = z;
 
         // Link
-        size_t bump_x = (x - bump->pos[0]) / BUMP_CHUNK_SIZE;
-        size_t bump_y = (y - bump->pos[1]) / BUMP_CHUNK_SIZE;
+        size_t bump_x = (size_t)((x - bump->pos[0]) / (float)BUMP_CHUNK_SIZE);
+        size_t bump_y = (size_t)((y - bump->pos[1]) / (float)BUMP_CHUNK_SIZE);
         actor->bump_index =
             SDL_clamp(bump_x, 0, bump->size[0] - 1) + (bump->size[0] * SDL_clamp(bump_y, 0, bump->size[1] - 1));
         if (chunks[actor->bump_index] != NULL)
