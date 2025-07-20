@@ -1178,13 +1178,54 @@ static void animate_model_instance(struct ModelInstance* inst) {
     struct Animation* animation = inst->animation;
     if (animation == NULL)
         return;
+
     if (animation->bone_frames != NULL) {
+        // Copy sample from bone-space frame
         lame_copy(
             inst->sample, animation->bone_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), animation->num_frames)],
             animation->num_bones * sizeof(DualQuaternion)
         );
     } else if (animation->parent_frames != NULL) {
-        // TODO
+        // Generate a sample from parent-space frame
+        // https://github.com/blueburncz/BBMOD/blob/bbmod3/BBMOD_GML/scripts/BBMOD_AnimationPlayer/BBMOD_AnimationPlayer.gml#L152
+        DualQuaternion* frame =
+            animation->parent_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), (float)animation->num_frames)];
+
+        static struct Node* node_stack[MAX_BONES];
+        struct Model* model = inst->model;
+        node_stack[0] = model->root_node;
+        size_t next = 1;
+
+        for (size_t i = 0; i < model->num_nodes; i++) {
+            if (next <= 0)
+                break;
+            struct Node* node = node_stack[--next];
+
+            // TODO: Separate skeleton from the rest of the nodes to save on
+            //       iterations here.
+
+            size_t idx = node->index;
+            struct Node* parent = node->parent;
+            if (parent == NULL) {
+                // No parent transform -> just copy the node transform
+                inst->node_transforms[idx][0] = frame[idx][0];
+                inst->node_transforms[idx][1] = frame[idx][1];
+                inst->node_transforms[idx][2] = frame[idx][2];
+                inst->node_transforms[idx][3] = frame[idx][3];
+                inst->node_transforms[idx][4] = frame[idx][4];
+                inst->node_transforms[idx][5] = frame[idx][5];
+                inst->node_transforms[idx][6] = frame[idx][6];
+                inst->node_transforms[idx][7] = frame[idx][7];
+            } else {
+                // Multiply node transform with parent's transform
+                dq_mul(frame[idx], inst->node_transforms[parent->index], inst->node_transforms[idx]);
+            }
+            if (node->bone)
+                dq_mul(model->bone_offsets[idx], inst->node_transforms[idx], inst->sample[idx]);
+
+            for (size_t j = 0; j < node->num_children; j++)
+                node_stack[next++] = node->children[j];
+        }
     }
 }
 
