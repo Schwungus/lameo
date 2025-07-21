@@ -1,5 +1,27 @@
 #include "L_math.h"
 
+void dq_identity(float dest[8]) {
+    dest[0] = 0;
+    dest[1] = 0;
+    dest[2] = 0;
+    dest[3] = 1;
+    dest[4] = 0;
+    dest[5] = 0;
+    dest[6] = 0;
+    dest[7] = 0;
+}
+
+void dq_copy(const float dq[8], float dest[8]) {
+    dest[0] = dq[0];
+    dest[1] = dq[1];
+    dest[2] = dq[2];
+    dest[3] = dq[3];
+    dest[4] = dq[4];
+    dest[5] = dq[5];
+    dest[6] = dq[6];
+    dest[7] = dq[7];
+}
+
 void dq_mul(const float a[8], const float b[8], float dest[8]) {
     float a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3], a4 = a[4], a5 = a[5], a6 = a[6], a7 = a[7];
     float b0 = b[0], b1 = b[1], b2 = b[2], b3 = b[3], b4 = b[4], b5 = b[5], b6 = b[6], b7 = b[7];

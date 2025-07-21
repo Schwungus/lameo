@@ -1172,7 +1172,7 @@ void destroy_model_instance(struct ModelInstance* inst) {
 }
 
 static void animate_model_instance(struct ModelInstance* inst) {
-    struct Animation* animation = inst->animation;
+    const struct Animation* animation = inst->animation;
     if (inst->animation == NULL)
         return;
     if (animation->bone_frames != NULL) {
@@ -1184,45 +1184,34 @@ static void animate_model_instance(struct ModelInstance* inst) {
     } else if (animation->parent_frames != NULL) {
         // Generate a sample from parent-space frame
         // https://github.com/blueburncz/BBMOD/blob/bbmod3/BBMOD_GML/scripts/BBMOD_AnimationPlayer/BBMOD_AnimationPlayer.gml#L152
-        DualQuaternion* frame =
+        const DualQuaternion* frame =
             animation->parent_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), (float)animation->num_frames)];
 
-        static struct Node* node_stack[MAX_BONES];
-        struct Model* model = inst->model;
+        static const struct Node* node_stack[MAX_BONES];
+        const struct Model* model = inst->model;
         node_stack[0] = model->root_node;
         size_t next = 1;
 
         for (size_t i = 0; i < model->num_nodes; i++) {
             if (next <= 0)
                 break;
-            struct Node* node = node_stack[--next];
+            const struct Node* node = node_stack[--next];
 
             // TODO: Separate skeleton from the rest of the nodes to save on
             //       iterations here.
 
             size_t idx = node->index;
+            if (idx >= animation->num_nodes)
+                continue;
+
             static DualQuaternion ndq;
-            ndq[0] = frame[idx][0];
-            ndq[1] = frame[idx][1];
-            ndq[2] = frame[idx][2];
-            ndq[3] = frame[idx][3];
-            ndq[4] = frame[idx][4];
-            ndq[5] = frame[idx][5];
-            ndq[6] = frame[idx][6];
-            ndq[7] = frame[idx][7];
+            dq_copy(frame[idx], ndq);
             glm_quat_mul(inst->rotations[idx], ndq, ndq);
             glm_quat_add(inst->translations[idx], &ndq[4], &ndq[4]);
 
             if (node->parent != NULL)
                 dq_mul(ndq, inst->transforms[node->parent->index], ndq);
-            inst->transforms[idx][0] = ndq[0];
-            inst->transforms[idx][1] = ndq[1];
-            inst->transforms[idx][2] = ndq[2];
-            inst->transforms[idx][3] = ndq[3];
-            inst->transforms[idx][4] = ndq[4];
-            inst->transforms[idx][5] = ndq[5];
-            inst->transforms[idx][6] = ndq[6];
-            inst->transforms[idx][7] = ndq[7];
+            dq_copy(ndq, inst->transforms[idx]);
 
             if (node->bone)
                 dq_mul(model->bone_offsets[idx], inst->transforms[idx], inst->sample[idx]);
@@ -1236,33 +1225,36 @@ static void animate_model_instance(struct ModelInstance* inst) {
 void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
     if (animation != NULL) {
         if (inst->sample == NULL) {
-            size_t new_size = animation->num_nodes * sizeof(versor);
-
-            inst->translations = lame_alloc_clean(new_size);
-            inst->rotations = lame_alloc(new_size);
-            for (size_t i = 0; i < animation->num_nodes; i++)
+            inst->translations = lame_alloc(animation->num_nodes * sizeof(versor));
+            inst->rotations = lame_alloc(animation->num_nodes * sizeof(versor));
+            for (size_t i = 0; i < animation->num_nodes; i++) {
+                glm_vec4_zero(inst->translations[i]);
                 glm_quat_identity(inst->rotations[i]);
+            }
 
-            new_size = animation->num_nodes * sizeof(DualQuaternion);
-
-            inst->transforms = lame_alloc_clean(new_size);
-            inst->sample = lame_alloc_clean(new_size);
+            inst->transforms = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            inst->sample = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            for (size_t i = 0; i < animation->num_nodes; i++) {
+                dq_identity(inst->transforms[i]);
+                dq_identity(inst->sample[i]);
+            }
         } else if (inst->animation != NULL && inst->animation->num_nodes < animation->num_nodes) {
-            size_t old_size = inst->animation->num_nodes * sizeof(versor);
-            size_t new_size = animation->num_nodes * sizeof(versor);
-
-            lame_realloc_clean(&(inst->translations), old_size, new_size);
-            lame_realloc(&(inst->rotations), new_size);
-            for (size_t i = inst->animation->num_nodes; i < animation->num_nodes; i++)
+            lame_realloc(&(inst->translations), animation->num_nodes * sizeof(versor));
+            lame_realloc(&(inst->rotations), animation->num_nodes * sizeof(versor));
+            for (size_t i = inst->animation->num_nodes; i < animation->num_nodes; i++) {
+                glm_vec4_zero(inst->translations[i]);
                 glm_quat_identity(inst->rotations[i]);
+            }
 
-            old_size = inst->animation->num_nodes * sizeof(DualQuaternion);
-            new_size = animation->num_nodes * sizeof(DualQuaternion);
-
-            lame_realloc_clean(&(inst->transforms), old_size, new_size);
-            lame_realloc_clean(&(inst->sample), old_size, new_size);
+            lame_realloc(&(inst->transforms), animation->num_nodes * sizeof(DualQuaternion));
+            lame_realloc(&(inst->sample), animation->num_nodes * sizeof(DualQuaternion));
+            for (size_t i = inst->animation->num_nodes; i < animation->num_nodes; i++) {
+                dq_identity(inst->transforms[i]);
+                dq_identity(inst->sample[i]);
+            }
         }
     }
+
     inst->animation = animation;
     inst->frame = frame;
     inst->loop = loop;

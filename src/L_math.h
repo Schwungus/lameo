@@ -26,4 +26,6 @@ typedef float DualQuaternion[8];
 #define DQ_IDENTITY (DualQuaternion){0, 0, 0, 1, 0, 0, 0, 0}
 #define DQ_IDENTITY_INIT {0, 0, 0, 1, 0, 0, 0, 0}
 
+void dq_identity(float[8]);
+void dq_copy(const float[8], float[8]);
 void dq_mul(const float[8], const float[8], float[8]);
