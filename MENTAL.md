@@ -23,28 +23,32 @@ plain C!
     -   `cglm/cglm.h` (use `L_math.h` instead)
     -   `glad/gl.h`, `SDL3/SDL_video.h` or `SDL3/SDL_opengl.h` (use `L_video.h` instead)
     -   `fmod.h` (use `L_audio.h` instead)
-        -   Using **FMOD** directly outside of `L_audio.h` is discouraged as its functionality is supposed to be abstracted.
+        -   Using **FMOD** directly outside of `L_audio.h` is discouraged as its functionality should be abstracted.
     -   `lauxlib.h`, `lua.h` or `lualib.h` (use `L_script.h` instead)
     -   `caulk.h` (use `L_steam.h` instead)
-        -   Using **caulk** directly outside of `L_steam.h` is discouraged as its functionality is supposed to be abstracted.
+        -   Using **caulk** directly outside of `L_steam.h` is discouraged as its functionality should be abstracted.
 -   Only use SDL3 equivalents of C standard library functions and macros **exclusively**.
 -   Only use `lame_*` functions for memory handling **exclusively**.
-    -   For shortcutting/convenience, the following destructor macros are provided:
-        -   `FREE_POINTER()`
-        -   `CLOSE_POINTER()`
-        -   `CLOSE_HANDLE()`
-    -   **EXCEPTION:** Some third-party libraries may allow custom memory allocation, in which case you can directly use SDL3's memory functions.
+    -   For shortcutting/convenience, the following variants are available for allocating zeroed out memory:
+        -   `lame_alloc_clean()`
+        -   `lame_realloc_clean()` (Requires two size arguments)
+    -   For shortcutting/convenience, the following destructor macros are available:
+        -   `FREE_POINTER()` frees a pointer with `lame_free()` if not `NULL`.
+        -   `CLOSE_POINTER()` frees a pointer with a callback if not `NULL`.
+        -   `CLOSE_HANDLE()` frees a handle with a callback if not `0`.
+    -   For structs in Lua, allocate them as userdata with `userdata_alloc()` or `userdata_alloc_clean()` so that they may be garbage-collected.
+    -   **EXCEPTION:** Some third-party libraries may allow custom memory allocation, in which case you may directly use SDL3's memory functions.
 -   Only use the following macros for logging **exclusively**:
     -   `INFO()`
     -   `WARN()`
     -   `WTF()`
     -   `FATAL()`
-    -   **EXCEPTION:** Some third-party libraries may allow custom logging callbacks, in which case you can hook those to lameo's logging system using either the logging macros or by defining a custom `log_*` function.
+    -   **EXCEPTION:** Some third-party libraries may allow custom logging callbacks, in which case you may hook those to lameo's logging system using either the logging macros or by defining a custom `log_*` function.
 -   Only use the following functions for filenames when handling the following categories **exclusively**:
     -   Internal files (controller mappings, debugging) -> `get_base_path()`
     -   Definitions (mod information, languages) -> `path` from `struct Mod`
     -   Assets (images, sounds, JSON) -> `get_mod_file()`
-        -   Mods can override assets, so the latest replacement is always returned.
+        -   Mods may override assets, so the latest replacement is always returned.
     -   User data (saves, extras) -> `get_user_path()`
         -   User data is unique for each Steam ID. If Steam is not available, the user ID `0` is used as a fallback for local data.
     -   Miscellaneous (settings, controls) -> `get_pref_path()`
@@ -58,22 +62,15 @@ plain C!
 
 ## Safety
 
--   In some cases such as assets, actors, etc., pointers may be destroyed by other sources and as such may lead to dangling pointers in external code. `Fixture`s and `HandleID`s are built **specifically** for this situation, so that you may use handles for safer pointing. Invalid handles will always resolve into `NULL`. Here is a list of common types with handles:
+-   In some cases such as actors, UIs, etc., pointers may be destroyed by other sources and as such may lead to dangling pointers in external code. `Fixture`s and `HandleID`s are built **specifically** for this situation, so that you may use handles for safer pointing. Invalid handles will always resolve into `NULL`. Here is a list of common types with handles:
     | Type | Handle Type | Fixture |
     | ---- | ----------- | ------- |
     | `void*` | `HandleID` | |
-    | `struct Texture` | `TextureID` | `texture_handles` |
-    | `struct Material` | `MaterialID` | `material_handles` |
-    | `struct Model` | `ModelID` | `model_handles` |
-    | `struct Animation` | `AnimationID` | `animation_handles` |
-    | `struct Font` | `FontID` | `font_handles` |
-    | `struct Sound` | `SoundID` | `sound_handles` |
-    | `struct Track` | `TrackID` | `track_handles` |
     | `struct Actor` | `HandleID` | `actor_handles` |
     | `struct UI` | `HandleID` | `ui_handles` |
--   Do **not** allow lameo to cause segfaults. Make use of the `FATAL()` macro so you can catch fatal errors outside of debugging.
+-   Do **not** allow lameo to cause segfaults. Make use of the `FATAL()` macro so that you may catch fatal errors outside of debugging.
     -   In sanity checks/assertions, it's recommended to end the fatal error message with a `?` to indicate that the error occured during a sanity check/assertion.
     -   **EXCEPTION:** In rare cases, some segfaults may be out of lameo's control (i.e. Steam overlay injection).
 -   All allocated memory **must** be freed when closing lameo.
-    -   Some memory leaks may be out of lameo's control. Search for `MEMORY LEAK` in the repository for comments on possible cases.
+    -   Some memory leaks may be out of lameo's control. Search for `MEMORY LEAK` in the repository for comments on possible cases and severities.
     -   **EXCEPTION:** It's fine to leak memory on a fatal error, as lameo will forcefully exit without freeing anything anyway.
