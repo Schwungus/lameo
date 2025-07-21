@@ -1175,19 +1175,47 @@ static void animate_model_instance(struct ModelInstance* inst) {
     const struct Animation* animation = inst->animation;
     if (inst->animation == NULL)
         return;
+
+    static DualQuaternion transframe[MAX_BONES] = {0};
+    float frm = SDL_fabsf(inst->frame);
+
     if (animation->bone_frames != NULL) {
         // Copy sample from bone-space frame
-        lame_copy(
-            inst->sample, animation->bone_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), animation->num_frames)],
-            animation->num_bones * sizeof(DualQuaternion)
-        );
+        const DualQuaternion* frame_a = animation->bone_frames[(size_t)SDL_fmodf(frm, (float)animation->num_frames)];
+        const DualQuaternion* frame_b =
+            animation->bone_frames[(size_t)(inst->loop ? SDL_fmodf(frm + 1, (float)animation->num_frames)
+                                                       : SDL_min(frm + 1, animation->num_frames - 1))];
+
+        const DualQuaternion* frame;
+        if (frame_a == frame_b) {
+            frame = frame_a;
+        } else {
+            float blend = frm - SDL_floorf(frm);
+            for (size_t i = 0; i < animation->num_nodes; i++)
+                dq_lerp(frame_a[i], frame_b[i], blend, transframe[i]);
+            frame = transframe;
+        }
+
+        lame_copy(inst->sample, frame, animation->num_bones * sizeof(DualQuaternion));
     } else if (animation->parent_frames != NULL) {
         // Generate a sample from parent-space frame
         // https://github.com/blueburncz/BBMOD/blob/bbmod3/BBMOD_GML/scripts/BBMOD_AnimationPlayer/BBMOD_AnimationPlayer.gml#L152
-        const DualQuaternion* frame =
-            animation->parent_frames[(size_t)SDL_fmodf(SDL_fabsf(inst->frame), (float)animation->num_frames)];
+        const DualQuaternion* frame_a = animation->parent_frames[(size_t)SDL_fmodf(frm, (float)animation->num_frames)];
+        const DualQuaternion* frame_b =
+            animation->parent_frames[(size_t)(inst->loop ? SDL_fmodf(frm + 1, (float)animation->num_frames)
+                                                         : SDL_min(frm + 1, animation->num_frames - 1))];
 
-        static const struct Node* node_stack[MAX_BONES];
+        const DualQuaternion* frame;
+        if (frame_a == frame_b) {
+            frame = frame_a;
+        } else {
+            float blend = frm - SDL_floorf(frm);
+            for (size_t i = 0; i < animation->num_nodes; i++)
+                dq_slerp(frame_a[i], frame_b[i], blend, transframe[i]);
+            frame = transframe;
+        }
+
+        static const struct Node* node_stack[MAX_BONES] = {0};
         const struct Model* model = inst->model;
         node_stack[0] = model->root_node;
         size_t next = 1;

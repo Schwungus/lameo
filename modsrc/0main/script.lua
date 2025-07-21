@@ -15,22 +15,17 @@ define_actor("Camera", nil, {
 dummy = 0
 
 define_actor("Main", nil, {
-    load = function()
-        load_model("video")
-        load_animation("video/idle")
-    end,
-
     create = function (this)
         this.dummy = dummy
         dummy = math.fmod(dummy + 8, 160)
         this.dummy2 = 0
 
-        local model = this:create_model(get_model("video"))
+        local model = this:create_model(fetch_model("video"))
         model:set_hidden(8, 1)
         model:set_hidden(9, 1)
         model:set_hidden(10, 1)
         if ((this.dummy % 25) < 9) then
-            model:set_animation(get_animation("video/idle"), 0, 1)
+            model:set_animation(fetch_animation("player/walk"), 0, 1)
         end
     end,
 

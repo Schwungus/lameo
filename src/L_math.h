@@ -29,3 +29,5 @@ typedef float DualQuaternion[8];
 void dq_identity(float[8]);
 void dq_copy(const float[8], float[8]);
 void dq_mul(const float[8], const float[8], float[8]);
+void dq_lerp(const float[8], const float[8], float, float[8]);
+void dq_slerp(const float[8], const float[8], float, float[8]);
