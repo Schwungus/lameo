@@ -13,6 +13,12 @@ void* _lame_alloc(size_t size, const char* filename, int line) {
     return ptr;
 }
 
+void* _lame_alloc_clean(size_t size, const char* filename, int line) {
+    void* ptr = _lame_alloc(size, filename, line);
+    SDL_memset(ptr, 0, size);
+    return ptr;
+}
+
 void _lame_free(void** ptr, const char* filename, int line) {
     if (ptr == NULL || *ptr == NULL)
         log_fatal(src_basename(filename), line, "Freeing a null pointer?");
@@ -35,6 +41,12 @@ void _lame_realloc(void** ptr, size_t size, const char* filename, int line) {
     *ptr = SDL_realloc(*ptr, size);
     if (*ptr == NULL)
         log_fatal(src_basename(filename), line, "Reallocation failed");
+}
+
+void _lame_realloc_clean(void** ptr, size_t old_size, size_t new_size, const char* filename, int line) {
+    _lame_realloc(ptr, new_size, filename, line);
+    if (new_size > old_size)
+        SDL_memset((char*)(*ptr) + old_size, 0, new_size - old_size);
 }
 
 void _lame_set(void* dest, char val, size_t size, const char* filename, int line) {
@@ -123,13 +135,9 @@ char* read_string(uint8_t** buf) {
 }
 
 struct Fixture* _create_fixture(const char* filename, int line) {
-    struct Fixture* fixture = _lame_alloc(sizeof(struct Fixture), filename, line);
-    fixture->handles = _lame_alloc(sizeof(struct Handle), filename, line);
-    fixture->handles[0].ptr = NULL;
-    fixture->handles[0].generation = 0;
-    fixture->size = 0;
+    struct Fixture* fixture = _lame_alloc_clean(sizeof(struct Fixture), filename, line);
+    fixture->handles = _lame_alloc_clean(sizeof(struct Handle), filename, line);
     fixture->capacity = 1;
-    fixture->next = 0;
 
     // log_generic(src_basename(filename), line, "Created fixture %u", fixture);
     return fixture;
@@ -159,13 +167,11 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
                 src_basename(filename), line, "!!! Out of handle capacity (%u <= %u)", new_capacity, old_capacity
             );
 
-        _lame_realloc((void**)&fixture->handles, new_capacity * sizeof(struct Handle), filename, line);
+        _lame_realloc_clean(
+            (void**)&fixture->handles, old_capacity * sizeof(struct Handle), new_capacity * sizeof(struct Handle),
+            filename, line
+        );
         fixture->capacity = new_capacity;
-
-        for (size_t i = old_capacity; i < new_capacity; i++) {
-            fixture->handles[i].ptr = NULL;
-            fixture->handles[i].generation = 0;
-        }
     }
 
     // (Re)occupy an invalid handle
@@ -265,14 +271,9 @@ static uint32_t hash_key(const char* key) {
 }
 
 struct HashMap* _create_hash_map(const char* filename, int line) {
-    struct HashMap* map = _lame_alloc(sizeof(struct HashMap), filename, line);
-    map->count = map->length = 0;
+    struct HashMap* map = _lame_alloc_clean(sizeof(struct HashMap), filename, line);
     map->capacity = HASH_CAPACITY;
-
-    const size_t size = HASH_CAPACITY * sizeof(struct KeyValuePair);
-    map->items = _lame_alloc(size, filename, line);
-    _lame_set(map->items, 0, size, filename, line);
-
+    map->items = _lame_alloc_clean(HASH_CAPACITY * sizeof(struct KeyValuePair), filename, line);
     return map;
 }
 
@@ -327,8 +328,7 @@ static void expand_hash_map(struct HashMap* map, const char* filename, int line)
 
     const size_t old_capacity = map->capacity;
     const size_t new_size = new_capacity * sizeof(struct KeyValuePair);
-    struct KeyValuePair* items = _lame_alloc(new_size, filename, line);
-    _lame_set(items, 0, new_size, filename, line);
+    struct KeyValuePair* items = _lame_alloc_clean(new_size, filename, line);
 
     for (size_t i = 0; i < map->capacity; i++) {
         struct KeyValuePair* kvp = &(map->items[i]);
@@ -401,14 +401,9 @@ static uint32_t int_hash_key(uint32_t key) {
 }
 
 struct IntMap* _create_int_map(const char* filename, int line) {
-    struct IntMap* map = _lame_alloc(sizeof(struct IntMap), filename, line);
-    map->count = map->length = 0;
+    struct IntMap* map = _lame_alloc_clean(sizeof(struct IntMap), filename, line);
     map->capacity = HASH_CAPACITY;
-
-    const size_t size = HASH_CAPACITY * sizeof(struct IKeyValuePair);
-    map->items = _lame_alloc(size, filename, line);
-    _lame_set(map->items, 0, size, filename, line);
-
+    map->items = _lame_alloc_clean(HASH_CAPACITY * sizeof(struct IKeyValuePair), filename, line);
     return map;
 }
 
@@ -462,8 +457,7 @@ static void expand_int_map(struct IntMap* map, const char* filename, int line) {
 
     const size_t old_capacity = map->capacity;
     const size_t new_size = new_capacity * sizeof(struct IKeyValuePair);
-    struct IKeyValuePair* items = _lame_alloc(new_size, filename, line);
-    _lame_set(items, 0, new_size, filename, line);
+    struct IKeyValuePair* items = _lame_alloc_clean(new_size, filename, line);
 
     for (size_t i = 0; i < map->capacity; i++) {
         struct IKeyValuePair* kvp = &(map->items[i]);

@@ -65,7 +65,7 @@ int define_ui(lua_State* L) {
 
     struct UIType* type = from_hash_map(ui_types, name);
     if (type == NULL) {
-        type = lame_alloc(sizeof(struct UIType));
+        type = lame_alloc_clean(sizeof(struct UIType));
         type->name = SDL_strdup(name);
         to_hash_map(ui_types, name, type, true);
     } else {
@@ -132,7 +132,7 @@ struct UI* create_ui(struct UI* parent, const char* name) {
         return NULL;
     }
 
-    struct UI* ui = lame_alloc(sizeof(struct UI));
+    struct UI* ui = lame_alloc_clean(sizeof(struct UI));
     UIID hid = create_handle(ui_handles, ui);
     ui->hid = hid;
     ui->type = type;
@@ -147,7 +147,6 @@ struct UI* create_ui(struct UI* parent, const char* name) {
         parent->child = ui;
     }
     ui->parent = parent;
-    ui->child = NULL;
     ui_top = ui;
 
     ui->table = create_table_ref();

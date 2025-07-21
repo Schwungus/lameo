@@ -835,6 +835,13 @@ void* userdata_alloc(const char* type, size_t size) {
     return userdata;
 }
 
+void* _userdata_alloc_clean(const char* type, size_t size, const char* filename, int line) {
+    void* userdata = lua_newuserdata(context, size);
+    _lame_set(userdata, 0, size, filename, line);
+    luaL_setmetatable(context, type);
+    return userdata;
+}
+
 int create_ref() {
     return luaL_ref(context, LUA_REGISTRYINDEX);
 }

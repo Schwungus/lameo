@@ -64,7 +64,7 @@ int define_actor(lua_State* L) {
 
     struct ActorType* type = from_hash_map(actor_types, name);
     if (type == NULL) {
-        type = lame_alloc(sizeof(struct ActorType));
+        type = lame_alloc_clean(sizeof(struct ActorType));
         type->name = SDL_strdup(name);
         to_hash_map(actor_types, name, type, true);
     } else {
@@ -173,29 +173,23 @@ struct Actor* create_actor_from_type(
     if (base != NULL && ((base->flags & RAF_DISPOSED) || base->actor != NULL))
         return NULL;
 
-    struct Actor* actor = lame_alloc(sizeof(struct Actor));
+    struct Actor* actor = lame_alloc_clean(sizeof(struct Actor));
     ActorID hid = create_handle(actor_handles, actor);
     actor->hid = hid;
     actor->type = type;
-    actor->camera = NULL;
-    actor->model = NULL;
 
     if (actors != NULL)
         actors->next = actor;
     actor->previous = actors;
-    actor->next = NULL;
     actors = actor;
 
     if (room->actors != NULL)
         room->actors->next_neighbor = actor;
     actor->previous_neighbor = room->actors;
-    actor->next_neighbor = NULL;
     room->actors = actor;
 
     actor->room = room;
     actor->base = base;
-
-    actor->player = NULL;
 
     actor->pos[0] = x;
     actor->pos[1] = y;
@@ -204,9 +198,7 @@ struct Actor* create_actor_from_type(
     actor->angle[1] = pitch;
     actor->angle[2] = roll;
 
-    glm_vec3_zero(actor->vel);
     glm_vec3_one(actor->friction);
-    glm_vec3_zero(actor->gravity);
 
     actor->table = create_table_ref();
     actor->flags = AF_DEFAULT;
@@ -215,9 +207,6 @@ struct Actor* create_actor_from_type(
 
     actor->collision_size[0] = actor->bump_size[0] = 8;
     actor->collision_size[1] = actor->bump_size[1] = 16;
-    actor->mass = 0;
-    actor->bump_index = 0;
-    actor->previous_bump = actor->next_bump = NULL;
 
     if (invoke_create) {
         if (type->create != LUA_NOREF)
@@ -234,17 +223,12 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
     if (actor->camera != NULL)
         return actor->camera;
 
-    struct ActorCamera* camera = lame_alloc(sizeof(struct ActorCamera));
+    struct ActorCamera* camera = lame_alloc_clean(sizeof(struct ActorCamera));
     camera->actor = actor;
-    camera->parent = camera->child = NULL;
-
-    camera->targets = NULL;
-    camera->pois = NULL;
 
     glm_vec3_copy(actor->pos, camera->pos);
     glm_vec3_copy(actor->angle, camera->angle);
     camera->fov = 45;
-    camera->range = 0;
 
     camera->userdata = create_pointer_ref("camera", camera);
     camera->table = create_table_ref();
@@ -252,7 +236,6 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
 
     glm_mat4_identity(camera->view_matrix);
     glm_mat4_identity(camera->projection_matrix);
-    camera->surface = NULL;
     camera->surface_ref = LUA_NOREF;
 
     actor->camera = camera;

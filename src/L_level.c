@@ -25,8 +25,8 @@ void unload_level() {
     }
     destroy_int_map(level->rooms, true);
 
-    lame_free(&level->name);
-    lame_free(&level->title);
+    lame_free(&(level->name));
+    lame_free(&(level->title));
     lame_free(&level);
 }
 
@@ -45,7 +45,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
     if (!yyjson_is_obj(root))
         FATAL("Expected level \"%s\" root as object, got %s", name, yyjson_get_type_desc(root));
 
-    level = lame_alloc(sizeof(struct Level));
+    level = lame_alloc_clean(sizeof(struct Level));
     level->name = SDL_strdup(name);
 
     // Properties
@@ -66,7 +66,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                 FATAL("Expected level \"%s\" room %u ID as uint, got %s", name, i, yyjson_get_type_desc(roomval));
 
             // Allocate room at this point
-            struct Room* room = lame_alloc(sizeof(struct Room));
+            struct Room* room = lame_alloc_clean(sizeof(struct Room));
             room->level = level;
             room->id = (uint32_t)yyjson_get_uint(roomval);
             if (!to_int_map(level->rooms, room->id, room, false))
@@ -75,15 +75,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     room->id, name
                 );
 
-            room->master = room->players = NULL;
-            room->room_actors = NULL;
-            room->actors = NULL;
-
-            room->bump.chunks = NULL;
-            glm_vec2_zero(room->bump.pos);
             room->bump.size[0] = room->bump.size[1] = 1;
-
-            room->model = NULL;
 
             // Properties
             roomval = yyjson_obj_get(roomdef, "model");
@@ -114,16 +106,13 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     if (!load_actor(type))
                         continue;
 
-                    struct RoomActor* room_actor = lame_alloc(sizeof(struct RoomActor));
+                    struct RoomActor* room_actor = lame_alloc_clean(sizeof(struct RoomActor));
                     room_actor->type = get_actor_type(type);
 
                     if (room->room_actors != NULL)
                         room->room_actors->next = room_actor;
                     room_actor->previous = room->room_actors;
-                    room_actor->next = NULL;
                     room->room_actors = room_actor;
-
-                    room_actor->actor = NULL;
 
                     room_actor->pos[0] = (float)yyjson_get_real(yyjson_obj_get(actdef, "x"));
                     room_actor->pos[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "y"));

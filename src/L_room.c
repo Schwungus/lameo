@@ -2,7 +2,7 @@
 
 void update_bump_map(struct BumpMap* bump, vec2 pos) {
     if (bump->chunks == NULL) {
-        *(bump->chunks = (struct Actor**)lame_alloc(sizeof(struct Actor*))) = NULL;
+        bump->chunks = (struct Actor**)lame_alloc_clean(sizeof(struct Actor*));
         glm_vec2_copy(pos, bump->pos);
         bump->size[0] = bump->size[1] = 1;
 
@@ -40,7 +40,7 @@ void update_bump_map(struct BumpMap* bump, vec2 pos) {
     if (update) {
         const size_t size = bump->size[0] * bump->size[1] * sizeof(struct Actor*);
         lame_realloc(&bump->chunks, size);
-        lame_set((void*)bump->chunks, 0, size);
+        lame_set(bump->chunks, 0, size);
 
         INFO(
             "Updated bump %u (pos (%.2f, %.2f) size %ux%u)", bump, bump->pos[0], bump->pos[1], bump->size[0],

@@ -64,7 +64,7 @@ void load_shader(const char* name) {
     }
 
     // Shader struct
-    struct Shader* shader = lame_alloc(sizeof(struct Shader));
+    struct Shader* shader = lame_alloc_clean(sizeof(struct Shader));
 
     // General
     shader->name = SDL_strdup(name);
@@ -144,20 +144,14 @@ void load_texture(const char* name) {
     }
 
     // Texture struct
-    struct Texture* texture = lame_alloc(sizeof(struct Texture));
+    struct Texture* texture = lame_alloc_clean(sizeof(struct Texture));
 
     // General
     texture->name = SDL_strdup(name);
-    texture->transient = false;
-
-    // Inheritance
-    texture->parent = NULL;
 
     // Data
     texture->size[0] = surface->w;
     texture->size[1] = surface->h;
-    texture->offset[0] = texture->offset[1] = 0;
-    texture->uvs[0] = texture->uvs[1] = 0;
     texture->uvs[2] = texture->uvs[3] = 1;
 
     glGenTextures(1, &texture->texture);
@@ -238,30 +232,17 @@ void load_material(const char* name) {
         WARN("Material \"%s\" not found, making a placeholder", name);
 
     // Material struct
-    struct Material* material = lame_alloc(sizeof(struct Material));
+    struct Material* material = lame_alloc_clean(sizeof(struct Material));
 
     // General
     material->name = SDL_strdup(name);
-    material->transient = false;
-
-    // Textures
-    material->textures[0] = material->textures[1] = NULL;
-    material->num_textures[0] = material->num_textures[1] = 0;
-    glm_vec2_zero(material->texture_speed);
 
     // Properties
     material->filter = true;
     glm_vec4_one(material->color);
     material->alpha_test = 0.5f;
-    material->bright = 0;
-    glm_vec2_zero(material->scroll);
-    material->specular[0] = 0;
     material->specular[1] = 1;
-    material->rimlight[0] = 0;
     material->rimlight[1] = 1;
-    material->half_lambert = false;
-    material->cel = 0;
-    glm_vec3_zero(material->wind);
 
     if (file != NULL) {
         yyjson_doc* json = load_json(file);
@@ -369,7 +350,7 @@ void destroy_material(struct Material* material) {
 SOURCE_ASSET(models, model, struct Model*);
 
 static struct Node* read_node(uint8_t** cursor, struct Node* parent) {
-    struct Node* node = lame_alloc(sizeof(struct Node));
+    struct Node* node = lame_alloc_clean(sizeof(struct Node));
     node->name = read_string(cursor);
     node->index = read_f32(cursor);
     node->bone = read_bool(cursor);
@@ -392,8 +373,6 @@ static struct Node* read_node(uint8_t** cursor, struct Node* parent) {
         node->children = (struct Node**)lame_alloc(node->num_children * sizeof(struct Node*));
         for (size_t i = 0; i < node->num_children; i++)
             node->children[i] = read_node(cursor, node);
-    } else {
-        node->children = NULL;
     }
 
     return node;
@@ -459,11 +438,10 @@ void load_model(const char* name) {
     }
 
     // Model struct
-    struct Model* model = lame_alloc(sizeof(struct Model));
+    struct Model* model = lame_alloc_clean(sizeof(struct Model));
 
     // General
     model->name = SDL_strdup(name);
-    model->transient = false;
 
     // Submodels
     model->num_submodels = read_u32(&cursor);
@@ -508,7 +486,7 @@ void load_model(const char* name) {
 
             // Vertices
             submodel->num_vertices = read_u32(&cursor);
-            submodel->vertices = lame_alloc(submodel->num_vertices * sizeof(struct WorldVertex));
+            submodel->vertices = lame_alloc_clean(submodel->num_vertices * sizeof(struct WorldVertex));
 
             for (size_t j = 0; j < submodel->num_vertices; j++) {
                 struct WorldVertex* vertex = &(submodel->vertices[j]);
@@ -517,8 +495,6 @@ void load_model(const char* name) {
                     vertex->position[0] = read_f32(&cursor);
                     vertex->position[1] = read_f32(&cursor);
                     vertex->position[2] = read_f32(&cursor);
-                } else {
-                    glm_vec3_zero(vertex->position);
                 }
 
                 if (has_normals) {
@@ -526,22 +502,17 @@ void load_model(const char* name) {
                     vertex->normal[1] = read_f32(&cursor);
                     vertex->normal[2] = read_f32(&cursor);
                 } else {
-                    vertex->normal[0] = vertex->normal[1] = 0;
                     vertex->normal[2] = -1;
                 }
 
                 if (has_uvs) {
                     vertex->uv[0] = read_f32(&cursor);
                     vertex->uv[1] = read_f32(&cursor);
-                } else {
-                    vertex->uv[0] = vertex->uv[1] = 0;
                 }
 
                 if (has_uvs2) {
                     vertex->uv[2] = read_f32(&cursor);
                     vertex->uv[3] = read_f32(&cursor);
-                } else {
-                    vertex->uv[2] = vertex->uv[3] = 0;
                 }
 
                 if (has_color) {
@@ -569,9 +540,6 @@ void load_model(const char* name) {
                     vertex->bone_weight[1] = read_f32(&cursor);
                     vertex->bone_weight[2] = read_f32(&cursor);
                     vertex->bone_weight[3] = read_f32(&cursor);
-                } else {
-                    glm_vec4_zero(vertex->bone_index);
-                    glm_vec4_zero(vertex->bone_weight);
                 }
 
                 if (has_id) {
@@ -637,8 +605,6 @@ void load_model(const char* name) {
                 (void*)offsetof(struct WorldVertex, bone_weight)
             );
         }
-    } else {
-        model->submodels = NULL;
     }
 
     // Nodes
@@ -659,21 +625,18 @@ void load_model(const char* name) {
             (*dq)[6] = read_f32(&cursor);
             (*dq)[7] = read_f32(&cursor);
         }
-    } else {
-        model->bone_offsets = NULL;
     }
 
     // Materials
     model->num_materials = read_u32(&cursor);
     if (model->num_materials > 0) {
-        model->materials = (struct Material**)lame_alloc(model->num_materials * sizeof(struct Material*));
+        model->materials = (struct Material**)lame_alloc_clean(model->num_materials * sizeof(struct Material*));
         for (size_t i = 0; i < model->num_materials; i++) {
             const char* material_name = read_string(&cursor);
-            model->materials[i] = (material_name[0] == '\0') ? NULL : fetch_material(material_name);
+            if (material_name[0] != '\0')
+                model->materials[i] = fetch_material(material_name);
             lame_free(&material_name);
         }
-    } else {
-        model->materials = NULL;
     }
 
     lame_free(&buffer);
@@ -758,11 +721,10 @@ void load_animation(const char* name) {
     }
 
     // Animation struct
-    struct Animation* animation = lame_alloc(sizeof(struct Animation));
+    struct Animation* animation = lame_alloc_clean(sizeof(struct Animation));
 
     // General
     animation->name = SDL_strdup(name);
-    animation->transient = false;
 
     // Data
     enum BoneSpaces spaces = (enum BoneSpaces)(read_u8(&cursor));
@@ -778,12 +740,13 @@ void load_animation(const char* name) {
         animation->num_bones
     );
 
-    animation->parent_frames =
-        (spaces & BS_PARENT) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
-    animation->world_frames =
-        (spaces & BS_WORLD) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
-    animation->bone_frames =
-        (spaces & BS_BONE) ? (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*)) : NULL;
+    if (spaces & BS_PARENT)
+        animation->parent_frames = (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+    if (spaces & BS_WORLD)
+        animation->world_frames = (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+    if (spaces & BS_BONE)
+        animation->bone_frames = (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
+    ;
 
     for (size_t i = 0; i < animation->num_frames; i++) {
         if (animation->parent_frames != NULL) {
@@ -891,17 +854,10 @@ void load_font(const char* name) {
         return;
     }
 
-    struct Font* font = lame_alloc(sizeof(struct Font));
+    struct Font* font = lame_alloc_clean(sizeof(struct Font));
 
     // General
     font->name = SDL_strdup(name);
-    font->transient = false;
-
-    // Data
-    font->texture = 0;
-    font->size = 0;
-    font->glyphs = NULL;
-    font->num_glyphs = 0;
 
     // Texture
     struct Texture* texture;
@@ -942,19 +898,19 @@ void load_font(const char* name) {
         if (font->num_glyphs <= gid) {
             if (font->glyphs == NULL) {
                 font->num_glyphs = gid + 1;
-                font->glyphs = (struct Glyph**)lame_alloc(font->num_glyphs * sizeof(struct Glyph*));
-                lame_set((void*)font->glyphs, 0, font->num_glyphs * sizeof(struct Glyph*));
+                font->glyphs = (struct Glyph**)lame_alloc_clean(font->num_glyphs * sizeof(struct Glyph*));
             } else {
-                size_t old_num = font->num_glyphs;
+                const size_t old_num = font->num_glyphs;
                 font->num_glyphs = gid + 1;
-                lame_realloc(&(font->glyphs), font->num_glyphs * sizeof(struct Glyph*));
-                lame_set((void*)(font->glyphs + old_num), 0, (font->num_glyphs - old_num) * sizeof(struct Glyph*));
+                lame_realloc_clean(
+                    &(font->glyphs), old_num * sizeof(struct Glyph*), font->num_glyphs * sizeof(struct Glyph*)
+                );
             }
         }
 
         struct Glyph* glyph = font->glyphs[gid];
         if (glyph == NULL) {
-            glyph = font->glyphs[gid] = lame_alloc(sizeof(struct Glyph));
+            glyph = font->glyphs[gid] = lame_alloc_clean(sizeof(struct Glyph));
             ++gldef;
         } else
             WARN("Font \"%s\" overwriting glyph \"%c\"", name, gid);
@@ -995,17 +951,14 @@ void destroy_font(struct Font* font) {
 SOURCE_ASSET(sounds, sound, struct Sound*);
 
 struct Sound* create_sound(const char* name) {
-    struct Sound* sound = lame_alloc(sizeof(struct Sound));
+    struct Sound* sound = lame_alloc_clean(sizeof(struct Sound));
 
     // General
     sound->name = SDL_strdup(name);
-    sound->transient = false;
 
     // Data
-    sound->samples = NULL;
-    sound->num_samples = 0;
     sound->gain = 1;
-    sound->pitch[0] = sound->pitch[1] = 1;
+    glm_vec2_one(sound->pitch);
 
     sound->userdata = create_pointer_ref("sound", sound);
 
@@ -1035,7 +988,7 @@ void load_sound(const char* name) {
         // Data
         sound->samples = (Sample**)lame_alloc(sizeof(Sample*));
         sound->num_samples = 1;
-        load_sample(file, &sound->samples[0]);
+        load_sample(file, &(sound->samples[0]));
 
         goto sound_loaded;
     }
@@ -1072,16 +1025,14 @@ void load_sound(const char* name) {
         }
     } else if (yyjson_is_arr(value)) {
         sound->num_samples = yyjson_arr_size(value);
-        sound->samples = (Sample**)lame_alloc(sound->num_samples * sizeof(Sample*));
+        sound->samples = (Sample**)lame_alloc_clean(sound->num_samples * sizeof(Sample*));
 
         size_t i, n;
         yyjson_val* entry;
         yyjson_arr_foreach(value, i, n, entry) {
             if (yyjson_is_null(entry)) {
-                sound->samples[i] = NULL;
                 continue;
             } else if (!yyjson_is_str(entry)) {
-                sound->samples[i] = NULL;
                 WTF("Expected \"sample\" index %u as string or null, got %s", i, yyjson_get_type_desc(entry));
                 continue;
             }
@@ -1089,11 +1040,10 @@ void load_sound(const char* name) {
             SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "sounds/%s.*", yyjson_get_str(entry));
             file = get_mod_file(asset_file_helper, ".json");
             if (file == NULL) {
-                sound->samples[i] = NULL;
                 WARN("Sample \"%s\" not found", asset_file_helper);
                 continue;
             }
-            load_sample(file, &sound->samples[i]);
+            load_sample(file, &(sound->samples[i]));
         }
     } else if (!yyjson_is_null(value)) {
         WTF("Expected \"sample\" as string, array or null in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
@@ -1152,11 +1102,10 @@ void load_track(const char* name) {
         return;
     }
 
-    struct Track* track = lame_alloc(sizeof(struct Track));
+    struct Track* track = lame_alloc_clean(sizeof(struct Track));
 
     // General
     track->name = SDL_strdup(name);
-    track->transient = false;
 
     // Data
     load_stream(track_file, &track->stream);

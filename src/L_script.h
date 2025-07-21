@@ -137,6 +137,9 @@ void _execute_buffer(void*, size_t, const char*, const char*, int);
 
 void collect_garbage();
 void* userdata_alloc(const char*, size_t);
+void* _userdata_alloc_clean(const char*, size_t, const char*, int);
+
+#define userdata_alloc_clean(type, size) _userdata_alloc_clean(type, size, __FILE__, __LINE__)
 
 int create_ref();
 int create_table_ref();

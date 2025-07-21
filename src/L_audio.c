@@ -68,10 +68,8 @@ void audio_teardown() {
 // Sound
 void load_sample(const char* filename, FMOD_SOUND** sample) {
     FMOD_RESULT result = FMOD_System_CreateSound(speaker, filename, FMOD_CREATESAMPLE, NULL, sample);
-    if (result != FMOD_OK) {
+    if (result != FMOD_OK)
         WTF("Sample fail: %s", FMOD_ErrorString(result));
-        *sample = NULL;
-    }
 }
 
 void destroy_sample(FMOD_SOUND* sample) {

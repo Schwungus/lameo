@@ -46,7 +46,7 @@ int define_handler(lua_State* L) {
     const char* name = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TTABLE);
 
-    struct Handler* handler = lame_alloc(sizeof(struct Handler));
+    struct Handler* handler = lame_alloc_clean(sizeof(struct Handler));
     handler->name = SDL_strdup(name);
 
     // Get virtual functions
@@ -67,7 +67,6 @@ int define_handler(lua_State* L) {
 
     // Link handler
     if (handlers == NULL) {
-        handler->previous = NULL;
         handlers = handler;
     } else {
         struct Handler* it = handlers;
@@ -76,7 +75,6 @@ int define_handler(lua_State* L) {
         it->next = handler;
         handler->previous = it;
     }
-    handler->next = NULL;
 
     INFO("Defined handler \"%s\"", name);
 

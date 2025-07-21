@@ -32,14 +32,13 @@ struct Language* fetch_language(const char* name) {
         if (SDL_strcmp(lang->name, name) == 0)
             return lang;
 
-    lang = lame_alloc(sizeof(struct Language));
+    lang = lame_alloc_clean(sizeof(struct Language));
     lang->name = SDL_strdup(name);
     lang->map = create_hash_map();
 
     if (languages != NULL)
         languages->next = lang;
     lang->previous = languages;
-    lang->next = NULL;
     languages = lang;
 
     INFO("Added language \"%s\"", name);

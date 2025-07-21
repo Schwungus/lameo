@@ -56,13 +56,12 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
         }
     }
 
-    struct Mod* mod = lame_alloc(sizeof(*mod));
+    struct Mod* mod = lame_alloc_clean(sizeof(*mod));
 
     // Data
     mod->hid = (ModID)create_handle(mod_handles, mod);
     mod->name = SDL_strdup(fname);
     mod->path = SDL_strdup(path);
-    mod->crc32 = 0;
     if (!SDL_EnumerateDirectory(path, iterate_crc32, &mod->crc32))
         FATAL("CRC32 fail: %s", SDL_GetError());
 
@@ -72,7 +71,6 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
     if (json == NULL) {
         WARN("Failed to open \"mod.json\" for \"%s\"", fname);
         mod->title = SDL_strdup(fname);
-        mod->version = 0;
     } else {
         yyjson_val* root = yyjson_doc_get_root(json);
         if (yyjson_is_obj(root)) {
@@ -90,7 +88,6 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
     if (mods != NULL)
         mods->next = mod;
     mod->previous = mods;
-    mod->next = NULL;
     mods = mod;
 
     INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
@@ -214,9 +211,9 @@ void mod_teardown() {
         const struct Mod* mod = mods;
         mods = mod->previous;
         INFO("Removed mod \"%s\" (%s)", mod->title, mod->name);
-        lame_free(&mod->name);
-        lame_free(&mod->title);
-        lame_free(&mod->path);
+        lame_free(&(mod->name));
+        lame_free(&(mod->title));
+        lame_free(&(mod->path));
         lame_free(&mod);
     }
 

@@ -10,19 +10,9 @@ static struct Player* active_players = NULL;
 void player_init() {
     for (int i = 0; i < MAX_PLAYERS; i++) {
         players[i].slot = i;
-
         players[i].status = PS_INACTIVE;
-        players[i].previous_ready = players[i].next_ready = NULL;
-        players[i].previous_active = players[i].next_active = NULL;
-        players[i].previous_neighbor = players[i].next_neighbor = NULL;
 
-        players[i].input.move[0] = players[i].input.move[1] = 0;
-        players[i].input.aim[0] = players[i].input.aim[1] = 0;
-        players[i].input.buttons = PB_NONE;
-        players[i].last_input = players[i].input;
-
-        players[i].room = NULL;
-        players[i].actor = NULL;
+        players[i].input.buttons = players[i].last_input.buttons = PB_NONE;
 
         players[i].userdata = create_pointer_ref("player", &players[i]);
         players[i].table = create_table_ref();
