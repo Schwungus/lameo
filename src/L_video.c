@@ -1165,9 +1165,9 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->frame = 0;
     inst->frame_speed = 1;
 
+    lame_set((void*)inst->node_translations, 0, MAX_BONES * sizeof(versor));
     for (size_t i = 0; i < MAX_BONES; i++)
         glm_quat_identity(inst->node_rotations[i]);
-    rotate_model_instance_node(inst, 3, (versor){0.25f, 0, 0, 0.75f});
 
     return inst;
 }
@@ -1219,6 +1219,7 @@ static void animate_model_instance(struct ModelInstance* inst) {
             ndq[6] = frame[idx][6];
             ndq[7] = frame[idx][7];
             glm_quat_mul(inst->node_rotations[idx], ndq, ndq);
+            glm_quat_add(inst->node_translations[idx], &ndq[4], &ndq[4]);
 
             if (node->parent != NULL)
                 dq_mul(ndq, inst->node_transforms[node->parent->index], ndq);
@@ -1245,6 +1246,10 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
     inst->frame = frame;
     inst->loop = loop;
     animate_model_instance(inst);
+}
+
+void translate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
+    glm_quat_copy(quat, inst->node_translations[node_index]);
 }
 
 void rotate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
