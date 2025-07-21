@@ -35,7 +35,8 @@ define_actor("Main", nil, {
 
     tick = function (this)
         this.dummy2 = this.dummy2 + (this.dummy * 0.1)
-        this:set_pos(this:get_x() - (this:get_roll() * 0.01))
+        local move = {get_player(0):get_move()}
+        this:set_pos(this:get_x() - (this:get_roll() * 0.01) + move[1], this:get_y() + move[2])
     end,
 
     draw_ui = function (this)

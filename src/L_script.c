@@ -585,6 +585,74 @@ SCRIPT_FUNCTION(get_last_ui_buttons) {
     return 1;
 }
 
+// Player
+SCRIPT_CHECKER(player, struct Player*);
+SCRIPT_TESTER(player, struct Player*);
+
+SCRIPT_FUNCTION(get_player) {
+    const int slot = (int)luaL_checkinteger(L, 1);
+
+    struct Player* player = get_player(slot);
+    if (player == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, player->userdata);
+
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_slot) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->slot);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_status) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->status);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_move) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->input.move[0]);
+    lua_pushinteger(L, player->input.move[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_aim) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->input.aim[0]);
+    lua_pushinteger(L, player->input.aim[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_buttons) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->input.buttons);
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_player_last_move) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->last_input.move[0]);
+    lua_pushinteger(L, player->last_input.move[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_last_aim) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->last_input.aim[0]);
+    lua_pushinteger(L, player->last_input.aim[1]);
+    return 2;
+}
+
+SCRIPT_FUNCTION(get_player_last_buttons) {
+    const struct Player* player = s_check_player(L, 1);
+    lua_pushinteger(L, player->last_input.buttons);
+    return 1;
+}
+
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
     if (nsize <= 0) {
@@ -623,7 +691,25 @@ void script_init() {
 
     // Players
     luaL_newmetatable(context, "player");
+    static const luaL_Reg player_methods[] = {
+        {"get_slot", s_get_player_slot},
+        {"get_status", s_get_player_status},
+
+        {"get_move", s_get_player_move},
+        {"get_aim", s_get_player_aim},
+        {"get_buttons", s_get_player_buttons},
+        {"get_last_move", s_get_player_last_move},
+        {"get_last_aim", s_get_player_last_aim},
+        {"get_last_buttons", s_get_player_last_buttons},
+
+        {NULL, NULL},
+    };
+    luaL_setfuncs(context, player_methods, 0);
+    lua_pushvalue(context, -1);
+    lua_setfield(context, -2, "__index");
     lua_pop(context, 1);
+
+    EXPOSE_FUNCTION(get_player);
 
     EXPOSE_INTEGER(MAX_PLAYERS);
 

@@ -85,6 +85,41 @@ void tick_update() {
                 if (tick_world) {
                     struct Player* player = get_active_players();
                     while (player != NULL) {
+                        player->last_input = player->input;
+
+                        player->input.move[0] =
+                            (int8_t)(input_value(VERB_DOWN, player->slot) - input_value(VERB_UP, player->slot));
+                        player->input.move[1] =
+                            (int8_t)(input_value(VERB_RIGHT, player->slot) - input_value(VERB_LEFT, player->slot));
+
+                        player->input.aim[0] = (int16_t)(input_value(VERB_AIM_DOWN, player->slot) -
+                                                         input_value(VERB_AIM_UP, player->slot));
+                        player->input.aim[1] = (int16_t)(input_value(VERB_AIM_DOWN, player->slot) -
+                                                         input_value(VERB_AIM_UP, player->slot));
+
+                        player->input.buttons = PB_NONE;
+                        if (input_value(VERB_JUMP, player->slot))
+                            player->input.buttons |= PB_JUMP;
+                        if (input_value(VERB_INTERACT, player->slot))
+                            player->input.buttons |= PB_INTERACT;
+                        if (input_value(VERB_ATTACK, player->slot))
+                            player->input.buttons |= PB_ATTACK;
+                        if (input_value(VERB_INVENTORY1, player->slot))
+                            player->input.buttons |= PB_INVENTORY1;
+                        if (input_value(VERB_INVENTORY2, player->slot))
+                            player->input.buttons |= PB_INVENTORY2;
+                        if (input_value(VERB_INVENTORY3, player->slot))
+                            player->input.buttons |= PB_INVENTORY3;
+                        if (input_value(VERB_INVENTORY4, player->slot))
+                            player->input.buttons |= PB_INVENTORY4;
+                        if (input_value(VERB_AIM, player->slot))
+                            player->input.buttons |= PB_AIM;
+
+                        player = player->previous_active;
+                    }
+
+                    player = get_active_players();
+                    while (player != NULL) {
                         if (player->room != NULL && player->room->master == player) {
                             struct Actor* actor = player->room->actors;
                             while (actor != NULL) {

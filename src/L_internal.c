@@ -136,9 +136,17 @@ void loop() {
             case LOAD_END: {
                 // Make ready players active
                 dispatch_players();
+                struct Player* player = get_active_players();
+                while (player != NULL) {
+                    player->input.move[0] = player->input.move[1] = 0;
+                    player->input.aim[0] = player->input.aim[1] = 0;
+                    player->input.buttons = PB_NONE;
+                    player->last_input = player->input;
+                    player = player->previous_active;
+                }
 
                 // Assign players to room ID "load_state.room"
-                struct Player* player = get_active_players();
+                player = get_active_players();
                 while (player != NULL) {
                     player_enter_room(player, load_state.room);
                     player = player->previous_active;
