@@ -366,6 +366,8 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
     //              time you tab out and back in.
     //              https://github.com/libsdl-org/SDL/issues/13233
     // Pattern: <C D D           > 43 00 44 00 44 00 00 00 00 00 00 00 00 00 00 00
+    // Severity: High. This part is commented out until SDL 3.4.0 releases.
+
     /*if (display.fullscreen == FSM_EXCLUSIVE_FULLSCREEN) {
         SDL_DisplayMode dm;
         SDL_SetWindowFullscreenMode(

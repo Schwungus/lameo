@@ -442,6 +442,7 @@ void handle_gamepad(SDL_GamepadDeviceEvent* event) {
     // MEMORY LEAK: Windows leaks ~148 bytes when a gamepad is available.
     //              https://github.com/libsdl-org/SDL/issues/10621#issuecomment-2325450912
     // Pattern: <No HID devices f> 4E 6F 20 48 49 44 20 64 65 76 69 63 65 73 20 66
+    // Severity: None, doesn't stack.
     if (event->type == SDL_EVENT_GAMEPAD_ADDED)
         SDL_OpenGamepad(event->which);
     else if (event->type == SDL_EVENT_GAMEPAD_REMOVED)
