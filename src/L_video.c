@@ -233,10 +233,7 @@ void video_init() {
     if (default_font == NULL)
         FATAL("Main font \"main\" not found");
     // GROSS HACK: Font texture has to be manually made transient
-    default_font->transient = true;
-    struct Texture* fontex = hid_to_texture(default_font->texture);
-    if (fontex != NULL)
-        fontex->transient = true;
+    default_font->transient = default_font->texture->transient = true;
 
     INFO("Opened");
 }
@@ -640,17 +637,15 @@ void main_material_sprite(struct Material* material, GLfloat x, GLfloat y, GLflo
     if (material == NULL || material->textures[0] == NULL)
         return;
     main_sprite(
-        hid_to_texture(
-            material->textures[0][(size_t)((float)draw_time * material->texture_speed[0]) % material->num_textures[0]]
-        ),
-        x, y, z
+        material->textures[0][(size_t)((float)draw_time * material->texture_speed[0]) % material->num_textures[0]], x,
+        y, z
     );
 }
 
 void main_string(const char* str, struct Font* font, GLfloat size, GLfloat x, GLfloat y, GLfloat z) {
     if (font == NULL)
         font = default_font;
-    set_main_texture(hid_to_texture(font->texture));
+    set_main_texture(font->texture);
 
     GLfloat scale = size / font->size;
     GLfloat cx = x, cy = y;
@@ -696,7 +691,7 @@ void main_string_wrap(
 ) {
     if (font == NULL)
         font = default_font;
-    set_main_texture(hid_to_texture(font->texture));
+    set_main_texture(font->texture);
 
     GLfloat scale = size / font->size;
     GLfloat cx = x, cy = y;
@@ -1289,15 +1284,15 @@ void submit_model_instance(struct ModelInstance* inst) {
             continue;
 
         const struct Submodel* submodel = &(model->submodels[i]);
-        const struct Material* material = hid_to_material(model->materials[submodel->material]);
-        if (material == NULL)
-            continue;
+        const struct Material* material = model->materials[submodel->material];
+        // if (material == NULL)
+        //     continue;
         const struct Texture* texture =
             material->textures[0] == NULL
                 ? NULL
-                : hid_to_texture(material->textures[0][(size_t)SDL_fmodf(
+                : material->textures[0][(size_t)SDL_fmodf(
                       (float)draw_time * material->texture_speed[0], (float)material->num_textures[0]
-                  )]);
+                  )];
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture == NULL ? blank_texture : texture->texture);
@@ -1306,9 +1301,9 @@ void submit_model_instance(struct ModelInstance* inst) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
         if (material->textures[1] != NULL) {
-            const struct Texture* blend_texture = hid_to_texture(material->textures[1][(size_t)SDL_fmodf(
+            const struct Texture* blend_texture = material->textures[1][(size_t)SDL_fmodf(
                 (float)draw_time * material->texture_speed[1], (float)material->num_textures[1]
-            )]);
+            )];
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);

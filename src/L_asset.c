@@ -11,7 +11,7 @@
 static char asset_file_helper[FILE_PATH_MAX];
 
 // Shaders
-SOURCE_ASSET(shaders, shader, struct Shader*, ShaderID);
+SOURCE_ASSET(shaders, shader, struct Shader*);
 
 void load_shader(const char* name) {
     if (get_shader(name) != NULL)
@@ -67,7 +67,6 @@ void load_shader(const char* name) {
     struct Shader* shader = lame_alloc(sizeof(struct Shader));
 
     // General
-    shader->hid = (ShaderID)create_handle(shader_handles, shader);
     shader->name = SDL_strdup(name);
     shader->transient = true; // No sense in unloading shaders
 
@@ -109,7 +108,7 @@ void load_shader(const char* name) {
 
     shader->userdata = create_pointer_ref("shader", shader);
     ASSET_SANITY_PUSH(shader, shaders);
-    INFO("Loaded shader \"%s\" (%u)", name, shader->hid);
+    INFO("Loaded shader \"%s\" (%u)", name, shader);
 }
 
 void destroy_shader(struct Shader* shader) {
@@ -119,14 +118,13 @@ void destroy_shader(struct Shader* shader) {
     glDeleteProgram(shader->program);
     SDL_DestroyProperties(shader->uniforms);
 
-    INFO("Freed shader \"%s\" (%u)", shader->name, shader->hid);
-    destroy_handle(shader_handles, shader->hid);
+    INFO("Freed shader \"%s\" (%u)", shader->name, shader);
     lame_free(&(shader->name));
     lame_free(&shader);
 }
 
 // Textures
-SOURCE_ASSET(textures, texture, struct Texture*, TextureID);
+SOURCE_ASSET(textures, texture, struct Texture*);
 
 void load_texture(const char* name) {
     if (get_texture(name) != NULL)
@@ -149,14 +147,11 @@ void load_texture(const char* name) {
     struct Texture* texture = lame_alloc(sizeof(struct Texture));
 
     // General
-    texture->hid = (TextureID)create_handle(texture_handles, texture);
     texture->name = SDL_strdup(name);
     texture->transient = false;
 
     // Inheritance
     texture->parent = NULL;
-    texture->children = NULL;
-    texture->num_children = 0;
 
     // Data
     texture->size[0] = surface->w;
@@ -215,29 +210,23 @@ void load_texture(const char* name) {
 
     texture->userdata = create_pointer_ref("texture", texture);
     ASSET_SANITY_PUSH(texture, textures);
-    INFO("Loaded texture \"%s\" (%u)", name, texture->hid);
+    INFO("Loaded texture \"%s\" (%u)", name, texture);
 }
 
 void destroy_texture(struct Texture* texture) {
     ASSET_SANITY_POP(texture, textures);
     unreference_pointer(&(texture->userdata));
 
-    if (texture->children != NULL) {
-        for (int i = 0; i < texture->num_children; i++)
-            destroy_texture_hid(texture->children[i]);
-        lame_free(&(texture->children));
-    }
     if (texture->parent == NULL)
         glDeleteTextures(1, &(texture->texture));
 
-    INFO("Freed texture \"%s\" (%u)", texture->name, texture->hid);
-    destroy_handle(texture_handles, texture->hid);
+    INFO("Freed texture \"%s\" (%u)", texture->name, texture);
     lame_free(&(texture->name));
     lame_free(&texture);
 }
 
 // Materials
-SOURCE_ASSET(materials, material, struct Material*, MaterialID);
+SOURCE_ASSET(materials, material, struct Material*);
 
 void load_material(const char* name) {
     if (get_material(name) != NULL)
@@ -252,7 +241,6 @@ void load_material(const char* name) {
     struct Material* material = lame_alloc(sizeof(struct Material));
 
     // General
-    material->hid = (MaterialID)create_handle(material_handles, material);
     material->name = SDL_strdup(name);
     material->transient = false;
 
@@ -282,16 +270,16 @@ void load_material(const char* name) {
             if (yyjson_is_obj(root)) {
                 yyjson_val* value = yyjson_obj_get(root, "texture");
                 if (yyjson_is_str(value)) {
-                    TextureID* textures = lame_alloc(sizeof(TextureID));
-                    textures[0] = fetch_texture_hid(yyjson_get_str(value));
+                    struct Texture** textures = (struct Texture**)lame_alloc(sizeof(struct Texture*));
+                    textures[0] = fetch_texture(yyjson_get_str(value));
                     material->textures[0] = textures;
                     material->num_textures[0] = 1;
                 }
 
                 value = yyjson_obj_get(root, "blend_texture");
                 if (yyjson_is_str(value)) {
-                    TextureID* textures = lame_alloc(sizeof(TextureID));
-                    textures[0] = fetch_texture_hid(yyjson_get_str(value));
+                    struct Texture** textures = (struct Texture**)lame_alloc(sizeof(struct Texture*));
+                    textures[1] = fetch_texture(yyjson_get_str(value));
                     material->textures[1] = textures;
                     material->num_textures[1] = 1;
                 }
@@ -362,7 +350,7 @@ void load_material(const char* name) {
 
     material->userdata = create_pointer_ref("material", material);
     ASSET_SANITY_PUSH(material, materials);
-    INFO("Loaded material \"%s\" (%u)", name, material->hid);
+    INFO("Loaded material \"%s\" (%u)", name, material);
 }
 
 void destroy_material(struct Material* material) {
@@ -372,14 +360,13 @@ void destroy_material(struct Material* material) {
     FREE_POINTER(material->textures[0]);
     FREE_POINTER(material->textures[1]);
 
-    INFO("Freed material \"%s\" (%u)", material->name, material->hid);
-    destroy_handle(material_handles, material->hid);
+    INFO("Freed material \"%s\" (%u)", material->name, material);
     lame_free(&(material->name));
     lame_free(&material);
 }
 
 // Models
-SOURCE_ASSET(models, model, struct Model*, ModelID);
+SOURCE_ASSET(models, model, struct Model*);
 
 static struct Node* read_node(uint8_t** cursor, struct Node* parent) {
     struct Node* node = lame_alloc(sizeof(struct Node));
@@ -475,7 +462,6 @@ void load_model(const char* name) {
     struct Model* model = lame_alloc(sizeof(struct Model));
 
     // General
-    model->hid = (ModelID)create_handle(model_handles, model);
     model->name = SDL_strdup(name);
     model->transient = false;
 
@@ -680,10 +666,10 @@ void load_model(const char* name) {
     // Materials
     model->num_materials = read_u32(&cursor);
     if (model->num_materials > 0) {
-        model->materials = lame_alloc(model->num_materials * sizeof(MaterialID));
+        model->materials = (struct Material**)lame_alloc(model->num_materials * sizeof(struct Material*));
         for (size_t i = 0; i < model->num_materials; i++) {
             const char* material_name = read_string(&cursor);
-            model->materials[i] = fetch_material_hid(material_name);
+            model->materials[i] = (material_name[0] == '\0') ? NULL : fetch_material(material_name);
             lame_free(&material_name);
         }
     } else {
@@ -694,7 +680,7 @@ void load_model(const char* name) {
 
     model->userdata = create_pointer_ref("model", model);
     ASSET_SANITY_PUSH(model, models);
-    INFO("Loaded model \"%s\" (%u)", name, model->hid);
+    INFO("Loaded model \"%s\" (%u)", name, model);
 }
 
 void destroy_model(struct Model* model) {
@@ -715,14 +701,13 @@ void destroy_model(struct Model* model) {
     FREE_POINTER(model->bone_offsets);
     FREE_POINTER(model->materials);
 
-    INFO("Freed model \"%s\" (%u)", model->name, model->hid);
-    destroy_handle(model_handles, model->hid);
+    INFO("Freed model \"%s\" (%u)", model->name, model);
     lame_free(&(model->name));
     lame_free(&model);
 }
 
 // Animations
-SOURCE_ASSET(animations, animation, struct Animation*, AnimationID);
+SOURCE_ASSET(animations, animation, struct Animation*);
 
 void load_animation(const char* name) {
     if (get_animation(name) != NULL)
@@ -776,7 +761,6 @@ void load_animation(const char* name) {
     struct Animation* animation = lame_alloc(sizeof(struct Animation));
 
     // General
-    animation->hid = (AnimationID)create_handle(animation_handles, animation);
     animation->name = SDL_strdup(name);
     animation->transient = false;
 
@@ -852,7 +836,7 @@ void load_animation(const char* name) {
 
     animation->userdata = create_pointer_ref("animation", animation);
     ASSET_SANITY_PUSH(animation, animations);
-    INFO("Loaded animation \"%s\" (%u)", name, animation->hid);
+    INFO("Loaded animation \"%s\" (%u)", name, animation);
 }
 
 void destroy_animation(struct Animation* animation) {
@@ -875,14 +859,13 @@ void destroy_animation(struct Animation* animation) {
         lame_free(&(animation->bone_frames));
     }
 
-    INFO("Freed animation \"%s\" (%u)", animation->name, animation->hid);
-    destroy_handle(animation_handles, animation->hid);
+    INFO("Freed animation \"%s\" (%u)", animation->name, animation);
     lame_free(&(animation->name));
     lame_free(&animation);
 }
 
 // Fonts
-SOURCE_ASSET(fonts, font, struct Font*, FontID);
+SOURCE_ASSET(fonts, font, struct Font*);
 
 void load_font(const char* name) {
     if (get_font(name) != NULL)
@@ -911,7 +894,6 @@ void load_font(const char* name) {
     struct Font* font = lame_alloc(sizeof(struct Font));
 
     // General
-    font->hid = (FontID)create_handle(font_handles, font);
     font->name = SDL_strdup(name);
     font->transient = false;
 
@@ -928,7 +910,7 @@ void load_font(const char* name) {
         texture = fetch_texture(yyjson_get_str(value));
         if (texture == NULL)
             FATAL("Font texture \"%s\" not found", name);
-        font->texture = texture->hid;
+        font->texture = texture;
     } else {
         FATAL("Expected \"texture\" as string in \"%s.json\", got %s", name, yyjson_get_type_desc(value));
     }
@@ -991,7 +973,7 @@ void load_font(const char* name) {
 
     font->userdata = create_pointer_ref("font", font);
     ASSET_SANITY_PUSH(font, fonts);
-    INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font->hid, gldef, font->num_glyphs);
+    INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font, gldef, font->num_glyphs);
 }
 
 void destroy_font(struct Font* font) {
@@ -1004,20 +986,18 @@ void destroy_font(struct Font* font) {
         lame_free(&(font->glyphs));
     }
 
-    INFO("Freed font \"%s\" (%u)", font->name, font->hid);
-    destroy_handle(font_handles, font->hid);
+    INFO("Freed font \"%s\" (%u)", font->name, font);
     lame_free(&(font->name));
     lame_free(&font);
 }
 
 // Sounds
-SOURCE_ASSET(sounds, sound, struct Sound*, SoundID);
+SOURCE_ASSET(sounds, sound, struct Sound*);
 
 struct Sound* create_sound(const char* name) {
     struct Sound* sound = lame_alloc(sizeof(struct Sound));
 
     // General
-    sound->hid = (SoundID)create_handle(sound_handles, sound);
     sound->name = SDL_strdup(name);
     sound->transient = false;
 
@@ -1139,7 +1119,7 @@ void load_sound(const char* name) {
 
 sound_loaded:
     ASSET_SANITY_PUSH(sound, sounds);
-    INFO("Loaded sound \"%s\" (%u)", name, sound->hid);
+    INFO("Loaded sound \"%s\" (%u)", name, sound);
 }
 
 void destroy_sound(struct Sound* sound) {
@@ -1153,14 +1133,13 @@ void destroy_sound(struct Sound* sound) {
         lame_free(&(sound->samples));
     }
 
-    INFO("Freed sound \"%s\" (%u)", sound->name, sound->hid);
-    destroy_handle(sound_handles, sound->hid);
+    INFO("Freed sound \"%s\" (%u)", sound->name, sound);
     lame_free(&(sound->name));
     lame_free(&sound);
 }
 
 // Music
-SOURCE_ASSET(music, track, struct Track*, TrackID);
+SOURCE_ASSET(music, track, struct Track*);
 
 void load_track(const char* name) {
     if (get_track(name) != NULL)
@@ -1176,7 +1155,6 @@ void load_track(const char* name) {
     struct Track* track = lame_alloc(sizeof(struct Track));
 
     // General
-    track->hid = (TrackID)create_handle(track_handles, track);
     track->name = SDL_strdup(name);
     track->transient = false;
 
@@ -1185,7 +1163,7 @@ void load_track(const char* name) {
 
     track->userdata = create_pointer_ref("track", track);
     ASSET_SANITY_PUSH(track, music);
-    INFO("Loaded track \"%s\" (%u)", name, track->hid);
+    INFO("Loaded track \"%s\" (%u)", name, track);
 }
 
 void destroy_track(struct Track* track) {
@@ -1193,8 +1171,7 @@ void destroy_track(struct Track* track) {
     unreference_pointer(&(track->userdata));
 
     destroy_stream(track->stream);
-    INFO("Freed track \"%s\" (%u)", track->name, track->hid);
-    destroy_handle(track_handles, track->hid);
+    INFO("Freed track \"%s\" (%u)", track->name, track);
     lame_free(&(track->name));
     lame_free(&track);
 }
