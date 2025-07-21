@@ -88,12 +88,12 @@ void tick_update() {
                         player->last_input = player->input;
 
                         player->input.move[0] =
-                            (int8_t)(input_value(VERB_DOWN, player->slot) - input_value(VERB_UP, player->slot));
+                            (int16_t)(input_value(VERB_DOWN, player->slot) - input_value(VERB_UP, player->slot));
                         player->input.move[1] =
-                            (int8_t)(input_value(VERB_RIGHT, player->slot) - input_value(VERB_LEFT, player->slot));
+                            (int16_t)(input_value(VERB_RIGHT, player->slot) - input_value(VERB_LEFT, player->slot));
 
-                        player->input.aim[0] = (int16_t)(input_value(VERB_AIM_DOWN, player->slot) -
-                                                         input_value(VERB_AIM_UP, player->slot));
+                        player->input.aim[0] = (int16_t)(input_value(VERB_AIM_RIGHT, player->slot) -
+                                                         input_value(VERB_AIM_LEFT, player->slot));
                         player->input.aim[1] = (int16_t)(input_value(VERB_AIM_DOWN, player->slot) -
                                                          input_value(VERB_AIM_UP, player->slot));
 

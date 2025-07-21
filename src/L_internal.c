@@ -138,8 +138,7 @@ void loop() {
                 dispatch_players();
                 struct Player* player = get_active_players();
                 while (player != NULL) {
-                    player->input.move[0] = player->input.move[1] = 0;
-                    player->input.aim[0] = player->input.aim[1] = 0;
+                    player->input.move[0] = player->input.move[1] = player->input.aim[0] = player->input.aim[1] = 0;
                     player->input.buttons = PB_NONE;
                     player->last_input = player->input;
                     player = player->previous_active;

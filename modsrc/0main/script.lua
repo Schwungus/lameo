@@ -35,8 +35,12 @@ define_actor("Main", nil, {
 
     tick = function (this)
         this.dummy2 = this.dummy2 + (this.dummy * 0.1)
+
         local move = {get_player(0):get_move()}
-        this:set_pos(this:get_x() - (this:get_roll() * 0.01) + move[1], this:get_y() + move[2])
+        this:set_pos(this:get_x() - (this:get_roll() * 0.01) + (move[1] / 32767), this:get_y() + (move[2] / 32767))
+
+        local aim = {get_player(0):get_aim()}
+        this:set_angle(this:get_yaw() + (aim[1] / 32767) * 10, this:get_pitch() + (aim[2] / 32767) * 10)
     end,
 
     draw_ui = function (this)

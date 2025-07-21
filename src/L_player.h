@@ -30,8 +30,7 @@ enum PlayerButtons {
 };
 
 struct PlayerInput {
-    int8_t move[2];
-    int16_t aim[2];
+    int16_t move[2], aim[2];
     enum PlayerButtons buttons;
 };
 
