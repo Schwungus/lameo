@@ -1014,15 +1014,10 @@ GLfloat string_height(const char* str, GLfloat size) {
 // Surfaces
 struct Surface* create_surface(bool external, uint16_t width, uint16_t height, bool color, bool depth) {
     struct Surface* surface =
-        external ? userdata_alloc("surface", sizeof(struct Surface)) : lame_alloc(sizeof(struct Surface));
-
-    surface->active = false;
-    surface->stack = NULL;
+        external ? userdata_alloc_clean("surface", sizeof(struct Surface)) : lame_alloc_clean(sizeof(struct Surface));
 
     surface->enabled[SURFACE_COLOR_TEXTURE] = color;
     surface->enabled[SURFACE_DEPTH_TEXTURE] = depth;
-    surface->fbo = 0;
-    surface->texture[SURFACE_COLOR_TEXTURE] = surface->texture[SURFACE_DEPTH_TEXTURE] = 0;
     surface->size[0] = width;
     surface->size[1] = height;
 
@@ -1144,40 +1139,40 @@ void clear_stencil(GLint stencil) {
 
 // Model Instance
 struct ModelInstance* create_model_instance(struct Model* model) {
-    struct ModelInstance* inst = lame_alloc(sizeof(struct ModelInstance));
+    struct ModelInstance* inst = lame_alloc_clean(sizeof(struct ModelInstance));
 
     inst->model = model;
     inst->userdata = create_pointer_ref("model_instance", inst);
-    glm_vec3_zero(inst->pos);
-    glm_vec3_zero(inst->angle);
     glm_vec3_one(inst->scale);
 
-    inst->hidden = lame_alloc(model->num_submodels * sizeof(bool));
-    lame_set(inst->hidden, 0, model->num_submodels * sizeof(bool));
+    inst->hidden = lame_alloc_clean(model->num_submodels * sizeof(bool));
+    inst->override_materials = (struct Material**)lame_alloc_clean(model->num_materials * sizeof(struct Material*));
+    inst->override_textures = lame_alloc_clean(model->num_materials * sizeof(GLuint));
 
-    inst->animation = NULL;
-    inst->loop = false;
-    inst->frame = 0;
     inst->frame_speed = 1;
-
-    lame_set((void*)inst->node_translations, 0, MAX_BONES * sizeof(versor));
-    for (size_t i = 0; i < MAX_BONES; i++)
-        glm_quat_identity(inst->node_rotations[i]);
 
     return inst;
 }
 
 void destroy_model_instance(struct ModelInstance* inst) {
     unreference_pointer(&(inst->userdata));
-    lame_free(&(inst->hidden));
+
+    FREE_POINTER(inst->hidden);
+    FREE_POINTER(inst->override_materials);
+    FREE_POINTER(inst->override_textures);
+
+    FREE_POINTER(inst->translations);
+    FREE_POINTER(inst->rotations);
+    FREE_POINTER(inst->transforms);
+    FREE_POINTER(inst->sample);
+
     lame_free(&inst);
 }
 
 static void animate_model_instance(struct ModelInstance* inst) {
     struct Animation* animation = inst->animation;
-    if (animation == NULL)
+    if (inst->animation == NULL)
         return;
-
     if (animation->bone_frames != NULL) {
         // Copy sample from bone-space frame
         lame_copy(
@@ -1213,22 +1208,22 @@ static void animate_model_instance(struct ModelInstance* inst) {
             ndq[5] = frame[idx][5];
             ndq[6] = frame[idx][6];
             ndq[7] = frame[idx][7];
-            glm_quat_mul(inst->node_rotations[idx], ndq, ndq);
-            glm_quat_add(inst->node_translations[idx], &ndq[4], &ndq[4]);
+            glm_quat_mul(inst->rotations[idx], ndq, ndq);
+            glm_quat_add(inst->translations[idx], &ndq[4], &ndq[4]);
 
             if (node->parent != NULL)
-                dq_mul(ndq, inst->node_transforms[node->parent->index], ndq);
-            inst->node_transforms[idx][0] = ndq[0];
-            inst->node_transforms[idx][1] = ndq[1];
-            inst->node_transforms[idx][2] = ndq[2];
-            inst->node_transforms[idx][3] = ndq[3];
-            inst->node_transforms[idx][4] = ndq[4];
-            inst->node_transforms[idx][5] = ndq[5];
-            inst->node_transforms[idx][6] = ndq[6];
-            inst->node_transforms[idx][7] = ndq[7];
+                dq_mul(ndq, inst->transforms[node->parent->index], ndq);
+            inst->transforms[idx][0] = ndq[0];
+            inst->transforms[idx][1] = ndq[1];
+            inst->transforms[idx][2] = ndq[2];
+            inst->transforms[idx][3] = ndq[3];
+            inst->transforms[idx][4] = ndq[4];
+            inst->transforms[idx][5] = ndq[5];
+            inst->transforms[idx][6] = ndq[6];
+            inst->transforms[idx][7] = ndq[7];
 
             if (node->bone)
-                dq_mul(model->bone_offsets[idx], inst->node_transforms[idx], inst->sample[idx]);
+                dq_mul(model->bone_offsets[idx], inst->transforms[idx], inst->sample[idx]);
 
             for (size_t j = 0; j < node->num_children; j++)
                 node_stack[next++] = node->children[j];
@@ -1237,18 +1232,50 @@ static void animate_model_instance(struct ModelInstance* inst) {
 }
 
 void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
+    if (animation != NULL) {
+        if (inst->sample == NULL) {
+            size_t new_size = animation->num_nodes * sizeof(versor);
+
+            inst->translations = lame_alloc_clean(new_size);
+            inst->rotations = lame_alloc(new_size);
+            for (size_t i = 0; i < animation->num_nodes; i++)
+                glm_quat_identity(inst->rotations[i]);
+
+            new_size = animation->num_nodes * sizeof(DualQuaternion);
+
+            inst->transforms = lame_alloc_clean(new_size);
+            inst->sample = lame_alloc_clean(new_size);
+        } else if (inst->animation != NULL && inst->animation->num_nodes < animation->num_nodes) {
+            size_t old_size = inst->animation->num_nodes * sizeof(versor);
+            size_t new_size = animation->num_nodes * sizeof(versor);
+
+            lame_realloc_clean(&(inst->translations), old_size, new_size);
+            lame_realloc(&(inst->rotations), new_size);
+            for (size_t i = inst->animation->num_nodes; i < animation->num_nodes; i++)
+                glm_quat_identity(inst->rotations[i]);
+
+            old_size = inst->animation->num_nodes * sizeof(DualQuaternion);
+            new_size = animation->num_nodes * sizeof(DualQuaternion);
+
+            lame_realloc_clean(&(inst->transforms), old_size, new_size);
+            lame_realloc_clean(&(inst->sample), old_size, new_size);
+        }
+    }
     inst->animation = animation;
     inst->frame = frame;
     inst->loop = loop;
-    animate_model_instance(inst);
+    if (animation != NULL)
+        animate_model_instance(inst);
 }
 
 void translate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
-    glm_quat_copy(quat, inst->node_translations[node_index]);
+    if (inst->translations != NULL)
+        glm_quat_copy(quat, inst->translations[node_index]);
 }
 
 void rotate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
-    glm_quat_copy(quat, inst->node_rotations[node_index]);
+    if (inst->rotations != NULL)
+        glm_quat_copy(quat, inst->rotations[node_index]);
 }
 
 void tick_model_instance(struct ModelInstance* inst) {
@@ -1268,7 +1295,7 @@ void submit_model_instance(struct ModelInstance* inst) {
     set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_stencil", 1, 1, 1, 0);
 
-    if (inst->animation != NULL) {
+    if (inst->animation != NULL && inst->sample != NULL) {
         set_int_uniform("u_animated", 1);
         glUniform4fv(
             (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_sample[0]", -1)),

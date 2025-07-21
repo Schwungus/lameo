@@ -35,7 +35,7 @@ define_actor("Main", nil, {
     end,
 
     on_destroy = function (this)
-        play_ui_sound(get_sound("logo/schwungus"), 0, 0, 1, 1)
+        play_ui_sound(fetch_sound("logo/schwungus"), 0, 0, 1, 1)
     end,
 
     tick = function (this)

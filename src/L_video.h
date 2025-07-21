@@ -100,13 +100,15 @@ struct ModelInstance {
     vec3 pos, angle, scale;
 
     bool* hidden;
+    struct Material** override_materials;
+    GLuint* override_textures;
 
     struct Animation* animation;
     bool loop;
     float frame, frame_speed;
 
-    versor node_translations[MAX_BONES], node_rotations[MAX_BONES];
-    DualQuaternion node_transforms[MAX_BONES], sample[MAX_BONES];
+    versor *translations, *rotations;
+    DualQuaternion *transforms, *sample;
 };
 
 void video_init();
