@@ -1,9 +1,11 @@
 #include "L_mod.h"
 #include "L_config.h"
 #include "L_file.h"
+#include "L_flags.h"
 #include "L_localize.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_player.h"
 #include "L_script.h"
 
 static struct Mod* mods = NULL;
@@ -77,6 +79,8 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
             const char* title = yyjson_get_str(yyjson_obj_get(root, "title"));
             mod->title = SDL_strdup(title == NULL ? fname : title);
             mod->version = (uint16_t)yyjson_get_uint(yyjson_obj_get(root, "version"));
+            load_flags(root);
+            load_pflags(root);
         } else {
             WTF("Expected root object in \"%s/mod.json\", got %s", fname, yyjson_get_type_desc(root));
         }
@@ -123,10 +127,6 @@ void mod_init() {
     if (get_mod("0main") == NULL)
         FATAL("Internal mod \"0main\" not found");
 
-    INFO("Opened");
-}
-
-void mod_init_script() {
     // Load entry scripts from first to last mod
     struct Mod* mod = mods;
     if (mod != NULL) {
@@ -149,7 +149,7 @@ void mod_init_script() {
         }
     }
 
-    INFO("Opened for scripting");
+    INFO("Opened");
 }
 
 void mod_init_language() {

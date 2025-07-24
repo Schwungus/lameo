@@ -7,15 +7,23 @@ static struct Player players[MAX_PLAYERS] = {0};
 static struct Player* ready_players = NULL;
 static struct Player* active_players = NULL;
 
+static SDL_PropertiesID default_player_flags = 0;
+
 void player_init() {
-    for (int i = 0; i < MAX_PLAYERS; i++) {
+    default_player_flags = SDL_CreateProperties();
+    if (default_player_flags == 0)
+        FATAL("Default player flags fail: %s", SDL_GetError());
+
+    for (size_t i = 0; i < MAX_PLAYERS; i++) {
         players[i].slot = i;
         players[i].status = PS_INACTIVE;
 
         players[i].input.buttons = players[i].last_input.buttons = PB_NONE;
 
-        players[i].userdata = create_pointer_ref("player", &players[i]);
-        players[i].table = create_table_ref();
+        players[i].userdata = create_pointer_ref("player", &(players[i]));
+        players[i].flags = SDL_CreateProperties();
+        if (players[i].flags == 0)
+            FATAL("Player %u flags fail: %s", i, SDL_GetError());
     }
 
     activate_player(0);
@@ -24,17 +32,50 @@ void player_init() {
 }
 
 void player_teardown() {
-    for (int i = 0; i < MAX_PLAYERS; i++) {
-        unreference_pointer(&players[i].userdata);
-        unreference(&players[i].table);
+    for (size_t i = 0; i < MAX_PLAYERS; i++) {
+        unreference_pointer(&(players[i].userdata));
+        CLOSE_HANDLE(players[i].flags, SDL_DestroyProperties);
         if (players[i].room != NULL)
-            player_leave_room(&players[i]);
+            player_leave_room(&(players[i]));
         if (players[i].actor != NULL)
             destroy_actor(players[i].actor, false, false);
     }
     ready_players = active_players = NULL;
 
+    CLOSE_HANDLE(default_player_flags, SDL_DestroyProperties);
+
     INFO("Closed");
+}
+
+void load_pflags(yyjson_val* root) {
+    yyjson_val* flags = yyjson_obj_get(root, "player");
+    if (flags != NULL) {
+        size_t i, n;
+        yyjson_val *key, *value;
+        yyjson_obj_foreach(flags, i, n, key, value) {
+            const char* name = yyjson_get_str(key);
+            switch (yyjson_get_type(value)) {
+                default:
+                    WARN("Invalid player flag \"%s\" type %s", name, yyjson_get_type_desc(value));
+                    break;
+
+                case YYJSON_TYPE_BOOL:
+                    SDL_SetBooleanProperty(default_player_flags, name, yyjson_get_bool(value));
+                    break;
+
+                case YYJSON_TYPE_NUM:
+                    if (yyjson_is_int(value))
+                        SDL_SetNumberProperty(default_player_flags, name, (int)yyjson_get_int(value));
+                    else if (yyjson_is_real(value))
+                        SDL_SetFloatProperty(default_player_flags, name, (float)yyjson_get_real(value));
+                    break;
+
+                case YYJSON_TYPE_STR:
+                    SDL_SetStringProperty(default_player_flags, name, yyjson_get_str(value));
+                    break;
+            }
+        }
+    }
 }
 
 int activate_player(int slot) {
@@ -179,5 +220,6 @@ bool player_enter_room(struct Player* player, uint32_t id) {
         room->master = player;
         activate_room(room);
     }
+
     return true;
 }

@@ -4,6 +4,8 @@
 #include <SDL3/SDL_iostream.h>
 #include <yyjson.h>
 
+#include "L_log.h" // IWYU pragma: keep
+
 #define FILE_NAME_MAX 128
 #define FILE_PATH_MAX 256
 

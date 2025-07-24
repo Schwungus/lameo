@@ -27,18 +27,19 @@ void init(const char* config_path, const char* controls_path) {
     file_init();
     input_init();
     config_init(config_path, controls_path);
-    mod_init();
-    localize_init();
 
-    // Initialize these before scripting
+    // Before scripting
     asset_init();
     actor_init();
     ui_init();
-    script_init();
 
-    // Initialize these before scripting since they load assets
+    script_init();
     flags_init();
     player_init();
+
+    // After scripting (loads assets)
+    mod_init();
+    localize_init();
     video_init();
     audio_init();
 
@@ -114,6 +115,7 @@ void loop() {
                 if (ui_root != NULL)
                     destroy_ui(ui_root);
                 unload_level();
+                clear_local();
                 clear_assets(0);
                 collect_garbage();
 

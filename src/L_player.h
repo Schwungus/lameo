@@ -1,6 +1,7 @@
 #pragma once
 
 #include "L_actor.h"
+#include "L_file.h" // IWYU pragma: keep
 #include "L_room.h"
 
 #define MAX_PLAYERS 4
@@ -47,11 +48,13 @@ struct Player {
     struct Room* room;
     struct Actor* actor;
 
-    int userdata, table;
+    int userdata;
+    SDL_PropertiesID flags;
 };
 
 void player_init();
 void player_teardown();
+void load_pflags(yyjson_val*);
 
 int activate_player(int);
 int deactivate_player(int);

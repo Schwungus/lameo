@@ -2,11 +2,11 @@
 #include "L_actor.h"
 #include "L_asset.h"
 #include "L_audio.h"
+#include "L_flags.h"
 #include "L_handler.h"
 #include "L_localize.h"
 #include "L_log.h"
 #include "L_memory.h"
-#include "L_mod.h"
 #include "L_player.h"
 #include "L_room.h"
 #include "L_ui.h"
@@ -39,7 +39,7 @@ SCRIPT_FUNCTION(define_actor) {
 SCRIPT_FUNCTION(print) {
     lua_getstack(L, 1, &debug);
     lua_getinfo(L, "nSl", &debug);
-    log_script(debug.source, debug.name, debug.currentline, "%s", luaL_tolstring(L, -1, NULL));
+    log_script(src_basename(debug.source), debug.name, debug.currentline, "%s", luaL_tolstring(L, -1, NULL));
     return 0;
 }
 
@@ -653,6 +653,13 @@ SCRIPT_FUNCTION(get_player_last_buttons) {
     return 1;
 }
 
+// Flags
+SCRIPT_FLAGS_READ(static);
+SCRIPT_FLAGS_READ(global);
+SCRIPT_FLAGS_WRITE(global);
+SCRIPT_FLAGS_READ(local);
+SCRIPT_FLAGS_WRITE(local);
+
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
     if (nsize <= 0) {
@@ -686,8 +693,6 @@ void script_init() {
     // Debug
     EXPOSE_FUNCTION(print);
     EXPOSE_FUNCTION(error);
-
-    // Flags
 
     // Players
     luaL_newmetatable(context, "player");
@@ -882,7 +887,18 @@ void script_init() {
     EXPOSE_ASSET(sounds, sound);
     EXPOSE_ASSET(music, track);
 
-    mod_init_script();
+    // Flags
+    EXPOSE_INTEGER(FT_NULL);
+    EXPOSE_INTEGER(FT_BOOL);
+    EXPOSE_INTEGER(FT_INT);
+    EXPOSE_INTEGER(FT_FLOAT);
+    EXPOSE_INTEGER(FT_STRING);
+
+    EXPOSE_FLAGS_READ(static);
+    EXPOSE_FLAGS_READ(global);
+    EXPOSE_FLAGS_WRITE(global);
+    EXPOSE_FLAGS_READ(local);
+    EXPOSE_FLAGS_WRITE(local);
 
     INFO("Opened");
 }

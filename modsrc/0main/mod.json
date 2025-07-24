@@ -1,5 +1,8 @@
 {
-	"title": "Main",
-	"version": 1,
-	"description": "Hi! I'm internal. Don't touch me, you'll get bludgeoned."
+    "title": "Main",
+    "version": 1,
+
+    "static": {
+        "description": "Hi! I'm internal. Don't touch me, you'll get bludgeoned."
+    }
 }

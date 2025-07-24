@@ -65,18 +65,81 @@
         return 1;                                                                                                      \
     }
 
-#define SCRIPT_GETTER_SLOT(name, type)                                                                                 \
-    static int SCRIPT_PREFIX(name)(lua_State * L) {                                                                    \
-        SCRIPT_PUSH(type)(L, name(luaL_checkinteger(L, 1)));                                                           \
+#define SCRIPT_FLAGS_READ(scope)                                                                                       \
+    SCRIPT_FUNCTION(get_##scope##_type) {                                                                              \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        lua_pushinteger(L, get_##scope##_type(name));                                                                  \
+        return 1;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(get_##scope##_bool) {                                                                              \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const bool failsafe = luaL_optinteger(L, 2, false);                                                            \
+        lua_pushboolean(L, get_##scope##_bool(name, failsafe));                                                        \
+        return 1;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(get_##scope##_int) {                                                                               \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const int failsafe = (int)luaL_optinteger(L, 2, 0);                                                            \
+        lua_pushinteger(L, get_##scope##_int(name, failsafe));                                                         \
+        return 1;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(get_##scope##_float) {                                                                             \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const float failsafe = (float)luaL_optnumber(L, 2, 0);                                                         \
+        lua_pushnumber(L, get_##scope##_float(name, failsafe));                                                        \
+        return 1;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(get_##scope##_string) {                                                                            \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const char* fallback = luaL_optstring(L, 2, NULL);                                                             \
+        const char* str = get_##scope##_string(name, fallback);                                                        \
+                                                                                                                       \
+        if (str == NULL)                                                                                               \
+            lua_pushnil(L);                                                                                            \
+        else                                                                                                           \
+            lua_pushstring(L, str);                                                                                    \
         return 1;                                                                                                      \
     }
 
-#define SCRIPT_GETTER_FLAG(name, type)                                                                                 \
-    static int SCRIPT_PREFIX(name)(lua_State * L) {                                                                    \
-        int slot = luaL_checkinteger(L, 1);                                                                            \
-        const char* flag = luaL_checkstring(L, 2);                                                                     \
-        SCRIPT_PUSH(type)(L, name(slot, flag));                                                                        \
-        return 1;                                                                                                      \
+#define SCRIPT_FLAGS_WRITE(scope)                                                                                      \
+    SCRIPT_FUNCTION_DIRECT(clear_##scope);                                                                             \
+                                                                                                                       \
+    SCRIPT_FUNCTION(delete_##scope) {                                                                                  \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        delete_##scope(name);                                                                                          \
+        return 0;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(set_##scope##_bool) {                                                                              \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const bool value = luaL_checkinteger(L, 2);                                                                    \
+        set_##scope##_bool(name, value);                                                                               \
+        return 0;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(set_##scope##_int) {                                                                               \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const int value = luaL_checkinteger(L, 2);                                                                     \
+        set_##scope##_int(name, value);                                                                                \
+        return 0;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(set_##scope##_float) {                                                                             \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const float value = luaL_checknumber(L, 2);                                                                    \
+        set_##scope##_float(name, value);                                                                              \
+        return 0;                                                                                                      \
+    }                                                                                                                  \
+                                                                                                                       \
+    SCRIPT_FUNCTION(set_##scope##_string) {                                                                            \
+        const char* name = luaL_checkstring(L, 1);                                                                     \
+        const char* value = luaL_checkstring(L, 2);                                                                    \
+        set_##scope##_string(name, value);                                                                             \
+        return 0;                                                                                                      \
     }
 
 #define SCRIPT_LOG(L, format, ...)                                                                                     \
@@ -121,6 +184,21 @@
     EXPOSE_FUNCTION(load_##typename);                                                                                  \
     EXPOSE_FUNCTION(fetch_##typename);                                                                                 \
     EXPOSE_FUNCTION(get_##typename);
+
+#define EXPOSE_FLAGS_READ(scope)                                                                                       \
+    EXPOSE_FUNCTION(get_##scope##_type);                                                                               \
+    EXPOSE_FUNCTION(get_##scope##_bool);                                                                               \
+    EXPOSE_FUNCTION(get_##scope##_int);                                                                                \
+    EXPOSE_FUNCTION(get_##scope##_float);                                                                              \
+    EXPOSE_FUNCTION(get_##scope##_string);
+
+#define EXPOSE_FLAGS_WRITE(scope)                                                                                      \
+    EXPOSE_FUNCTION(clear_##scope);                                                                                    \
+    EXPOSE_FUNCTION(delete_##scope);                                                                                   \
+    EXPOSE_FUNCTION(set_##scope##_bool);                                                                               \
+    EXPOSE_FUNCTION(set_##scope##_int);                                                                                \
+    EXPOSE_FUNCTION(set_##scope##_float);                                                                              \
+    EXPOSE_FUNCTION(set_##scope##_string);
 
 #define execute_buffer(buffer, size, name) _execute_buffer(buffer, size, name, __FILE__, __LINE__)
 #define execute_ref(ref, name) _execute_ref(ref, name, __FILE__, __LINE__)

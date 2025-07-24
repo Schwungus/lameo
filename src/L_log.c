@@ -67,7 +67,10 @@ void log_generic(const char* filename, int line, const char* format, ...) {
 }
 
 void log_script(const char* source, const char* name, int line, const char* format, ...) {
-    printf("{%s:%s:%d} ", source, name, line);
+    if (name == NULL)
+        printf("{%s:%d} ", source, line);
+    else
+        printf("{%s:%s:%d} ", source, name, line);
     va_list args, args2;
     va_start(args, format);
     va_copy(args2, args);
@@ -77,7 +80,10 @@ void log_script(const char* source, const char* name, int line, const char* form
     fflush(stdout);
 
     if (log_file != NULL) {
-        SDL_IOprintf(log_file, "{%s:%s:%d} ", source, name, line);
+        if (name == NULL)
+            SDL_IOprintf(log_file, "{%s:%d} ", source, line);
+        else
+            SDL_IOprintf(log_file, "{%s:%s:%d} ", source, name, line);
         SDL_IOvprintf(log_file, format, args2);
         SDL_IOprintf(log_file, "\n");
     }
