@@ -435,6 +435,12 @@ SCRIPT_FUNCTION(actor_set_angle) {
     return 0;
 }
 
+SCRIPT_FUNCTION(actor_to_sky) {
+    struct Actor* actor = s_check_actor(L, 1);
+    actor_to_sky(actor);
+    return 0;
+}
+
 SCRIPT_FUNCTION(camera_index) {
     struct ActorCamera* camera = s_check_camera(L, 1);
     const char* key = luaL_checkstring(L, 2);
@@ -817,6 +823,8 @@ void script_init() {
         {"get_pitch", s_actor_get_angle_y},
         {"get_roll", s_actor_get_angle_z},
         {"set_angle", s_actor_set_angle},
+
+        {"to_sky", s_actor_to_sky},
 
         {NULL, NULL},
     };

@@ -256,6 +256,11 @@ struct ModelInstance* create_actor_model(struct Actor* actor, struct Model* mode
     return (actor->model = inst);
 }
 
+void actor_to_sky(struct Actor* actor) {
+    actor->room->sky = actor;
+    actor->flags &= ~AF_VISIBLE;
+}
+
 void tick_actor(struct Actor* actor) {
     if (actor->type->tick != LUA_NOREF)
         execute_ref_in(actor->type->tick, actor->userdata, actor->type->name);
@@ -308,15 +313,18 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     if (actor->next != NULL)
         actor->next->previous = actor->previous;
 
-    if (actor->room->actors == actor)
-        actor->room->actors = actor->previous_neighbor;
+    struct Room* room = actor->room;
+    if (room->sky == actor)
+        room->sky = NULL;
+    if (room->actors == actor)
+        room->actors = actor->previous_neighbor;
     if (actor->previous_neighbor != NULL)
         actor->previous_neighbor->next_neighbor = actor->next_neighbor;
     if (actor->next_neighbor != NULL)
         actor->next_neighbor->previous_neighbor = actor->previous_neighbor;
 
     if (actor->flags & AF_BUMPABLE) {
-        struct Actor** chunks = actor->room->bump.chunks;
+        struct Actor** chunks = room->bump.chunks;
         if (chunks[actor->bump_index] == actor)
             chunks[actor->bump_index] = actor->previous_bump;
         if (actor->previous_bump != NULL)

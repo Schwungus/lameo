@@ -34,6 +34,7 @@ struct Room {
     struct BumpMap bump;
 
     struct ModelInstance* model;
+    struct Actor* sky;
 };
 
 struct RoomActor {

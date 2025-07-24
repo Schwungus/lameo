@@ -26,6 +26,7 @@ static struct WorldBatch world_batch = {0};
 static struct ActorCamera* active_camera = NULL;
 
 static struct Shader* default_shaders[RT_SIZE] = {NULL};
+static struct Shader* sky_shader = NULL;
 static struct Shader* current_shader = NULL;
 static struct Font* default_font = NULL;
 static struct Surface* current_surface = NULL;
@@ -226,6 +227,11 @@ void video_init() {
         default_shaders[RT_WORLD] = fetch_shader("world");
         if (default_shaders[RT_WORLD] == NULL)
             FATAL("World shader \"world\" not found");
+    }
+    if (sky_shader == NULL) {
+        sky_shader = fetch_shader("sky");
+        if (sky_shader == NULL)
+            FATAL("Sky shader \"sky\" not found");
     }
 
     // Fonts
@@ -799,6 +805,7 @@ void submit_world_batch() {
     set_int_uniform("u_has_blend_texture", 0);
     set_int_uniform("u_blend_texture", 1);
     set_float_uniform("u_alpha_test", world_batch.alpha_test);
+    set_vec2_uniform("u_scroll", 0, 0);
 
     // Apply blend mode
     glBlendFuncSeparate(
@@ -889,17 +896,9 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     }
 
     set_surface(camera->surface);
-    clear_color(0.5f, 0.5f, 0.5f, 1);
+
     clear_depth(1);
     clear_stencil(0);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilMask(0xFF);
 
     // Build matrices
     static mat4 lookie;
@@ -924,16 +923,50 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
         glm_ortho(0, width, height, 0, 1, 32000, projection_matrix);
     else
         glm_perspective(glm_rad(camera->fov), (float)width / (float)height, 1, 32000, projection_matrix);
-    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
-    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
     // Render room
     set_render_stage(RT_WORLD);
-    set_shader(NULL);
 
     struct Room* room = camera->actor->room;
+    const float u_time = (float)draw_time / 1000.0f;
+
+    struct Actor* sky = room->sky;
+    if (sky != NULL) {
+        static mat4 sky_view;
+        glm_lookat(GLM_VEC3_ZERO, forward_vector, up_vector, sky_view);
+        glm_mat4_mul(projection_matrix, sky_view, mvp_matrix);
+        set_shader(sky_shader);
+        set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+        set_float_uniform("u_time", u_time);
+
+        if (sky->model != NULL)
+            submit_model_instance(sky->model);
+        else
+            clear_color(0, 0, 0, 1);
+        if (sky->type->draw != LUA_NOREF)
+            execute_ref_in(sky->type->draw, sky->userdata, sky->type->name);
+
+        submit_world_batch();
+    } else {
+        clear_color(0.5f, 0.5f, 0.5f, 1);
+    }
+
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+
+    set_shader(NULL);
+    set_float_uniform("u_time", u_time);
+
     if (room->model != NULL)
-        draw_model_instance(room->model);
+        submit_model_instance(room->model);
 
     struct Actor* actor = room->actors;
     while (actor != NULL) {
@@ -946,13 +979,6 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
         actor = actor->previous_neighbor;
     }
 
-    set_world_texture(fetch_texture("dumdum"));
-    world_vertex(-256, 256, 0, 0, 0, -1, 255, 0, 0, 255, 0, 1);
-    world_vertex(256, 256, 0, 0, 0, -1, 0, 255, 0, 128, 1, 1);
-    world_vertex(256, -256, 0, 0, 0, -1, 0, 0, 255, 255, 1, 0);
-    world_vertex(256, -256, 0, 0, 0, -1, 255, 0, 0, 255, 1, 0);
-    world_vertex(-256, -256, 0, 0, 0, -1, 0, 255, 0, 128, 0, 0);
-    world_vertex(-256, 256, 0, 0, 0, -1, 0, 0, 255, 255, 0, 1);
     submit_world_batch();
 
     glDisable(GL_STENCIL_TEST);
@@ -1333,18 +1359,27 @@ void submit_model_instance(struct ModelInstance* inst) {
             continue;
 
         const struct Submodel* submodel = &(model->submodels[i]);
-        const struct Material* material = model->materials[submodel->material];
-        // if (material == NULL)
-        //     continue;
-        const struct Texture* texture =
-            material->textures[0] == NULL
-                ? NULL
-                : material->textures[0][(size_t)SDL_fmodf(
-                      (float)draw_time * material->texture_speed[0], (float)material->num_textures[0]
-                  )];
+
+        struct Material* material = inst->override_materials[submodel->material];
+        if (material == NULL) {
+            material = model->materials[submodel->material];
+            if (material == NULL)
+                continue;
+        }
+
+        GLuint tex = inst->override_textures[submodel->material];
+        if (tex == 0) {
+            const struct Texture* texture =
+                material->textures[0] == NULL
+                    ? NULL
+                    : material->textures[0][(size_t)SDL_fmodf(
+                          (float)draw_time * material->texture_speed[0], (float)material->num_textures[0]
+                      )];
+            tex = (texture == NULL) ? blank_texture : texture->texture;
+        }
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture == NULL ? blank_texture : texture->texture);
+        glBindTexture(GL_TEXTURE_2D, tex);
         const GLint filter = material->filter ? GL_LINEAR : GL_NEAREST;
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
@@ -1363,6 +1398,7 @@ void submit_model_instance(struct ModelInstance* inst) {
         }
 
         set_float_uniform("u_alpha_test", material->alpha_test);
+        set_vec2_uniform("u_scroll", material->scroll[0], material->scroll[1]);
 
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);

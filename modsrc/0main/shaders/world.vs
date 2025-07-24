@@ -16,9 +16,12 @@ uniform mat4 u_model_matrix;
 uniform mat4 u_view_matrix;
 uniform mat4 u_projection_matrix;
 uniform mat4 u_mvp_matrix;
+uniform float u_time;
 
 uniform bool u_animated;
 uniform vec4 u_sample[2 * MAX_BONES];
+
+uniform vec2 u_scroll;
 
 vec3 quat_rotate(vec4 q, vec3 v) {
 	vec3 u = q.xyz;
@@ -73,4 +76,5 @@ void main() {
 
     v_color = i_color;
     v_uv = i_uv;
+    v_uv.xy += u_time * u_scroll;
 }

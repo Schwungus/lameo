@@ -4,10 +4,9 @@
 #include "L_math.h" // IWYU pragma: keep
 #include "L_memory.h"
 #include "L_player.h"
+#include "L_room.h"
 #include "L_script.h" // IWYU pragma: keep
 #include "L_video.h"
-
-#include "L_room.h" // L_room.h relies on ACTOR_NAME_MAX, so only include after that's defined
 
 typedef HandleID ActorID;
 
@@ -17,7 +16,7 @@ enum ActorFlags {
     // Room
     AF_PERSISTENT = 1 << 0, // Will not be destroyed when deactivating a room.
     AF_DISPOSABLE = 1 << 1, // If this actor has a base and is destroyed, it will not spawn in its own room again.
-    AF_UNIQUE = 1 << 2,     // Cannot be created if an instance of it already exists in the same room.
+    AF_UNIQUE = 1 << 2,     // [UNUSED] Deal with it your god damn self!
 
     // Visual
     AF_VISIBLE = 1 << 3,     // Can be drawn as long as it's not culled.
@@ -153,6 +152,7 @@ struct Actor* create_actor_from_type(
 );
 struct ActorCamera* create_actor_camera(struct Actor*);
 struct ModelInstance* create_actor_model(struct Actor*, struct Model*);
+void actor_to_sky(struct Actor*);
 void tick_actor(struct Actor*);
 void draw_actor(struct Actor*);
 void destroy_actor_later(struct Actor*, bool);
