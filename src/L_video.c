@@ -806,6 +806,7 @@ void submit_world_batch() {
     set_int_uniform("u_blend_texture", 1);
     set_float_uniform("u_alpha_test", world_batch.alpha_test);
     set_vec2_uniform("u_scroll", 0, 0);
+    set_vec3_uniform("u_material_wind", 0, 0, 0);
 
     // Apply blend mode
     glBlendFuncSeparate(
@@ -964,6 +965,7 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
 
     set_shader(NULL);
     set_float_uniform("u_time", u_time);
+    set_vec4_uniform("u_wind", room->wind[0], room->wind[1], room->wind[2], room->wind[3]);
 
     if (room->model != NULL)
         submit_model_instance(room->model);
@@ -1399,6 +1401,7 @@ void submit_model_instance(struct ModelInstance* inst) {
 
         set_float_uniform("u_alpha_test", material->alpha_test);
         set_vec2_uniform("u_scroll", material->scroll[0], material->scroll[1]);
+        set_vec3_uniform("u_material_wind", material->wind[0], material->wind[1], material->wind[2]);
 
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);

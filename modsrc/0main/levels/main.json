@@ -2,6 +2,8 @@
     "rooms": [
         {
             "id": 0,
+            "wind": [1.0, 1.0, 0.25, 2.0],
+
             "actors": [
                 { "type": "Sky" },
                 { "type": "Main" },

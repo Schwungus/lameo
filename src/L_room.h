@@ -35,6 +35,8 @@ struct Room {
 
     struct ModelInstance* model;
     struct Actor* sky;
+
+    vec4 wind; // (0-2) Wind direction and (3) factor
 };
 
 struct RoomActor {

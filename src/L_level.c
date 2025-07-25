@@ -76,6 +76,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                 );
 
             room->bump.size[0] = room->bump.size[1] = 1;
+            room->wind[0] = 1;
 
             // Properties
             roomval = yyjson_obj_get(roomdef, "model");
@@ -83,6 +84,15 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                 struct Model* model = fetch_model(yyjson_get_str(roomval));
                 if (model != NULL)
                     room->model = create_model_instance(model);
+            }
+
+            roomval = yyjson_obj_get(roomdef, "wind");
+            if (yyjson_is_arr(roomval) && yyjson_arr_size(roomval) >= 4) {
+                room->wind[0] = (float)yyjson_get_real(yyjson_arr_get(roomval, 0));
+                room->wind[1] = (float)yyjson_get_real(yyjson_arr_get(roomval, 1));
+                room->wind[2] = (float)yyjson_get_real(yyjson_arr_get(roomval, 2));
+                room->wind[3] = (float)yyjson_get_real(yyjson_arr_get(roomval, 3));
+                glm_vec3_normalize(room->wind);
             }
 
             // Actors
