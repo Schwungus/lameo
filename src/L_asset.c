@@ -108,7 +108,7 @@ void load_shader(const char* name) {
 
     shader->userdata = create_pointer_ref("shader", shader);
     ASSET_SANITY_PUSH(shader, shaders);
-    INFO("Loaded shader \"%s\" (%u)", name, shader);
+    DEBUG("Loaded shader \"%s\" (%u)", name, shader);
 }
 
 void destroy_shader(struct Shader* shader) {
@@ -118,7 +118,7 @@ void destroy_shader(struct Shader* shader) {
     glDeleteProgram(shader->program);
     SDL_DestroyProperties(shader->uniforms);
 
-    INFO("Freed shader \"%s\" (%u)", shader->name, shader);
+    DEBUG("Freed shader \"%s\" (%u)", shader->name, shader);
     lame_free(&(shader->name));
     lame_free(&shader);
 }
@@ -204,7 +204,7 @@ void load_texture(const char* name) {
 
     texture->userdata = create_pointer_ref("texture", texture);
     ASSET_SANITY_PUSH(texture, textures);
-    INFO("Loaded texture \"%s\" (%u)", name, texture);
+    DEBUG("Loaded texture \"%s\" (%u)", name, texture);
 }
 
 void destroy_texture(struct Texture* texture) {
@@ -214,7 +214,7 @@ void destroy_texture(struct Texture* texture) {
     if (texture->parent == NULL)
         glDeleteTextures(1, &(texture->texture));
 
-    INFO("Freed texture \"%s\" (%u)", texture->name, texture);
+    DEBUG("Freed texture \"%s\" (%u)", texture->name, texture);
     lame_free(&(texture->name));
     lame_free(&texture);
 }
@@ -331,7 +331,7 @@ void load_material(const char* name) {
 
     material->userdata = create_pointer_ref("material", material);
     ASSET_SANITY_PUSH(material, materials);
-    INFO("Loaded material \"%s\" (%u)", name, material);
+    DEBUG("Loaded material \"%s\" (%u)", name, material);
 }
 
 void destroy_material(struct Material* material) {
@@ -341,7 +341,7 @@ void destroy_material(struct Material* material) {
     FREE_POINTER(material->textures[0]);
     FREE_POINTER(material->textures[1]);
 
-    INFO("Freed material \"%s\" (%u)", material->name, material);
+    DEBUG("Freed material \"%s\" (%u)", material->name, material);
     lame_free(&(material->name));
     lame_free(&material);
 }
@@ -643,7 +643,7 @@ void load_model(const char* name) {
 
     model->userdata = create_pointer_ref("model", model);
     ASSET_SANITY_PUSH(model, models);
-    INFO("Loaded model \"%s\" (%u)", name, model);
+    DEBUG("Loaded model \"%s\" (%u)", name, model);
 }
 
 void destroy_model(struct Model* model) {
@@ -664,7 +664,7 @@ void destroy_model(struct Model* model) {
     FREE_POINTER(model->bone_offsets);
     FREE_POINTER(model->materials);
 
-    INFO("Freed model \"%s\" (%u)", model->name, model);
+    DEBUG("Freed model \"%s\" (%u)", model->name, model);
     lame_free(&(model->name));
     lame_free(&model);
 }
@@ -733,13 +733,6 @@ void load_animation(const char* name) {
 
     animation->num_nodes = (size_t)(read_u32(&cursor));
     animation->num_bones = (size_t)(read_u32(&cursor));
-
-    INFO("PARENT %u, WORLD %u, BONE %u", spaces & BS_PARENT, spaces & BS_WORLD, spaces & BS_BONE);
-    INFO(
-        "%u frames (+%.3f), %u nodes, %u bones", animation->num_frames, animation->frame_speed, animation->num_nodes,
-        animation->num_bones
-    );
-
     if (spaces & BS_PARENT)
         animation->parent_frames = (DualQuaternion**)lame_alloc(animation->num_frames * sizeof(DualQuaternion*));
     if (spaces & BS_WORLD)
@@ -799,7 +792,7 @@ void load_animation(const char* name) {
 
     animation->userdata = create_pointer_ref("animation", animation);
     ASSET_SANITY_PUSH(animation, animations);
-    INFO("Loaded animation \"%s\" (%u)", name, animation);
+    DEBUG("Loaded animation \"%s\" (%u)", name, animation);
 }
 
 void destroy_animation(struct Animation* animation) {
@@ -822,7 +815,7 @@ void destroy_animation(struct Animation* animation) {
         lame_free(&(animation->bone_frames));
     }
 
-    INFO("Freed animation \"%s\" (%u)", animation->name, animation);
+    DEBUG("Freed animation \"%s\" (%u)", animation->name, animation);
     lame_free(&(animation->name));
     lame_free(&animation);
 }
@@ -929,7 +922,7 @@ void load_font(const char* name) {
 
     font->userdata = create_pointer_ref("font", font);
     ASSET_SANITY_PUSH(font, fonts);
-    INFO("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font, gldef, font->num_glyphs);
+    DEBUG("Loaded font \"%s\" (%u, %u/%u glyphs)", name, font, gldef, font->num_glyphs);
 }
 
 void destroy_font(struct Font* font) {
@@ -942,7 +935,7 @@ void destroy_font(struct Font* font) {
         lame_free(&(font->glyphs));
     }
 
-    INFO("Freed font \"%s\" (%u)", font->name, font);
+    DEBUG("Freed font \"%s\" (%u)", font->name, font);
     lame_free(&(font->name));
     lame_free(&font);
 }
@@ -1069,7 +1062,7 @@ void load_sound(const char* name) {
 
 sound_loaded:
     ASSET_SANITY_PUSH(sound, sounds);
-    INFO("Loaded sound \"%s\" (%u)", name, sound);
+    DEBUG("Loaded sound \"%s\" (%u)", name, sound);
 }
 
 void destroy_sound(struct Sound* sound) {
@@ -1083,7 +1076,7 @@ void destroy_sound(struct Sound* sound) {
         lame_free(&(sound->samples));
     }
 
-    INFO("Freed sound \"%s\" (%u)", sound->name, sound);
+    DEBUG("Freed sound \"%s\" (%u)", sound->name, sound);
     lame_free(&(sound->name));
     lame_free(&sound);
 }
@@ -1112,7 +1105,7 @@ void load_track(const char* name) {
 
     track->userdata = create_pointer_ref("track", track);
     ASSET_SANITY_PUSH(track, music);
-    INFO("Loaded track \"%s\" (%u)", name, track);
+    DEBUG("Loaded track \"%s\" (%u)", name, track);
 }
 
 void destroy_track(struct Track* track) {
@@ -1120,7 +1113,7 @@ void destroy_track(struct Track* track) {
     unreference_pointer(&(track->userdata));
 
     destroy_stream(track->stream);
-    INFO("Freed track \"%s\" (%u)", track->name, track);
+    DEBUG("Freed track \"%s\" (%u)", track->name, track);
     lame_free(&(track->name));
     lame_free(&track);
 }

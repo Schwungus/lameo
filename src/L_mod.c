@@ -52,7 +52,7 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
         yyjson_arr_foreach((yyjson_val*)userdata, i, n, value) {
             const char* str = yyjson_get_str(value);
             if (str != NULL && SDL_strcmp(fname, str) == 0) {
-                INFO("Skipping disabled mod \"%s\"", fname);
+                INFO("\"%s\" is disabled", fname);
                 return SDL_ENUM_CONTINUE;
             }
         }
@@ -94,7 +94,7 @@ static SDL_EnumerationResult iterate_mods(void* userdata, const char* dirname, c
     mod->previous = mods;
     mods = mod;
 
-    INFO("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
+    DEBUG("Added mod \"%s\" v%u (%u, %s -> %u)", mod->title, mod->version, mod->hid, mod->name, mod->crc32);
     return SDL_ENUM_CONTINUE;
 }
 
@@ -210,7 +210,7 @@ void mod_teardown() {
     while (mods != NULL) {
         const struct Mod* mod = mods;
         mods = mod->previous;
-        INFO("Removed mod \"%s\" (%s)", mod->title, mod->name);
+        DEBUG("Removed mod \"%s\" (%s)", mod->title, mod->name);
         lame_free(&(mod->name));
         lame_free(&(mod->title));
         lame_free(&(mod->path));

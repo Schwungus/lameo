@@ -26,7 +26,13 @@ void log_callback(void* userdata, int category, SDL_LogPriority priority, const 
 
 void log_init() {
     SDL_SetLogOutputFunction(log_callback, NULL);
-    SDL_SetLogPriorities(SDL_LOG_PRIORITY_TRACE);
+    SDL_SetLogPriorities(
+#ifndef NDEBUG
+        SDL_LOG_PRIORITY_TRACE
+#else
+        SDL_LOG_PRIORITY_INFO
+#endif
+    );
 
     log_file = SDL_IOFromFile(get_base_path(LOG_FILENAME), "w");
     if (log_file == NULL) {

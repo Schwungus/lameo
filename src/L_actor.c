@@ -127,7 +127,9 @@ int define_actor(lua_State* L) {
             type->draw_ui = parent->draw_ui;
     }
 
+#ifndef NDEBUG
     SCRIPT_LOG(L, "Defined Actor \"%s\"", name);
+#endif
     return 0;
 }
 
@@ -142,7 +144,7 @@ bool load_actor(const char* name) {
     do {
         if (it->load != LUA_NOREF)
             execute_ref(it->load, it->name);
-        INFO("Loaded Actor \"%s\"", it->name);
+        DEBUG("Loaded Actor \"%s\"", it->name);
         it = it->parent;
     } while (it != NULL);
 

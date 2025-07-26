@@ -76,7 +76,9 @@ int define_handler(lua_State* L) {
         handler->previous = it;
     }
 
-    INFO("Defined handler \"%s\"", name);
+#ifndef DEBUG
+    SCRIPT_LOG(L, "Defined handler \"%s\"", name);
+#endif
 
     // Register handler
     if (handler->on_register != LUA_NOREF)

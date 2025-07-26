@@ -138,13 +138,10 @@ struct Fixture* _create_fixture(const char* filename, int line) {
     struct Fixture* fixture = _lame_alloc_clean(sizeof(struct Fixture), filename, line);
     fixture->handles = _lame_alloc_clean(sizeof(struct Handle), filename, line);
     fixture->capacity = 1;
-
-    // log_generic(src_basename(filename), line, "Created fixture %u", fixture);
     return fixture;
 }
 
 void _destroy_fixture(struct Fixture* fixture, const char* filename, int line) {
-    // log_generic(src_basename(filename), line, "Destroyed fixture %u", fixture);
     if (fixture->handles != NULL)
         _lame_free((void**)&fixture->handles, filename, line);
     _lame_free((void**)&fixture, filename, line);
@@ -196,9 +193,6 @@ HandleID _create_handle(struct Fixture* fixture, void* ptr, const char* filename
 
     // Generate handle ID
     HandleID hid = ((HID_HALF)index << HID_BITS) | (HID_HALF)handle->generation;
-    // log_generic(
-    //     src_basename(filename), line, "%u created %u (%u/%u) for %u", fixture, hid, index, handle->generation, ptr
-    // );
     return hid;
 }
 
@@ -226,8 +220,6 @@ void _destroy_handle(struct Fixture* fixture, HandleID hid, const char* filename
     if (index < fixture->next)
         fixture->next = index;
     --fixture->size;
-
-    // log_generic(src_basename(filename), line, "%u destroyed %u (%u/%u)", fixture, hid, index, generation);
 }
 
 struct Handle* hid_to_handle(struct Fixture* fixture, HandleID hid) {
@@ -343,7 +335,9 @@ static void expand_hash_map(struct HashMap* map, const char* filename, int line)
     _lame_free((void**)&(map->items), filename, line);
     map->items = items;
     map->capacity = new_capacity;
+#ifndef NDEBUG
     log_generic(src_basename(filename), line, "Increased HashMap capacity to %u", new_capacity);
+#endif
 }
 
 bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, const char* filename, int line) {
@@ -472,7 +466,9 @@ static void expand_int_map(struct IntMap* map, const char* filename, int line) {
     _lame_free((void**)&(map->items), filename, line);
     map->items = items;
     map->capacity = new_capacity;
+#ifndef NDEBUG
     log_generic(src_basename(filename), line, "Increased IntMap capacity to %u", new_capacity);
+#endif
 }
 
 bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const char* filename, int line) {

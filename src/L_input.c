@@ -147,7 +147,7 @@ void assign_verb_to_key(struct Verb* verb, SDL_Scancode key) {
                     break;
                 }
 
-        INFO("Unassigned verb %s from key %d", verb->name, verb->key);
+        DEBUG("Unassigned verb %s from key %d", verb->name, verb->key);
     }
 
     verb->key = key;
@@ -174,7 +174,7 @@ void assign_verb_to_key(struct Verb* verb, SDL_Scancode key) {
             }
         }
 
-        INFO("Assigned verb %s to key %d", verb->name, key);
+        DEBUG("Assigned verb %s to key %d", verb->name, key);
     }
 }
 
@@ -191,7 +191,7 @@ void assign_verb_to_mouse_button(struct Verb* verb, enum MouseButtons mouse_butt
                     break;
                 }
 
-        INFO("Unassigned verb %s from mouse button %d", verb->name, verb->mouse_button);
+        DEBUG("Unassigned verb %s from mouse button %d", verb->name, verb->mouse_button);
     }
 
     verb->mouse_button = mouse_button;
@@ -218,7 +218,7 @@ void assign_verb_to_mouse_button(struct Verb* verb, enum MouseButtons mouse_butt
             }
         }
 
-        INFO("Assigned verb %s to mouse button %d", verb->name, mouse_button);
+        DEBUG("Assigned verb %s to mouse button %d", verb->name, mouse_button);
     }
 }
 
@@ -235,7 +235,7 @@ void assign_verb_to_gamepad_button(struct Verb* verb, SDL_GamepadButton gamepad_
                     break;
                 }
 
-        INFO("Unassigned verb %s from gamepad button %d", verb->name, verb->gamepad_button);
+        DEBUG("Unassigned verb %s from gamepad button %d", verb->name, verb->gamepad_button);
     }
 
     verb->gamepad_button = gamepad_button;
@@ -262,7 +262,7 @@ void assign_verb_to_gamepad_button(struct Verb* verb, SDL_GamepadButton gamepad_
             }
         }
 
-        INFO("Assigned verb %s to gamepad button %d", verb->name, gamepad_button);
+        DEBUG("Assigned verb %s to gamepad button %d", verb->name, gamepad_button);
     }
 }
 
@@ -279,7 +279,7 @@ void assign_verb_to_gamepad_axis(struct Verb* verb, SDL_GamepadAxis gamepad_axis
                     break;
                 }
 
-        INFO("Unassigned verb %s from gamepad axis %d", verb->name, verb->gamepad_axis);
+        DEBUG("Unassigned verb %s from gamepad axis %d", verb->name, verb->gamepad_axis);
     }
 
     verb->gamepad_axis = gamepad_axis;
@@ -306,7 +306,7 @@ void assign_verb_to_gamepad_axis(struct Verb* verb, SDL_GamepadAxis gamepad_axis
             }
         }
 
-        INFO("Assigned verb %s to gamepad axis %d", verb->name, gamepad_axis);
+        DEBUG("Assigned verb %s to gamepad axis %d", verb->name, gamepad_axis);
     }
 }
 

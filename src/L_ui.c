@@ -103,7 +103,9 @@ int define_ui(lua_State* L) {
             type->draw = parent->draw;
     }
 
+#ifndef NDEBUG
     SCRIPT_LOG(L, "Defined UI \"%s\"", name);
+#endif
     return 0;
 }
 
@@ -118,7 +120,7 @@ bool load_ui(const char* name) {
     do {
         if (it->load != LUA_NOREF)
             execute_ref(it->load, it->name);
-        INFO("Loaded UI \"%s\"", it->name);
+        DEBUG("Loaded UI \"%s\"", it->name);
         it = it->parent;
     } while (it != NULL);
 

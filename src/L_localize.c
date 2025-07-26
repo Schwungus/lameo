@@ -41,7 +41,7 @@ struct Language* fetch_language(const char* name) {
     lang->previous = languages;
     languages = lang;
 
-    INFO("Added language \"%s\"", name);
+    DEBUG("Added language \"%s\"", name);
 
     return lang;
 }
@@ -54,7 +54,7 @@ void set_language(const char* name) {
     for (struct Language* lang = languages; lang != NULL; lang = lang->previous)
         if (SDL_strcmp(lang->name, name) == 0) {
             language = lang;
-            INFO("Language set to %s", name);
+            DEBUG("Language set to %s", name);
             return;
         }
 }
