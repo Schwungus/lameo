@@ -10,6 +10,12 @@
 #include "L_asset.h"
 #include "L_math.h" // IWYU pragma: keep
 
+#define CHECK_GL_EXTENSION(ext)                                                                                        \
+    if (!ext)                                                                                                          \
+        FATAL(                                                                                                         \
+            "Missing OpenGL extension: " #ext "\nAt least OpenGL 3.3 with framebuffer and shader support is required." \
+        );
+
 #define DEFAULT_DISPLAY_WIDTH 640
 #define DEFAULT_DISPLAY_HEIGHT 480
 
@@ -111,7 +117,7 @@ struct ModelInstance {
     DualQuaternion *transforms, *sample;
 };
 
-void video_init();
+void video_init(bool);
 void video_update();
 void video_teardown();
 

@@ -39,7 +39,7 @@ static mat4 view_matrix = GLM_MAT4_IDENTITY_INIT;
 static mat4 projection_matrix = GLM_MAT4_IDENTITY_INIT;
 static mat4 mvp_matrix = GLM_MAT4_IDENTITY_INIT;
 
-void video_init() {
+void video_init(bool bypass_shader) {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -62,10 +62,18 @@ void video_init() {
     if (version == 0)
         FATAL("Failed to load OpenGL functions");
     INFO("GLAD version: %d.%d", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
-    if (!GLAD_GL_VERSION_3_3 || !GLAD_GL_EXT_framebuffer_object ||
-        !(GLAD_GL_ARB_shader_objects && GLAD_GL_ARB_vertex_shader && GLAD_GL_ARB_fragment_shader &&
-          GLAD_GL_ARB_vertex_program && GLAD_GL_ARB_fragment_program))
+    if (!GLAD_GL_VERSION_3_3)
         FATAL("Unsupported OpenGL version\nAt least OpenGL 3.3 with framebuffer and shader support is required.");
+    CHECK_GL_EXTENSION(GLAD_GL_EXT_framebuffer_object);
+    if (bypass_shader) {
+        WARN("Bypassing shader support");
+    } else {
+        CHECK_GL_EXTENSION(GLAD_GL_ARB_shader_objects);
+        CHECK_GL_EXTENSION(GLAD_GL_ARB_vertex_shader);
+        CHECK_GL_EXTENSION(GLAD_GL_ARB_fragment_shader);
+        CHECK_GL_EXTENSION(GLAD_GL_ARB_vertex_program);
+        CHECK_GL_EXTENSION(GLAD_GL_ARB_fragment_program);
+    }
 
     INFO("OpenGL vendor: %s", glGetString(GL_VENDOR));
     INFO("OpenGL version: %s", glGetString(GL_VERSION));

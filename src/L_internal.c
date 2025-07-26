@@ -19,7 +19,7 @@
 
 static struct LoadState load_state = {0};
 
-void init(const char* config_path, const char* controls_path) {
+void init(const char* config_path, const char* controls_path, bool bypass_shader) {
     log_init();
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         FATAL("SDL fail: %s", SDL_GetError());
@@ -40,7 +40,7 @@ void init(const char* config_path, const char* controls_path) {
     // After scripting (loads assets)
     mod_init();
     localize_init();
-    video_init();
+    video_init(bypass_shader);
     audio_init();
 
     handler_init();

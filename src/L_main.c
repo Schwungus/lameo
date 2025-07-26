@@ -26,14 +26,17 @@ int main(int argc, char** argv) {
     SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 
     const char *config_path = NULL, *controls_path = NULL;
+    bool bypass_shader = false;
     for (int i = 0; i < argc; i++) {
         if (SDL_strcmp(argv[i], "-config") == 0)
             config_path = argv[++i];
         else if (SDL_strcmp(argv[i], "-controls") == 0)
             controls_path = argv[++i];
+        else if (SDL_strcmp(argv[i], "-bypass_shader") == 0)
+            bypass_shader = true;
     }
 
-    init(config_path, controls_path);
+    init(config_path, controls_path, bypass_shader);
     loop();
     cleanup();
 

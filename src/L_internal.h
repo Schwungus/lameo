@@ -18,7 +18,7 @@ struct LoadState {
     uint16_t tag;
 };
 
-void init(const char*, const char*);
+void init(const char*, const char*, bool);
 void loop();
 void cleanup();
 
