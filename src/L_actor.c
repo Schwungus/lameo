@@ -310,6 +310,9 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
         actor->base->actor = NULL;
     }
 
+    if (actor->player != NULL && actor->player->actor == actor)
+        actor->player->actor = NULL;
+
     if (actors == actor)
         actors = actor->previous;
     if (actor->previous != NULL)
@@ -339,9 +342,6 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
 
     destroy_actor_camera(actor);
     destroy_actor_model(actor);
-
-    if (actor->player != NULL && actor->player->actor == actor)
-        actor->player->actor = NULL;
 
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);

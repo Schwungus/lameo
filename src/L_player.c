@@ -248,10 +248,18 @@ struct Actor* respawn_player(struct Player* player) {
     const char* class = get_pflag_string(player, "class", NULL);
     if (class == NULL)
         return NULL;
-    return player->actor = create_actor(
-               room, NULL, class, true, spawn->pos[0], spawn->pos[1], spawn->pos[2], spawn->angle[0], spawn->angle[1],
-               spawn->angle[2], spawn->tag
-           );
+    struct Actor* actor = create_actor(
+        room, NULL, class, false, spawn->pos[0], spawn->pos[1], spawn->pos[2], spawn->angle[0], spawn->angle[1],
+        spawn->angle[2], spawn->tag
+    );
+    if (actor == NULL)
+        return NULL;
+    actor->player = player;
+    player->actor = actor;
+    if (actor->type->create != LUA_NOREF)
+        execute_ref_in(actor->type->create, actor->userdata, actor->type->name);
+    actor->flags &= ~AF_NEW;
+    return actor;
 }
 
 // Flags
