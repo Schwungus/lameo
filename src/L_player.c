@@ -221,7 +221,37 @@ bool player_enter_room(struct Player* player, uint32_t id) {
         activate_room(room);
     }
 
+    respawn_player(player);
     return true;
+}
+
+struct Actor* respawn_player(struct Player* player) {
+    struct Room* room = player->room;
+    if (room == NULL)
+        return NULL;
+
+    // Kill old pawn
+    if (player->actor != NULL)
+        destroy_actor(player->actor, false, false);
+
+    // Spawn scan
+    struct Actor* spawn = room->actors;
+    while (spawn != NULL) {
+        if (actor_is_ancestor(spawn, "PlayerSpawn"))
+            break;
+        spawn = spawn->previous_neighbor;
+    }
+    if (spawn == NULL)
+        return NULL;
+
+    // New pawn
+    const char* class = get_pflag_string(player, "class", NULL);
+    if (class == NULL)
+        return NULL;
+    return player->actor = create_actor(
+               room, NULL, class, true, spawn->pos[0], spawn->pos[1], spawn->pos[2], spawn->angle[0], spawn->angle[1],
+               spawn->angle[2], spawn->tag
+           );
 }
 
 // Flags
