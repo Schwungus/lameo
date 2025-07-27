@@ -47,6 +47,7 @@ struct RoomActor {
     vec3 pos, angle;
     uint16_t tag;
     enum RoomActorFlags flags;
+    int special;
 };
 
 void update_bump_map(struct BumpMap*, vec2);

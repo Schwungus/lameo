@@ -1,6 +1,6 @@
 define_actor("Camera", nil, {
     create = function (this)
-        this:create_camera():set_active()
+        this:create_camera()
     end,
 
     create_camera = function (this, camera)

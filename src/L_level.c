@@ -131,6 +131,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     room_actor->angle[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "pitch"));
                     room_actor->angle[2] = (float)yyjson_get_real(yyjson_obj_get(actdef, "roll"));
                     room_actor->tag = (uint16_t)yyjson_get_uint(yyjson_obj_get(actdef, "tag"));
+                    room_actor->special = json_to_table_ref(yyjson_obj_get(actdef, "special"));
 
                     room_actor->flags = RAF_DEFAULT;
                     if (yyjson_get_bool(yyjson_obj_get(actdef, "persistent")))

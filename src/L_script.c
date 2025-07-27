@@ -974,6 +974,52 @@ int function_ref(int idx, const char* name) {
     return LUA_NOREF;
 }
 
+int json_to_table_ref(yyjson_val* obj) {
+    if (!yyjson_is_obj(obj) || yyjson_obj_size(obj) <= 0)
+        return LUA_NOREF;
+    lua_newtable(context);
+
+    size_t i, n;
+    yyjson_val *key, *value;
+    yyjson_obj_foreach(obj, i, n, key, value) {
+        switch (yyjson_get_type(value)) {
+            default:
+                WTF("Unsupported JSON type \"%s\"", yyjson_get_type_desc(value));
+            case YYJSON_TYPE_NULL:
+                lua_pushnil(context);
+                break;
+            case YYJSON_TYPE_BOOL:
+                lua_pushboolean(context, yyjson_get_bool(value));
+                break;
+            case YYJSON_TYPE_NUM:
+                if (yyjson_is_int(value))
+                    lua_pushinteger(context, yyjson_get_int(value));
+                else
+                    lua_pushnumber(context, yyjson_get_num(value));
+                break;
+            case YYJSON_TYPE_STR:
+                lua_pushstring(context, yyjson_get_str(value));
+                break;
+        }
+        lua_setfield(context, -2, yyjson_get_str(key));
+    }
+
+    return create_ref();
+}
+
+void copy_table(int sref, int dref) {
+    lua_rawgeti(context, LUA_REGISTRYINDEX, sref);
+    int src = lua_gettop(context);
+    lua_rawgeti(context, LUA_REGISTRYINDEX, dref);
+    int dest = lua_gettop(context);
+
+    lua_pushnil(context);
+    while (lua_next(context, src) != 0)
+        lua_setfield(context, dest, lua_tostring(context, -2));
+
+    lua_pop(context, 2);
+}
+
 void unreference(int* ref) {
     luaL_unref(context, LUA_REGISTRYINDEX, *ref);
     *ref = LUA_NOREF;

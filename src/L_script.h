@@ -4,6 +4,8 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "L_file.h" // IWYU pragma: keep
+
 #define SCRIPT_PREFIX(name) s_##name
 #define SCRIPT_PUSH(type) lua_push##type
 #define SCRIPT_TO(type) lua_to##type
@@ -223,6 +225,8 @@ int create_ref();
 int create_table_ref();
 int create_pointer_ref(const char*, void*);
 int function_ref(int, const char*);
+int json_to_table_ref(yyjson_val*);
+void copy_table(int, int);
 
 void unreference(int*);
 void unreference_pointer(int*);

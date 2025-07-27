@@ -62,6 +62,7 @@ void destroy_room(struct Room* room) {
     struct RoomActor* it = room->room_actors;
     while (it != NULL) {
         struct RoomActor* next = it->previous;
+        unreference(&(it->special));
         lame_free(&it);
         it = next;
     }

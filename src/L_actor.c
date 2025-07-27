@@ -206,6 +206,8 @@ struct Actor* create_actor_from_type(
     actor->flags = AF_DEFAULT;
     actor->userdata = create_pointer_ref("actor", actor);
     actor->tag = tag;
+    if (base != NULL && base->special != LUA_NOREF)
+        copy_table(base->special, actor->table);
 
     actor->collision_size[0] = actor->bump_size[0] = 8;
     actor->collision_size[1] = actor->bump_size[1] = 16;
