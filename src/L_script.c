@@ -287,6 +287,15 @@ SCRIPT_FUNCTION(actor_is_ancestor) {
     return 1;
 }
 
+SCRIPT_FUNCTION(actor_get_player) {
+    struct Actor* actor = s_check_actor(L, 1);
+    if (actor->player == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, actor->player->userdata);
+    return 1;
+}
+
 SCRIPT_FUNCTION(actor_get_camera) {
     struct Actor* actor = s_check_actor(L, 1);
     if (actor->camera == NULL)
@@ -659,6 +668,90 @@ SCRIPT_FUNCTION(get_player_last_buttons) {
     return 1;
 }
 
+SCRIPT_FUNCTION(get_pflag_type) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    lua_pushinteger(L, get_pflag_type(player, name));
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_pflag_bool) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const bool failsafe = luaL_optinteger(L, 3, false);
+    lua_pushboolean(L, get_pflag_bool(player, name, failsafe));
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_pflag_int) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const int failsafe = (int)luaL_optinteger(L, 3, 0);
+    lua_pushinteger(L, get_pflag_int(player, name, failsafe));
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_pflag_float) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const float failsafe = (float)luaL_optnumber(L, 3, 0);
+    lua_pushnumber(L, get_pflag_float(player, name, failsafe));
+    return 1;
+}
+
+SCRIPT_FUNCTION(get_pflag_string) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const char* failsafe = luaL_optstring(L, 3, NULL);
+    lua_pushstring(L, get_pflag_string(player, name, failsafe));
+    return 1;
+}
+
+SCRIPT_FUNCTION(clear_pflags) {
+    struct Player* player = s_check_player(L, 1);
+    clear_pflags(player);
+    return 0;
+}
+
+SCRIPT_FUNCTION(delete_pflag) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    delete_pflag(player, name);
+    return 0;
+}
+
+SCRIPT_FUNCTION(set_pflag_bool) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const bool value = luaL_checkinteger(L, 3);
+    set_pflag_bool(player, name, value);
+    return 0;
+}
+
+SCRIPT_FUNCTION(set_pflag_int) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const int value = (int)luaL_checkinteger(L, 3);
+    set_pflag_int(player, name, value);
+    return 0;
+}
+
+SCRIPT_FUNCTION(set_pflag_float) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const float value = (float)luaL_checknumber(L, 3);
+    set_pflag_float(player, name, value);
+    return 0;
+}
+
+SCRIPT_FUNCTION(set_pflag_string) {
+    struct Player* player = s_check_player(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+    const char* value = luaL_checkstring(L, 3);
+    set_pflag_string(player, name, value);
+    return 0;
+}
+
 // Flags
 SCRIPT_FLAGS_READ(static);
 SCRIPT_FLAGS_READ(global);
@@ -712,6 +805,19 @@ void script_init() {
         {"get_last_move", s_get_player_last_move},
         {"get_last_aim", s_get_player_last_aim},
         {"get_last_buttons", s_get_player_last_buttons},
+
+        {"get_type", s_get_pflag_type},
+        {"get_bool", s_get_pflag_bool},
+        {"get_int", s_get_pflag_int},
+        {"get_float", s_get_pflag_float},
+        {"get_string", s_get_pflag_string},
+
+        {"clear", s_clear_pflags},
+        {"delete", s_delete_pflag},
+        {"set_bool", s_set_pflag_bool},
+        {"set_int", s_set_pflag_int},
+        {"set_float", s_set_pflag_float},
+        {"set_string", s_set_pflag_string},
 
         {NULL, NULL},
     };
@@ -797,6 +903,8 @@ void script_init() {
     luaL_newmetatable(context, "actor");
     static const luaL_Reg actor_methods[] = {
         {"is_ancestor", s_actor_is_ancestor},
+
+        {"get_player", s_actor_get_player},
 
         {"get_camera", s_actor_get_camera},
         {"create_camera", s_actor_create_camera},

@@ -223,3 +223,67 @@ bool player_enter_room(struct Player* player, uint32_t id) {
 
     return true;
 }
+
+// Flags
+enum FlagTypes get_pflag_type(struct Player* player, const char* name) {
+    switch (SDL_HasProperty(player->flags, name) ? SDL_GetPropertyType(player->flags, name)
+                                                 : SDL_GetPropertyType(default_player_flags, name)) {
+        default:
+            return FT_NULL;
+        case SDL_PROPERTY_TYPE_BOOLEAN:
+            return FT_BOOL;
+        case SDL_PROPERTY_TYPE_NUMBER:
+            return FT_INT;
+        case SDL_PROPERTY_TYPE_FLOAT:
+            return FT_FLOAT;
+        case SDL_PROPERTY_TYPE_STRING:
+            return FT_STRING;
+    }
+}
+
+bool get_pflag_bool(struct Player* player, const char* name, bool failsafe) {
+    return SDL_HasProperty(player->flags, name) ? SDL_GetBooleanProperty(player->flags, name, failsafe)
+                                                : SDL_GetBooleanProperty(default_player_flags, name, failsafe);
+}
+
+int get_pflag_int(struct Player* player, const char* name, int failsafe) {
+    return (int)(SDL_HasProperty(player->flags, name) ? SDL_GetNumberProperty(player->flags, name, failsafe)
+                                                      : SDL_GetNumberProperty(default_player_flags, name, failsafe));
+}
+
+float get_pflag_float(struct Player* player, const char* name, float failsafe) {
+    return SDL_HasProperty(player->flags, name) ? SDL_GetFloatProperty(player->flags, name, failsafe)
+                                                : SDL_GetFloatProperty(default_player_flags, name, failsafe);
+}
+
+const char* get_pflag_string(struct Player* player, const char* name, const char* failsafe) {
+    return SDL_HasProperty(player->flags, name) ? SDL_GetStringProperty(player->flags, name, failsafe)
+                                                : SDL_GetStringProperty(default_player_flags, name, failsafe);
+}
+
+void clear_pflags(struct Player* player) {
+    SDL_DestroyProperties(player->flags);
+    player->flags = SDL_CreateProperties();
+    if (player->flags == 0)
+        FATAL("clear_pflags failed in player %u: %s", player->slot, SDL_GetError());
+}
+
+void delete_pflag(struct Player* player, const char* name) {
+    SDL_ClearProperty(player->flags, name);
+}
+
+void set_pflag_bool(struct Player* player, const char* name, bool value) {
+    SDL_SetBooleanProperty(player->flags, name, value);
+}
+
+void set_pflag_int(struct Player* player, const char* name, int value) {
+    SDL_SetNumberProperty(player->flags, name, value);
+}
+
+void set_pflag_float(struct Player* player, const char* name, float value) {
+    SDL_SetFloatProperty(player->flags, name, value);
+}
+
+void set_pflag_string(struct Player* player, const char* name, const char* value) {
+    SDL_SetStringProperty(player->flags, name, value);
+}

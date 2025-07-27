@@ -2,6 +2,7 @@
 
 #include "L_actor.h"
 #include "L_file.h" // IWYU pragma: keep
+#include "L_flags.h"
 #include "L_room.h"
 
 #define MAX_PLAYERS 4
@@ -66,3 +67,16 @@ struct Player* get_active_players();
 
 bool player_enter_room(struct Player*, uint32_t);
 bool player_leave_room(struct Player*);
+
+enum FlagTypes get_pflag_type(struct Player*, const char*);
+bool get_pflag_bool(struct Player*, const char*, bool);
+int get_pflag_int(struct Player*, const char*, int);
+float get_pflag_float(struct Player*, const char*, float);
+const char* get_pflag_string(struct Player*, const char*, const char*);
+
+void clear_pflags(struct Player*);
+void delete_pflag(struct Player*, const char*);
+void set_pflag_bool(struct Player*, const char*, bool);
+void set_pflag_int(struct Player*, const char*, int);
+void set_pflag_float(struct Player*, const char*, float);
+void set_pflag_string(struct Player*, const char*, const char*);
