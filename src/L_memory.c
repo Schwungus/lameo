@@ -335,9 +335,6 @@ static void expand_hash_map(struct HashMap* map, const char* filename, int line)
     _lame_free((void**)&(map->items), filename, line);
     map->items = items;
     map->capacity = new_capacity;
-#ifndef NDEBUG
-    log_generic(src_basename(filename), line, "Increased HashMap capacity to %u", new_capacity);
-#endif
 }
 
 bool _to_hash_map(struct HashMap* map, const char* key, void* value, bool nuke, const char* filename, int line) {
@@ -466,9 +463,6 @@ static void expand_int_map(struct IntMap* map, const char* filename, int line) {
     _lame_free((void**)&(map->items), filename, line);
     map->items = items;
     map->capacity = new_capacity;
-#ifndef NDEBUG
-    log_generic(src_basename(filename), line, "Increased IntMap capacity to %u", new_capacity);
-#endif
 }
 
 bool _to_int_map(struct IntMap* map, uint32_t key, void* value, bool nuke, const char* filename, int line) {

@@ -583,9 +583,13 @@ void set_main_texture_direct(GLuint texture) {
 void main_vertex(GLfloat x, GLfloat y, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a, GLfloat u, GLfloat v) {
     if (main_batch.vertex_count >= main_batch.vertex_capacity) {
         submit_main_batch();
-        main_batch.vertex_capacity *= 2;
-        DEBUG("Reallocated main batch VBO to %u vertices", main_batch.vertex_capacity);
-        lame_realloc(&main_batch.vertices, main_batch.vertex_capacity * sizeof(struct MainVertex));
+
+        const size_t new_size = main_batch.vertex_capacity * 2;
+        if (new_size < main_batch.vertex_capacity)
+            FATAL("Capacity overflow in main batch VBO");
+        lame_realloc(&main_batch.vertices, new_size * sizeof(struct MainVertex));
+        main_batch.vertex_capacity = new_size;
+
         glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
         glBufferData(
             GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct MainVertex) * main_batch.vertex_capacity), NULL, GL_DYNAMIC_DRAW
@@ -852,9 +856,13 @@ void world_vertex(
 ) {
     if (world_batch.vertex_count >= world_batch.vertex_capacity) {
         submit_world_batch();
-        world_batch.vertex_capacity *= 2;
-        DEBUG("Reallocated world batch VBO to %u vertices", world_batch.vertex_capacity);
-        lame_realloc(&world_batch.vertices, world_batch.vertex_capacity * sizeof(struct WorldVertex));
+
+        const size_t new_size = world_batch.vertex_capacity * 2;
+        if (new_size < world_batch.vertex_capacity)
+            FATAL("Capacity overflow in world batch VBO");
+        lame_realloc(&world_batch.vertices, new_size * sizeof(struct WorldVertex));
+        world_batch.vertex_capacity = new_size;
+
         glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
         glBufferData(
             GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(struct WorldVertex) * world_batch.vertex_capacity), NULL,
@@ -899,7 +907,6 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     if (camera->surface == NULL) {
         camera->surface = create_surface(true, width, height, true, true);
         camera->surface_ref = create_ref();
-        DEBUG("Validating camera in \"%s\"", camera->actor->type->name);
     } else {
         resize_surface(camera->surface, width, height);
     }
@@ -1157,7 +1164,6 @@ void resize_surface(struct Surface* surface, uint16_t width, uint16_t height) {
     dispose_surface(surface);
     surface->size[0] = width;
     surface->size[1] = height;
-    DEBUG("Resized surface %u to %ux%u px", surface, width, height);
 }
 
 void clear_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {

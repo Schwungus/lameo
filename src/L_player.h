@@ -67,6 +67,7 @@ struct Player* get_active_players();
 
 bool player_enter_room(struct Player*, uint32_t);
 bool player_leave_room(struct Player*);
+struct Actor* respawn_player(struct Player*);
 
 enum FlagTypes get_pflag_type(struct Player*, const char*);
 bool get_pflag_bool(struct Player*, const char*, bool);
