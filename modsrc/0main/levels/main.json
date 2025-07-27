@@ -8,12 +8,11 @@
                 { "type": "Sky" },
                 { "type": "Main" },
                 {
-                    "type": "Camera",
+                    "type": "PlayerSpawn",
                     "x": 28.0,
                     "y": 28.0,
                     "z": -7.0,
-                    "yaw": 225.0,
-                    "special": { "active": true }
+                    "yaw": 225.0
                 }
             ]
         },
@@ -22,7 +21,7 @@
             "id": 25,
             "actors": [
                 {
-                    "type": "Camera",
+                    "type": "PlayerSpawn",
                     "x": -56.0,
                     "z": -7.0
                 },

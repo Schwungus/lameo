@@ -4,5 +4,9 @@
 
     "static": {
         "description": "Hi! I'm internal. Don't touch me, you'll get bludgeoned."
+    },
+
+    "player": {
+        "class": "Player"
     }
 }

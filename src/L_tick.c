@@ -1,6 +1,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 
+#include "L_config.h"
 #include "L_input.h"
 #include "L_internal.h"
 #include "L_log.h"
@@ -87,15 +88,22 @@ void tick_update() {
                     while (player != NULL) {
                         player->last_input = player->input;
 
-                        player->input.move[0] =
-                            (int16_t)(input_value(VERB_DOWN, player->slot) - input_value(VERB_UP, player->slot));
-                        player->input.move[1] =
-                            (int16_t)(input_value(VERB_RIGHT, player->slot) - input_value(VERB_LEFT, player->slot));
+                        const float walk = (input_value(VERB_WALK, player->slot) == 0) ? 1 : 0.5f;
+                        player->input.move[0] = (int16_t)((float)(input_value(VERB_DOWN, player->slot) -
+                                                                  input_value(VERB_UP, player->slot)) *
+                                                          walk);
+                        player->input.move[1] = (int16_t)((float)(input_value(VERB_RIGHT, player->slot) -
+                                                                  input_value(VERB_LEFT, player->slot)) *
+                                                          walk);
 
-                        player->input.aim[0] = (int16_t)(input_value(VERB_AIM_RIGHT, player->slot) -
-                                                         input_value(VERB_AIM_LEFT, player->slot));
-                        player->input.aim[1] = (int16_t)(input_value(VERB_AIM_DOWN, player->slot) -
-                                                         input_value(VERB_AIM_UP, player->slot));
+                        player->input.aim[0] =
+                            (int16_t)((float)(input_value(VERB_AIM_RIGHT, player->slot) -
+                                              input_value(VERB_AIM_LEFT, player->slot)) *
+                                      get_float_cvar("in_aim_x") * (float)(get_bool_cvar("in_invert_x") ? -1 : 1));
+                        player->input.aim[1] =
+                            (int16_t)((float)(input_value(VERB_AIM_DOWN, player->slot) -
+                                              input_value(VERB_AIM_UP, player->slot)) *
+                                      get_float_cvar("in_aim_y") * (float)(get_bool_cvar("in_invert_y") ? -1 : 1));
 
                         player->input.buttons = PB_NONE;
                         if (input_value(VERB_JUMP, player->slot))

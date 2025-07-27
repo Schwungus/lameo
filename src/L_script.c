@@ -630,15 +630,15 @@ SCRIPT_FUNCTION(get_player_status) {
 
 SCRIPT_FUNCTION(get_player_move) {
     const struct Player* player = s_check_player(L, 1);
-    lua_pushinteger(L, player->input.move[0]);
-    lua_pushinteger(L, player->input.move[1]);
+    lua_pushnumber(L, (float)(player->input.move[0]) * PLAYER_MOVE_FACTOR);
+    lua_pushnumber(L, (float)(player->input.move[1]) * PLAYER_MOVE_FACTOR);
     return 2;
 }
 
 SCRIPT_FUNCTION(get_player_aim) {
     const struct Player* player = s_check_player(L, 1);
-    lua_pushinteger(L, player->input.aim[0]);
-    lua_pushinteger(L, player->input.aim[1]);
+    lua_pushnumber(L, (float)(player->input.aim[0]) * PLAYER_AIM_FACTOR);
+    lua_pushnumber(L, (float)(player->input.aim[1]) * PLAYER_AIM_FACTOR);
     return 2;
 }
 
@@ -650,15 +650,15 @@ SCRIPT_FUNCTION(get_player_buttons) {
 
 SCRIPT_FUNCTION(get_player_last_move) {
     const struct Player* player = s_check_player(L, 1);
-    lua_pushinteger(L, player->last_input.move[0]);
-    lua_pushinteger(L, player->last_input.move[1]);
+    lua_pushnumber(L, (float)(player->last_input.move[0]) * PLAYER_MOVE_FACTOR);
+    lua_pushnumber(L, (float)(player->last_input.move[1]) * PLAYER_MOVE_FACTOR);
     return 2;
 }
 
 SCRIPT_FUNCTION(get_player_last_aim) {
     const struct Player* player = s_check_player(L, 1);
-    lua_pushinteger(L, player->last_input.aim[0]);
-    lua_pushinteger(L, player->last_input.aim[1]);
+    lua_pushnumber(L, (float)(player->last_input.aim[0]) * PLAYER_AIM_FACTOR);
+    lua_pushnumber(L, (float)(player->last_input.aim[1]) * PLAYER_AIM_FACTOR);
     return 2;
 }
 
@@ -758,6 +758,34 @@ SCRIPT_FLAGS_READ(global);
 SCRIPT_FLAGS_WRITE(global);
 SCRIPT_FLAGS_READ(local);
 SCRIPT_FLAGS_WRITE(local);
+
+// Math
+SCRIPT_FUNCTION(lengthdir) {
+    const float len = (float)luaL_checknumber(L, 1);
+    const float dir = (float)luaL_checknumber(L, 2);
+    const float rad = glm_rad(dir);
+
+    lua_pushnumber(L, SDL_cosf(rad) * len);
+    lua_pushnumber(L, SDL_sinf(rad) * len);
+
+    return 2;
+}
+
+SCRIPT_FUNCTION(lengthdir_3d) {
+    const float len = (float)luaL_checknumber(L, 1);
+    const float yaw = (float)luaL_checknumber(L, 2);
+    const float pitch = (float)luaL_checknumber(L, 3);
+
+    const float yrad = glm_rad(yaw);
+    const float prad = glm_rad(pitch);
+    const float hor = SDL_cosf(prad);
+
+    lua_pushnumber(L, (SDL_cosf(yrad) * len) * hor);
+    lua_pushnumber(L, (SDL_sinf(yrad) * len) * hor);
+    lua_pushnumber(L, -SDL_sinf(prad) * len);
+
+    return 3;
+}
 
 // Meat and bones
 void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
@@ -1015,6 +1043,10 @@ void script_init() {
     EXPOSE_FLAGS_WRITE(global);
     EXPOSE_FLAGS_READ(local);
     EXPOSE_FLAGS_WRITE(local);
+
+    // Math
+    EXPOSE_FUNCTION(lengthdir);
+    EXPOSE_FUNCTION(lengthdir_3d);
 
     INFO("Opened");
 }

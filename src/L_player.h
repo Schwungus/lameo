@@ -10,6 +10,9 @@
 #define IS_INVALID_PSLOT(slot) (slot < 0 || slot >= MAX_PLAYERS)
 #define IS_VALID_PSLOT(slot) (slot >= 0 && slot < MAX_PLAYERS)
 
+#define PLAYER_MOVE_FACTOR (float)(1.0f / 32767.0f)
+#define PLAYER_AIM_FACTOR (float)(360.0f / 32767.0f)
+
 enum PlayerStatus {
     PS_INACTIVE,
     PS_READY,

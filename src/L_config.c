@@ -27,6 +27,13 @@ void config_init(const char* confpath, const char* contpath) {
     SDL_SetBooleanProperty(default_cvars, "vid_vsync", false);
     SDL_SetNumberProperty(default_cvars, "vid_maxfps", 60);
 
+    SDL_SetBooleanProperty(default_cvars, "in_invert_x", false);
+    SDL_SetBooleanProperty(default_cvars, "in_invert_y", false);
+    SDL_SetFloatProperty(default_cvars, "in_aim_x", 0.016f);
+    SDL_SetFloatProperty(default_cvars, "in_aim_y", 0.016f);
+    SDL_SetFloatProperty(default_cvars, "in_mouse_x", 0.016f);
+    SDL_SetFloatProperty(default_cvars, "in_mouse_y", 0.016f);
+
     SDL_strlcpy(config_path, confpath == NULL ? get_pref_path("config.json") : confpath, sizeof(config_path));
     SDL_strlcpy(controls_path, contpath == NULL ? get_pref_path("controls.json") : contpath, sizeof(controls_path));
     INFO("\nConfig: %s\nControls: %s", config_path, controls_path);

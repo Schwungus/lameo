@@ -2,8 +2,8 @@ dummy = 0
 
 define_actor("Main", nil, {
     create = function (this)
-        this.dummy = dummy
-        dummy = math.fmod(dummy + 8, 160)
+        this.dummy = get_local_int("dummy", 0)
+        set_local_int("dummy", (get_local_int("dummy", 0) + 8) % 160)
         this.dummy2 = 0
 
         local model = this:create_model(fetch_model("video"))
@@ -22,23 +22,6 @@ define_actor("Main", nil, {
 
     tick = function (this)
         this.dummy2 = this.dummy2 + (this.dummy * 0.1)
-
-        local player = get_player(0)
-
-        local buttons = player:get_buttons()
-        local last_buttons = player:get_last_buttons()
-        if (buttons & PB_INVENTORY1) == PB_INVENTORY1 and (last_buttons & PB_INVENTORY1) ~= PB_INVENTORY1 then
-            print(player:get_int("hp", 0))
-        end
-        if (buttons & PB_INVENTORY2) == PB_INVENTORY2 and (last_buttons & PB_INVENTORY2) ~= PB_INVENTORY2 then
-            player:set_int("hp", math.floor(player:get_int("hp") / 2))
-        end
-
-        local move = {player:get_move()}
-        this:set_pos(this:get_x() - (this:get_roll() * 0.01) + (move[1] / 32767), this:get_y() + (move[2] / 32767))
-
-        local aim = {player:get_aim()}
-        this:set_angle(this:get_yaw() + (aim[1] / 32767) * 10, this:get_pitch() + (aim[2] / 32767) * 10)
     end,
 
     draw_ui = function (this)
