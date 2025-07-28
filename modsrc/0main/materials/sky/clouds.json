@@ -1,0 +1,6 @@
+{
+    "texture": "sky/clouds",
+    "alpha_test": 0.0,
+    "scroll": [0.003, 0.003],
+    "bright": 1.0
+}
