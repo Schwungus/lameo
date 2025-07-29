@@ -29,6 +29,7 @@ void destroy_sample(FMOD_SOUND*);
 void set_listeners(int);
 void update_listener(int, const float*, const float*, const float*, const float*);
 
+void pause_world_sounds(bool);
 FMOD_CHANNELGROUP* create_world_sound_pool();
 void destroy_world_sound_pool(FMOD_CHANNELGROUP*);
 FMOD_CHANNELGROUP* create_emitter(struct Actor*);

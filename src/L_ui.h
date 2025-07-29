@@ -70,6 +70,7 @@ struct UI* hid_to_ui(UIID);
 bool ui_is_ancestor(struct UI*, const char*);
 struct UI* get_ui_root();
 struct UI* get_ui_top();
+bool ui_blocking();
 
 void update_ui_input();
 const vec2* get_ui_cursor();

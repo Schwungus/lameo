@@ -1,4 +1,5 @@
 #include "L_ui.h"
+#include "L_audio.h"
 #include "L_input.h"
 #include "L_log.h"
 #include "L_memory.h"
@@ -158,7 +159,13 @@ struct UI* create_ui(struct UI* parent, const char* name) {
 
     if (type->create != LUA_NOREF)
         execute_ref_in(type->create, ui->userdata, name);
-    return hid_to_ui(hid) != NULL ? ui : NULL;
+
+    if (hid_to_ui(hid) != NULL) {
+        if (ui_blocking())
+            pause_world_sounds(true);
+        return ui;
+    }
+    return NULL;
 }
 
 void destroy_ui(struct UI* ui) {
@@ -173,13 +180,16 @@ void destroy_ui(struct UI* ui) {
     if (ui_top == ui)
         ui_top = ui->parent;
 
-    if (ui->parent != NULL)
-        ui->parent->child = NULL;
     if (ui->child != NULL)
         destroy_ui(ui->child);
+    if (ui->parent != NULL)
+        ui->parent->child = NULL;
 
     destroy_handle(ui_handles, ui->hid);
     lame_free(&ui);
+
+    if (!ui_blocking())
+        pause_world_sounds(false);
 }
 
 struct UI* hid_to_ui(UIID hid) {
@@ -193,7 +203,6 @@ bool ui_is_ancestor(struct UI* ui, const char* name) {
             return true;
         it = it->parent;
     }
-
     return false;
 }
 
@@ -203,6 +212,16 @@ struct UI* get_ui_root() {
 
 struct UI* get_ui_top() {
     return ui_top;
+}
+
+bool ui_blocking() {
+    struct UI* ui = ui_root;
+    while (ui != NULL) {
+        if (ui->flags & UIF_BLOCKING)
+            return true;
+        ui = ui->child;
+    }
+    return false;
 }
 
 void update_ui_input() {

@@ -95,6 +95,10 @@ void update_listener(int listener, const float* pos, const float* vel, const flo
     );
 }
 
+void pause_world_sounds(bool pause) {
+    FMOD_ChannelGroup_SetPaused(world_group, pause);
+}
+
 FMOD_CHANNELGROUP* create_world_sound_pool() {
     FMOD_CHANNELGROUP* pool = NULL;
     FMOD_System_CreateChannelGroup(speaker, NULL, &pool);
