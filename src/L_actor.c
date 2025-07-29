@@ -155,6 +155,10 @@ struct ActorType* get_actor_type(const char* name) {
     return (struct ActorType*)from_hash_map(actor_types, name);
 }
 
+struct Actor* get_actors() {
+    return actors;
+}
+
 struct Actor* create_actor(
     struct Room* room, struct RoomActor* base, const char* name, bool invoke_create, float x, float y, float z,
     float yaw, float pitch, float roll, uint16_t tag
@@ -342,6 +346,8 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
 
     destroy_actor_camera(actor);
     destroy_actor_model(actor);
+    if (actor->emitter != NULL)
+        destroy_emitter(actor->emitter);
 
     destroy_handle(actor_handles, actor->hid);
     lame_free(&actor);

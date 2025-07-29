@@ -136,6 +136,9 @@ struct Actor {
     float mass;                              // Push priority
     size_t bump_index;                       // Cell index in bump map
     struct Actor *previous_bump, *next_bump; // Position in bump list (previous-order)
+
+    FMOD_CHANNELGROUP* emitter;
+    FMOD_CHANNEL* voice;
 };
 
 void actor_init();
@@ -144,6 +147,7 @@ void actor_teardown();
 int define_actor(lua_State*);
 bool load_actor(const char*);
 struct ActorType* get_actor_type(const char*);
+struct Actor* get_actors();
 
 struct Actor*
 create_actor(struct Room*, struct RoomActor*, const char*, bool, float, float, float, float, float, float, uint16_t);

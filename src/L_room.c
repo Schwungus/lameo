@@ -61,6 +61,7 @@ void destroy_room(struct Room* room) {
         lame_free(&(room->bump.chunks));
 
     CLOSE_POINTER(room->model, destroy_model_instance);
+    CLOSE_POINTER(room->sounds, destroy_world_sound_pool);
 
     lame_free(&room);
 }
@@ -108,4 +109,6 @@ void deactivate_room(struct Room* room) {
             destroy_actor(it, false, false);
         it = next;
     }
+
+    FMOD_ChannelGroup_Stop(room->sounds);
 }

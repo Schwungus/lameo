@@ -298,7 +298,7 @@ void video_update() {
             }
         }
         if (camera != NULL)
-            main_surface(render_camera(camera, display.width, display.height), 0, 0, 0);
+            main_surface(render_camera(camera, display.width, display.height, true, NULL, 0), 0, 0, 0);
 
         struct Player* player = get_active_players();
         while (player != NULL) {
@@ -903,7 +903,10 @@ void set_active_camera(struct ActorCamera* camera) {
     active_camera = camera;
 }
 
-struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16_t height) {
+struct Surface* render_camera(
+    struct ActorCamera* camera, uint16_t width, uint16_t height, bool draw_screen, struct Shader* world_shader,
+    int listener
+) {
     if (camera->surface == NULL) {
         camera->surface = create_surface(true, width, height, true, true);
         camera->surface_ref = create_ref();
@@ -929,6 +932,8 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     glm_vec3_copy(forward_matrix[3], forward_vector);
     glm_mat4_mul(lookie, up_axis, up_matrix);
     glm_vec3_copy(up_matrix[3], up_vector);
+    if (listener >= 0)
+        update_listener(listener, camera->pos, GLM_VEC3_ZERO, forward_vector, up_vector);
 
     static vec3 look_from, look_to;
     glm_vec3_copy(camera->pos, look_from);
@@ -978,7 +983,7 @@ struct Surface* render_camera(struct ActorCamera* camera, uint16_t width, uint16
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
     glStencilMask(0xFF);
 
-    set_shader(NULL);
+    set_shader(world_shader);
     set_float_uniform("u_time", u_time);
     set_vec4_uniform("u_wind", room->wind[0], room->wind[1], room->wind[2], room->wind[3]);
 

@@ -3,6 +3,7 @@ dummy = 0
 define_actor("Main", nil, {
     load = function (this)
         load_model("video")
+        load_sound("kaupunki")
     end,
 
     create = function (this)
@@ -20,6 +21,8 @@ define_actor("Main", nil, {
                 model:set_animation(fetch_animation("player/walk"), 0, 1)
             end
         end
+
+        this:play_sound(get_sound("kaupunki"), 1, 128)
     end,
 
     on_destroy = function (this)

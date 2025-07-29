@@ -1,6 +1,7 @@
 #pragma once
 
 #include "L_actor.h"
+#include "L_audio.h" // IWYU pragma: keep
 #include "L_level.h"
 #include "L_math.h" // IWYU pragma: keep
 
@@ -35,6 +36,7 @@ struct Room {
 
     struct ModelInstance* model;
     struct Actor* sky;
+    FMOD_CHANNELGROUP* sounds;
 
     vec4 wind; // (0-2) Wind direction and (3) factor
 };

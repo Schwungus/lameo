@@ -191,7 +191,7 @@ void world_vertex(
 
 struct ActorCamera* get_active_camera();
 void set_active_camera(struct ActorCamera*);
-struct Surface* render_camera(struct ActorCamera*, uint16_t, uint16_t);
+struct Surface* render_camera(struct ActorCamera*, uint16_t, uint16_t, bool, struct Shader*, int);
 
 // Fonts
 GLfloat string_width(const char*, struct Font*, GLfloat);

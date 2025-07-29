@@ -233,9 +233,8 @@ SCRIPT_FUNCTION(play_ui_sound) {
     const float pitch = (float)luaL_optnumber(L, 4, 1);
     const float gain = (float)luaL_optnumber(L, 5, 1);
 
-    play_ui_sound(sound, loop, offset, pitch, gain);
-
-    return 0;
+    lua_pushlightuserdata(L, play_ui_sound(sound, loop, offset, pitch, gain));
+    return 1;
 }
 
 // Actor
@@ -448,6 +447,20 @@ SCRIPT_FUNCTION(actor_to_sky) {
     struct Actor* actor = s_check_actor(L, 1);
     actor_to_sky(actor);
     return 0;
+}
+
+SCRIPT_FUNCTION(play_actor_sound) {
+    struct Actor* actor = s_check_actor(L, 1);
+    struct Sound* sound = luaL_opt(L, s_check_sound, 2, NULL);
+    const float min_distance = (float)luaL_optnumber(L, 3, 1);
+    const float max_distance = (float)luaL_optnumber(L, 4, 1);
+    const bool loop = (bool)luaL_optnumber(L, 5, false);
+    const uint32_t offset = luaL_optinteger(L, 6, 0);
+    const float pitch = (float)luaL_optnumber(L, 7, 1);
+    const float gain = (float)luaL_optnumber(L, 8, 1);
+
+    lua_pushlightuserdata(L, play_actor_sound(actor, sound, min_distance, max_distance, loop, offset, pitch, gain));
+    return 1;
 }
 
 SCRIPT_FUNCTION(camera_index) {
@@ -941,6 +954,7 @@ void script_init() {
         {"get_model", s_actor_get_model},
         {"create_model", s_actor_create_model},
         {"destroy_model", s_actor_destroy_model},
+        {"to_sky", s_actor_to_sky},
 
         {"get_pos", s_actor_get_pos},
         {"get_x", s_actor_get_pos_x},
@@ -960,7 +974,7 @@ void script_init() {
         {"get_roll", s_actor_get_angle_z},
         {"set_angle", s_actor_set_angle},
 
-        {"to_sky", s_actor_to_sky},
+        {"play_sound", s_play_actor_sound},
 
         {NULL, NULL},
     };

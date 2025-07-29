@@ -2,6 +2,7 @@
 
 #include <fmod.h>
 
+#include "L_actor.h"
 #include "L_asset.h"
 
 enum VolumeSlots {
@@ -16,6 +17,8 @@ struct MusicInstance {
     uint32_t priority;
 };
 
+struct Actor; // Fixes a warning in L_script.h
+
 void audio_init();
 void audio_update();
 void audio_teardown();
@@ -23,7 +26,16 @@ void audio_teardown();
 void load_sample(const char*, FMOD_SOUND**);
 void destroy_sample(FMOD_SOUND*);
 
+void set_listeners(int);
+void update_listener(int, const float*, const float*, const float*, const float*);
+
+FMOD_CHANNELGROUP* create_world_sound_pool();
+void destroy_world_sound_pool(FMOD_CHANNELGROUP*);
+FMOD_CHANNELGROUP* create_emitter(struct Actor*);
+void destroy_emitter(FMOD_CHANNELGROUP*);
+
 FMOD_CHANNEL* play_ui_sound(struct Sound*, bool, uint32_t, float, float);
+FMOD_CHANNEL* play_actor_sound(struct Actor*, struct Sound*, float, float, bool, uint32_t, float, float);
 
 void load_stream(const char*, FMOD_SOUND**);
 void destroy_stream(FMOD_SOUND*);

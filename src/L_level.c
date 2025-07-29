@@ -77,6 +77,7 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
 
             room->bump.size[0] = room->bump.size[1] = 1;
             room->wind[0] = 1;
+            room->sounds = create_world_sound_pool();
 
             // Properties
             roomval = yyjson_obj_get(roomdef, "model");
