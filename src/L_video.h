@@ -103,7 +103,9 @@ struct Surface {
 struct ModelInstance {
     struct Model* model;
     int userdata;
+
     vec3 pos, angle, scale;
+    vec3 draw_pos[2], draw_angle[2], draw_scale[2];
 
     bool* hidden;
     struct Material** override_materials;
@@ -115,6 +117,8 @@ struct ModelInstance {
 
     versor *translations, *rotations;
     DualQuaternion *transforms, *sample;
+
+    DualQuaternion* draw_sample[2];
 };
 
 void video_init(bool);

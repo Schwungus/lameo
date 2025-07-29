@@ -5,3 +5,5 @@
 void tick_init();
 void tick_update();
 void tick_teardown();
+
+float get_ticks();

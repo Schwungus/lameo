@@ -922,9 +922,9 @@ struct Surface* render_camera(
     // Build matrices
     static mat4 lookie;
     glm_mat4_identity(lookie);
-    glm_spin(lookie, glm_rad(camera->angle[0]), GLM_ZUP);
-    glm_spin(lookie, glm_rad(camera->angle[1]), GLM_YUP);
-    glm_spin(lookie, glm_rad(camera->angle[2]), GLM_XUP);
+    glm_spin(lookie, glm_rad(camera->draw_angle[1][0]), GLM_ZUP);
+    glm_spin(lookie, glm_rad(camera->draw_angle[1][1]), GLM_YUP);
+    glm_spin(lookie, glm_rad(camera->draw_angle[1][2]), GLM_XUP);
 
     static mat4 forward_matrix, up_matrix;
     static vec3 forward_vector, up_vector;
@@ -932,18 +932,18 @@ struct Surface* render_camera(
     glm_vec3_copy(forward_matrix[3], forward_vector);
     glm_mat4_mul(lookie, up_axis, up_matrix);
     glm_vec3_copy(up_matrix[3], up_vector);
-    if (listener >= 0)
-        update_listener(listener, camera->pos, GLM_VEC3_ZERO, forward_vector, up_vector);
 
     static vec3 look_from, look_to;
-    glm_vec3_copy(camera->pos, look_from);
+    glm_vec3_copy(camera->draw_pos[1], look_from);
+    if (listener >= 0)
+        update_listener(listener, look_from, GLM_VEC3_ZERO, forward_vector, up_vector);
     glm_vec3_add(forward_vector, look_from, look_to);
 
     glm_lookat(look_from, look_to, up_vector, view_matrix);
     if (camera->flags & CF_ORTHOGONAL)
         glm_ortho(0, width, height, 0, 1, 32000, projection_matrix);
     else
-        glm_perspective(glm_rad(camera->fov), (float)width / (float)height, 1, 32000, projection_matrix);
+        glm_perspective(glm_rad(camera->draw_fov[1]), (float)width / (float)height, 1, 32000, projection_matrix);
 
     // Render room
     set_render_stage(RT_WORLD);
@@ -1193,6 +1193,7 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->model = model;
     inst->userdata = create_pointer_ref("model_instance", inst);
     glm_vec3_one(inst->scale);
+    glm_vec3_one(inst->draw_scale[0]);
 
     inst->hidden = lame_alloc_clean(model->num_submodels * sizeof(bool));
     inst->override_materials = (struct Material**)lame_alloc_clean(model->num_materials * sizeof(struct Material*));
@@ -1214,14 +1215,18 @@ void destroy_model_instance(struct ModelInstance* inst) {
     FREE_POINTER(inst->rotations);
     FREE_POINTER(inst->transforms);
     FREE_POINTER(inst->sample);
+    FREE_POINTER(inst->draw_sample[0]);
+    FREE_POINTER(inst->draw_sample[1]);
 
     lame_free(&inst);
 }
 
-static void animate_model_instance(struct ModelInstance* inst) {
+static void animate_model_instance(struct ModelInstance* inst, bool snap) {
     const struct Animation* animation = inst->animation;
     if (inst->animation == NULL)
         return;
+    if (snap)
+        lame_copy(inst->draw_sample[0], inst->sample, inst->model->num_bones * sizeof(DualQuaternion));
 
     static DualQuaternion transframe[MAX_BONES] = {0};
     float frm = SDL_fabsf(inst->frame);
@@ -1238,7 +1243,7 @@ static void animate_model_instance(struct ModelInstance* inst) {
             frame = frame_a;
         } else {
             float blend = frm - SDL_floorf(frm);
-            for (size_t i = 0; i < animation->num_nodes; i++)
+            for (size_t i = 0; i < animation->num_bones; i++)
                 dq_lerp(frame_a[i], frame_b[i], blend, transframe[i]);
             frame = transframe;
         }
@@ -1309,9 +1314,13 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
 
             inst->transforms = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             inst->sample = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            inst->draw_sample[0] = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
+            inst->draw_sample[1] = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             for (size_t i = 0; i < animation->num_nodes; i++) {
                 dq_identity(inst->transforms[i]);
                 dq_identity(inst->sample[i]);
+                dq_identity(inst->draw_sample[0][i]);
+                dq_identity(inst->draw_sample[1][i]);
             }
         } else if (inst->animation != NULL && inst->animation->num_nodes < animation->num_nodes) {
             lame_realloc(&(inst->translations), animation->num_nodes * sizeof(versor));
@@ -1323,9 +1332,13 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
 
             lame_realloc(&(inst->transforms), animation->num_nodes * sizeof(DualQuaternion));
             lame_realloc(&(inst->sample), animation->num_nodes * sizeof(DualQuaternion));
+            lame_realloc(&(inst->draw_sample[0]), animation->num_nodes * sizeof(DualQuaternion));
+            lame_realloc(&(inst->draw_sample[1]), animation->num_nodes * sizeof(DualQuaternion));
             for (size_t i = inst->animation->num_nodes; i < animation->num_nodes; i++) {
                 dq_identity(inst->transforms[i]);
                 dq_identity(inst->sample[i]);
+                dq_identity(inst->draw_sample[0][i]);
+                dq_identity(inst->draw_sample[1][i]);
             }
         }
     }
@@ -1334,7 +1347,7 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
     inst->frame = frame;
     inst->loop = loop;
     if (animation != NULL)
-        animate_model_instance(inst);
+        animate_model_instance(inst, true);
 }
 
 void translate_model_instance_node(struct ModelInstance* inst, size_t node_index, versor quat) {
@@ -1354,7 +1367,7 @@ void tick_model_instance(struct ModelInstance* inst) {
     inst->frame += animation->frame_speed * inst->frame_speed;
     if (!inst->loop && SDL_fabsf(inst->frame) >= (float)(animation->num_frames - 1))
         inst->frame = (float)(animation->num_frames - 1);
-    animate_model_instance(inst);
+    animate_model_instance(inst, false);
 }
 
 void submit_model_instance(struct ModelInstance* inst) {
@@ -1364,11 +1377,11 @@ void submit_model_instance(struct ModelInstance* inst) {
     set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_stencil", 1, 1, 1, 0);
 
-    if (inst->animation != NULL && inst->sample != NULL) {
+    if (inst->animation != NULL && inst->draw_sample[1] != NULL) {
         set_int_uniform("u_animated", 1);
         glUniform4fv(
             (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_sample[0]", -1)),
-            (GLsizei)(2 * inst->model->num_bones), (const GLfloat*)(inst->sample)
+            (GLsizei)(2 * inst->model->num_bones), (const GLfloat*)(inst->draw_sample[1])
         );
     } else {
         set_int_uniform("u_animated", 0);
@@ -1433,11 +1446,13 @@ void submit_model_instance(struct ModelInstance* inst) {
 
 void draw_model_instance(struct ModelInstance* inst) {
     glm_mat4_identity(model_matrix);
-    glm_scale(model_matrix, inst->scale);
-    glm_spin(model_matrix, glm_rad(inst->angle[0]), GLM_ZUP);
-    glm_spin(model_matrix, glm_rad(inst->angle[1]), GLM_YUP);
-    glm_spin(model_matrix, glm_rad(inst->angle[2]), GLM_XUP);
-    glm_translated(model_matrix, inst->pos);
+
+    glm_scale(model_matrix, inst->draw_scale[1]);
+    glm_spin(model_matrix, glm_rad(inst->draw_angle[1][0]), GLM_ZUP);
+    glm_spin(model_matrix, glm_rad(inst->draw_angle[1][1]), GLM_YUP);
+    glm_spin(model_matrix, glm_rad(inst->draw_angle[1][2]), GLM_XUP);
+    glm_translated(model_matrix, inst->draw_pos[1]);
+
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 

@@ -238,6 +238,10 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
     glm_vec3_copy(actor->angle, camera->angle);
     camera->fov = 45;
 
+    glm_vec3_copy(actor->pos, camera->draw_pos[0]);
+    glm_vec3_copy(actor->angle, camera->draw_angle[0]);
+    camera->draw_fov[0] = camera->fov;
+
     camera->userdata = create_pointer_ref("camera", camera);
     camera->table = create_table_ref();
     camera->flags = CF_DEFAULT;
@@ -260,6 +264,8 @@ struct ModelInstance* create_actor_model(struct Actor* actor, struct Model* mode
     struct ModelInstance* inst = create_model_instance(model);
     glm_vec3_copy(actor->pos, inst->pos);
     glm_vec3_copy(actor->angle, inst->angle);
+    glm_vec3_copy(actor->draw_pos[0], inst->draw_pos[0]);
+    glm_vec3_copy(actor->draw_angle[0], inst->draw_angle[0]);
 
     return (actor->model = inst);
 }

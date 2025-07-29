@@ -81,6 +81,9 @@ struct ActorCamera {
     vec3 pos, angle;
     float fov, range;
 
+    vec3 draw_pos[2], draw_angle[2];
+    float draw_fov[2];
+
     int table; // User-specific
     enum CameraFlags flags;
 
@@ -126,6 +129,8 @@ struct Actor {
 
     vec3 pos;   // Read-only
     vec3 angle; // (0) Yaw, (1) pitch and (2) roll
+    vec3 draw_pos[2], draw_angle[2];
+
     vec3 vel, friction, gravity;
 
     int table; // User-specific

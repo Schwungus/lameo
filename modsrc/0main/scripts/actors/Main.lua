@@ -17,9 +17,7 @@ define_actor("Main", nil, {
             model:set_hidden(8, 1)
             model:set_hidden(9, 1)
             model:set_hidden(10, 1)
-            if ((this.dummy % 25) < 9) then
-                model:set_animation(fetch_animation("player/walk"), 0, 1)
-            end
+            model:set_animation(fetch_animation("player/walk"), this.dummy, 1)
         end
 
         this:play_sound(get_sound("kaupunki"), 1, 128)

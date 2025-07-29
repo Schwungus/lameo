@@ -20,6 +20,9 @@
         dq[7]                                                                                                          \
     );
 
+float angle_difference(float, float);
+float lerp_angle(float, float, float);
+
 // Dual Quaternions
 typedef float DualQuaternion[8];
 

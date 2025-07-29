@@ -1,5 +1,13 @@
 #include "L_math.h"
 
+float angle_difference(float a, float b) {
+    return SDL_fmodf((SDL_fmodf(a - b, 360) + 540), 360) - 180;
+}
+
+float lerp_angle(float a, float b, float x) {
+    return a + (x * angle_difference(b, a));
+}
+
 void dq_identity(float dest[8]) {
     dest[0] = 0;
     dest[1] = 0;

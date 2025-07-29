@@ -82,6 +82,33 @@ void tick_update() {
                     }
                 }
 
+                // Pre-interpolation
+                struct Actor* actor = get_actors();
+                while (actor != NULL) {
+                    glm_vec3_copy(actor->pos, actor->draw_pos[0]);
+                    glm_vec3_copy(actor->angle, actor->draw_angle[0]);
+
+                    struct ActorCamera* camera = actor->camera;
+                    if (camera != NULL) {
+                        glm_vec3_copy(camera->pos, camera->draw_pos[0]);
+                        glm_vec3_copy(camera->angle, camera->draw_angle[0]);
+                        camera->draw_fov[0] = camera->fov;
+                    }
+
+                    struct ModelInstance* model = actor->model;
+                    if (model != NULL) {
+                        glm_vec3_copy(model->pos, model->draw_pos[0]);
+                        glm_vec3_copy(model->angle, model->draw_angle[0]);
+                        glm_vec3_copy(model->scale, model->draw_scale[0]);
+                        if (model->animation != NULL)
+                            lame_copy(
+                                model->draw_sample[0], model->sample, model->model->num_bones * sizeof(DualQuaternion)
+                            );
+                    }
+
+                    actor = actor->previous;
+                }
+
                 // World
                 if (tick_world) {
                     struct Player* player = get_active_players();
@@ -155,9 +182,45 @@ void tick_update() {
             ticks -= SDL_floorf(ticks);
     }
 
+    // Post-interpolation
+    struct Actor* actor = get_actors();
+    while (actor != NULL) {
+        glm_vec3_lerp(actor->draw_pos[0], actor->pos, ticks, actor->draw_pos[1]);
+        actor->draw_angle[1][0] = glm_lerp(actor->draw_angle[0][0], actor->angle[0], ticks);
+        actor->draw_angle[1][1] = glm_lerp(actor->draw_angle[0][1], actor->angle[1], ticks);
+        actor->draw_angle[1][2] = glm_lerp(actor->draw_angle[0][2], actor->angle[2], ticks);
+
+        struct ActorCamera* camera = actor->camera;
+        if (camera != NULL) {
+            glm_vec3_lerp(camera->draw_pos[0], camera->pos, ticks, camera->draw_pos[1]);
+            camera->draw_angle[1][0] = glm_lerp(camera->draw_angle[0][0], camera->angle[0], ticks);
+            camera->draw_angle[1][1] = glm_lerp(camera->draw_angle[0][1], camera->angle[1], ticks);
+            camera->draw_angle[1][2] = glm_lerp(camera->draw_angle[0][2], camera->angle[2], ticks);
+            camera->draw_fov[1] = glm_lerp(camera->draw_fov[0], camera->fov, ticks);
+        }
+
+        struct ModelInstance* model = actor->model;
+        if (model != NULL) {
+            glm_vec3_lerp(model->draw_pos[0], model->pos, ticks, model->draw_pos[1]);
+            model->draw_angle[1][0] = glm_lerp(model->draw_angle[0][0], model->angle[0], ticks);
+            model->draw_angle[1][1] = glm_lerp(model->draw_angle[0][1], model->angle[1], ticks);
+            model->draw_angle[1][2] = glm_lerp(model->draw_angle[0][2], model->angle[2], ticks);
+            glm_vec3_lerp(model->draw_scale[0], model->scale, ticks, model->draw_scale[1]);
+            if (model->animation != NULL)
+                for (size_t i = 0; i < model->model->num_bones; i++)
+                    dq_lerp(model->draw_sample[0][i], model->sample[i], ticks, model->draw_sample[1][i]);
+        }
+
+        actor = actor->previous;
+    }
+
     last_time = current_time;
 }
 
 void tick_teardown() {
     INFO("Closed");
+}
+
+float get_ticks() {
+    return ticks;
 }
