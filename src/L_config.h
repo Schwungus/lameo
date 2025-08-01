@@ -13,7 +13,6 @@ const char* get_string_cvar(const char*);
 void set_bool_cvar(const char*, bool);
 void set_int_cvar(const char*, Sint64);
 void set_float_cvar(const char*, float);
-void set_numeric_cvar(const char*, double);
 void set_string_cvar(const char*, const char*);
 
 bool reset_cvar(const char*);

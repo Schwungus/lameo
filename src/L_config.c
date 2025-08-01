@@ -88,23 +88,6 @@ void set_float_cvar(const char* name, float value) {
         WTF("Unknown or non-float CVar \"%s\"", name);
 }
 
-void set_numeric_cvar(const char* name, double value) {
-    switch (SDL_GetPropertyType(default_cvars, name)) {
-        case SDL_PROPERTY_TYPE_BOOLEAN:
-            SDL_SetBooleanProperty(cvars, name, (bool)value);
-            break;
-        case SDL_PROPERTY_TYPE_NUMBER:
-            SDL_SetNumberProperty(cvars, name, (Sint64)value);
-            break;
-        case SDL_PROPERTY_TYPE_FLOAT:
-            SDL_SetFloatProperty(cvars, name, (float)value);
-            break;
-        default:
-            WTF("Unknown or non-numeric CVar \"%s\"", name);
-            break;
-    }
-}
-
 void set_string_cvar(const char* name, const char* value) {
     if (SDL_GetPropertyType(default_cvars, name) == SDL_PROPERTY_TYPE_STRING)
         SDL_SetStringProperty(cvars, name, value);
@@ -143,8 +126,8 @@ void apply_cvar(const char* name) {
     if (name == NULL || (SDL_strcmp(name, "vid_width") == 0 || SDL_strcmp(name, "vid_height") == 0 ||
                          SDL_strcmp(name, "vid_fullscreen") == 0 || SDL_strcmp(name, "vid_vsync") == 0))
         set_display(
-            (int)get_int_cvar("vid_width"), (int)get_int_cvar("vid_height"), get_int_cvar("vid_fullscreen"),
-            get_bool_cvar("vid_vsync")
+            (int)get_int_cvar("vid_width"), (int)get_int_cvar("vid_height"),
+            (enum FullscreenModes)get_int_cvar("vid_fullscreen"), get_bool_cvar("vid_vsync")
         );
 
     if (name == NULL || SDL_strcmp(name, "vid_maxfps") == 0) {
@@ -246,9 +229,24 @@ void load_config() {
                     case YYJSON_TYPE_BOOL:
                         set_bool_cvar(cname, yyjson_get_bool(value));
                         break;
-                    case YYJSON_TYPE_NUM:
-                        set_numeric_cvar(cname, yyjson_get_num(value));
+                    case YYJSON_TYPE_NUM: {
+                        switch (SDL_GetPropertyType(default_cvars, cname)) {
+                            default:
+                                WTF("Invalid type \"%s\" for non-numeric CVar \"%s\"", yyjson_get_type_desc(value),
+                                    cname);
+                                break;
+                            case SDL_PROPERTY_TYPE_BOOLEAN:
+                                set_bool_cvar(cname, (bool)yyjson_get_num(value));
+                                break;
+                            case SDL_PROPERTY_TYPE_NUMBER:
+                                set_int_cvar(cname, (Sint64)yyjson_get_num(value));
+                                break;
+                            case SDL_PROPERTY_TYPE_FLOAT:
+                                set_float_cvar(cname, (float)yyjson_get_num(value));
+                                break;
+                        }
                         break;
+                    }
                     case YYJSON_TYPE_STR:
                         set_string_cvar(cname, yyjson_get_str(value));
                         break;

@@ -1,6 +1,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include "L_actor.h"
+#include "L_config.h"
 #include "L_internal.h"
 #include "L_localize.h"
 #include "L_log.h"
@@ -12,7 +13,7 @@
 static SDL_Window* window = NULL;
 static SDL_GLContext gpu = NULL;
 
-static struct Display display = {-1, -1, 0};
+static struct Display display = {DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0};
 static uint16_t framerate = 0;
 static uint64_t last_cap_time = 0;
 static float cap_wait = 0;
@@ -46,8 +47,7 @@ void video_init(bool bypass_shader) {
 
     // Window
     window = SDL_CreateWindow(
-        SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING), DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT,
-        SDL_WINDOW_OPENGL
+        SDL_GetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING), display.width, display.height, SDL_WINDOW_OPENGL
     );
     if (window == NULL)
         FATAL("Window fail: %s", SDL_GetError());
@@ -57,6 +57,8 @@ void video_init(bool bypass_shader) {
     if (gpu == NULL || !SDL_GL_MakeCurrent(window, gpu))
         FATAL("GPU fail: %s", SDL_GetError());
     SDL_GL_SetSwapInterval(0);
+
+    update_display();
 
     int version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
     if (version == 0)
@@ -79,12 +81,6 @@ void video_init(bool bypass_shader) {
     INFO("OpenGL version: %s", glGetString(GL_VERSION));
     INFO("OpenGL renderer: %s", glGetString(GL_RENDERER));
     INFO("OpenGL shading language version: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    // Display info
-    display.width = DEFAULT_DISPLAY_WIDTH;
-    display.height = DEFAULT_DISPLAY_HEIGHT;
-    display.fullscreen = FSM_WINDOWED;
-    display.vsync = false;
 
     // Blank texture
     glGenTextures(1, &blank_texture);
@@ -298,7 +294,10 @@ void video_update() {
             }
         }
         if (camera != NULL)
-            main_surface(render_camera(camera, display.width, display.height, true, NULL, 0), 0, 0, 0);
+            main_surface_rectangle(
+                render_camera(camera, display.width, display.height, true, NULL, 0), 0, 0, DEFAULT_DISPLAY_WIDTH,
+                DEFAULT_DISPLAY_HEIGHT, 0
+            );
 
         struct Player* player = get_active_players();
         while (player != NULL) {
@@ -348,34 +347,26 @@ const struct Display* get_display() {
 }
 
 void set_display(int width, int height, enum FullscreenModes fullscreen, bool vsync) {
-    if (window == NULL || (display.width == width && display.height == height && display.fullscreen == fullscreen &&
-                           display.vsync == vsync))
+    if (display.width == width && display.height == height && display.fullscreen == fullscreen &&
+        display.vsync == vsync)
         return;
 
-    // Size
-    if (display.width <= 0 || display.height <= 0) {
-        display.width = DEFAULT_DISPLAY_WIDTH;
-        display.height = DEFAULT_DISPLAY_HEIGHT;
-    } else {
-        SDL_DisplayID did = SDL_GetDisplayForWindow(window);
-        const SDL_DisplayMode* monitor = (display.fullscreen != FSM_WINDOWED && fullscreen == FSM_WINDOWED)
-                                             ? SDL_GetDesktopDisplayMode(did)
-                                             : SDL_GetCurrentDisplayMode(did);
-        if (monitor != NULL) {
-            display.width = SDL_min(width, monitor->w);
-            display.height = SDL_min(height, monitor->h);
-        } else {
-            display.width = width;
-            display.height = height;
-        }
-    }
-    SDL_SetWindowSize(window, display.width, display.height);
+    display.width = width <= 0 ? DEFAULT_DISPLAY_WIDTH : width;
+    display.height = height <= 0 ? DEFAULT_DISPLAY_HEIGHT : height;
+    display.fullscreen = SDL_min(fullscreen, FSM_EXCLUSIVE_FULLSCREEN);
+    display.vsync = vsync;
 
-    // Fullscreen
-    display.fullscreen = fullscreen;
-    if (display.fullscreen > FSM_EXCLUSIVE_FULLSCREEN)
-        display.fullscreen = FSM_EXCLUSIVE_FULLSCREEN;
+    update_display();
 
+    INFO(
+        "Display set to %dx%d (%dx%d), mode %d, vsync %d", display.width, display.height, get_int_cvar("vid_width"),
+        get_int_cvar("vid_height"), display.fullscreen, display.vsync
+    );
+}
+
+void update_display() {
+    if (window == NULL || gpu == NULL)
+        return;
     // MEMORY LEAK: In exclusive fullscreen, Windows will leak ~220 bytes every
     //              time you tab out and back in.
     //              https://github.com/libsdl-org/SDL/issues/13233
@@ -395,17 +386,15 @@ void set_display(int width, int height, enum FullscreenModes fullscreen, bool vs
         SDL_SetWindowFullscreenMode(window, NULL);
     }*/
     SDL_SetWindowFullscreen(window, display.fullscreen != FSM_WINDOWED);
-
-    // Vsync
-    SDL_GL_SetSwapInterval(display.vsync = vsync);
-
-    // Center and wait
+    SDL_SetWindowSize(window, display.width, display.height);
+    SDL_GL_SetSwapInterval(display.vsync);
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_RestoreWindow(window);
     SDL_SyncWindow(window);
+}
 
-    SDL_GetWindowSizeInPixels(window, &display.width, &display.height);
-    INFO("Display set to %dx%d, mode %d, vsync %d", display.width, display.height, display.fullscreen, display.vsync);
+uint16_t get_framerate() {
+    return framerate;
 }
 
 void set_framerate(uint16_t fps) {
@@ -628,6 +617,19 @@ void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
     GLfloat y1 = y;
     GLfloat x2 = x + (GLfloat)surface->size[0];
     GLfloat y2 = y + (GLfloat)surface->size[1];
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
+}
+
+void main_surface_rectangle(struct Surface* surface, GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat z) {
+    if (surface->texture[SURFACE_COLOR_TEXTURE] == 0)
+        return;
+    set_main_texture_direct(surface->texture[SURFACE_COLOR_TEXTURE]);
+
     main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
     main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
     main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
@@ -922,6 +924,8 @@ struct Surface* render_camera(
     // Build matrices
     static mat4 lookie;
     glm_mat4_identity(lookie);
+    if (camera->flags & CF_THIRD_PERSON)
+        glm_translate_x(lookie, -camera->draw_range[1]);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][0]), GLM_ZUP);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][1]), GLM_YUP);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][2]), GLM_XUP);
@@ -992,11 +996,11 @@ struct Surface* render_camera(
 
     struct Actor* actor = room->actors;
     while (actor != NULL) {
-        if (actor->flags & AF_VISIBLE) {
+        if (actor->flags & AF_VISIBLE && (camera != actor->camera || (camera->flags & CF_THIRD_PERSON))) {
             if (actor->model != NULL)
                 draw_model_instance(actor->model);
             if (actor->type->draw != LUA_NOREF)
-                execute_ref_in(actor->type->draw, actor->userdata, actor->type->name);
+                execute_ref_in_child(actor->type->draw, actor->userdata, camera->userdata, actor->type->name);
         }
         actor = actor->previous_neighbor;
     }
@@ -1008,6 +1012,20 @@ struct Surface* render_camera(
 
     set_render_stage(RT_MAIN);
     set_shader(NULL);
+
+    // Draw in surface screen space.
+    // I may identity the model matrix just in case
+    glm_ortho(0, width, height, 0, -1000, 1000, projection_matrix);
+    glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+    glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
+
+    actor = room->actors;
+    while (actor != NULL) {
+        if (actor->flags & AF_VISIBLE && actor->type->draw_screen != LUA_NOREF)
+            execute_ref_in_child(actor->type->draw_screen, actor->userdata, camera->userdata, actor->type->name);
+        actor = actor->previous_neighbor;
+    }
+
     pop_surface();
 
     return camera->surface;
@@ -1147,7 +1165,7 @@ void set_surface(struct Surface* surface) {
             glViewport(0, 0, surface->size[0], surface->size[1]);
             glm_ortho(0, surface->size[0], surface->size[1], 0, -1000, 1000, projection_matrix);
         } else {
-            glViewport(0, 0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT);
+            glViewport(0, 0, display.width, display.height);
             glm_ortho(0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0, -1000, 1000, projection_matrix);
         }
         glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
