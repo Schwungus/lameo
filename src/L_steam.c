@@ -17,6 +17,5 @@ void steam_teardown() {
 }
 
 CSteamID get_steam_id() {
-    ISteamUser* user = caulk_SteamUser();
-    return user == NULL ? 0 : caulk_ISteamUser_GetSteamID(user);
+    return (caulk_SteamUser() != NULL) ? caulk_SteamUser_GetSteamID() : 0;
 }
