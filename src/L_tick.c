@@ -104,7 +104,7 @@ void tick_update() {
                         glm_vec3_copy(model->scale, model->draw_scale[0]);
                         if (model->animation != NULL)
                             lame_copy(
-                                model->draw_sample[0], model->sample, model->model->num_bones * sizeof(DualQuaternion)
+                                model->draw_sample[0], model->sample, model->model->num_nodes * sizeof(DualQuaternion)
                             );
                     }
 
@@ -205,7 +205,7 @@ void tick_update() {
                 glm_vec3_copy(model->angle, model->draw_angle[1]);
                 glm_vec3_copy(model->scale, model->draw_scale[1]);
                 if (model->animation != NULL)
-                    lame_copy(model->draw_sample[1], model->sample, model->model->num_bones * sizeof(DualQuaternion));
+                    lame_copy(model->draw_sample[1], model->sample, model->model->num_nodes * sizeof(DualQuaternion));
             }
 
             actor = actor->previous;
@@ -235,7 +235,7 @@ void tick_update() {
                 model->draw_angle[1][2] = glm_lerp(model->draw_angle[0][2], model->angle[2], ticks);
                 glm_vec3_lerp(model->draw_scale[0], model->scale, ticks, model->draw_scale[1]);
                 if (model->animation != NULL)
-                    for (size_t i = 0; i < model->model->num_bones; i++)
+                    for (size_t i = 0; i < model->model->num_nodes; i++)
                         dq_lerp(model->draw_sample[0][i], model->sample[i], ticks, model->draw_sample[1][i]);
             }
 

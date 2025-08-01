@@ -203,6 +203,8 @@ struct Actor* create_actor_from_type(
     actor->angle[0] = yaw;
     actor->angle[1] = pitch;
     actor->angle[2] = roll;
+    glm_vec3_copy(actor->pos, actor->draw_pos[0]);
+    glm_vec3_copy(actor->angle, actor->draw_angle[0]);
 
     glm_vec3_one(actor->friction);
 
