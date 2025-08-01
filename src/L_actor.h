@@ -82,7 +82,7 @@ struct ActorCamera {
     float fov, range;
 
     vec3 draw_pos[2], draw_angle[2];
-    float draw_fov[2];
+    float draw_fov[2], draw_range[2];
 
     int table; // User-specific
     enum CameraFlags flags;

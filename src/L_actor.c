@@ -241,6 +241,7 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
     glm_vec3_copy(actor->pos, camera->draw_pos[0]);
     glm_vec3_copy(actor->angle, camera->draw_angle[0]);
     camera->draw_fov[0] = camera->fov;
+    camera->draw_range[0] = camera->range;
 
     camera->userdata = create_pointer_ref("camera", camera);
     camera->table = create_table_ref();

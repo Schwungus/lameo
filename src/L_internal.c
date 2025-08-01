@@ -153,6 +153,7 @@ void loop() {
                     player = player->previous_active;
                 }
 
+                reset_ticks();
                 load_state.state = LOAD_NONE;
                 break;
             }
