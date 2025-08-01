@@ -88,14 +88,23 @@ SCRIPT_FUNCTION(main_rectangle) {
     const GLfloat y1 = (GLfloat)luaL_checknumber(L, 2);
     const GLfloat x2 = (GLfloat)luaL_checknumber(L, 3);
     const GLfloat y2 = (GLfloat)luaL_checknumber(L, 4);
-    const GLfloat z = (GLfloat)luaL_checknumber(L, 5);
+    const GLfloat z = (GLfloat)luaL_optnumber(L, 5, 0);
     const GLubyte r = (GLubyte)luaL_optinteger(L, 6, 255);
     const GLubyte g = (GLubyte)luaL_optinteger(L, 7, 255);
     const GLubyte b = (GLubyte)luaL_optinteger(L, 8, 255);
     const GLubyte a = (GLubyte)luaL_optinteger(L, 9, 255);
 
     main_rectangle(x1, y1, x2, y2, z, r, g, b, a);
+    return 0;
+}
 
+SCRIPT_FUNCTION(main_sprite) {
+    struct Texture* texture = s_test_texture(L, 1);
+    const GLfloat x = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat y = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat z = (GLfloat)luaL_optnumber(L, 4, 0);
+
+    main_sprite(texture, x, y, z);
     return 0;
 }
 
@@ -221,7 +230,29 @@ SCRIPT_FUNCTION(model_instance_set_animation) {
     const bool loop = luaL_optinteger(L, 4, 0);
 
     set_model_instance_animation(inst, animation, frame, loop);
+    return 0;
+}
 
+SCRIPT_FUNCTION(model_instance_override_texture) {
+    struct ModelInstance* inst = s_check_model_instance(L, 1);
+    const lua_Integer material_index = luaL_checkinteger(L, 2);
+    if (material_index < 0 || material_index >= inst->model->num_materials)
+        luaL_argerror(L, 2, "invalid material index");
+    struct Texture* texture = s_test_texture(L, 3);
+
+    inst->override_textures[material_index] = (texture == NULL) ? 0 : texture->texture;
+    return 0;
+}
+
+SCRIPT_FUNCTION(model_instance_override_texture_surface) {
+    struct ModelInstance* inst = s_check_model_instance(L, 1);
+    const lua_Integer material_index = luaL_checkinteger(L, 2);
+    if (material_index < 0 || material_index >= inst->model->num_materials)
+        luaL_argerror(L, 2, "invalid material index");
+    struct Surface* surface = s_test_surface(L, 3);
+
+    validate_surface(surface);
+    inst->override_textures[material_index] = (surface == NULL) ? 0 : surface->texture[SURFACE_COLOR_TEXTURE];
     return 0;
 }
 
@@ -899,6 +930,7 @@ void script_init() {
     EXPOSE_FUNCTION(set_main_alpha);
 
     EXPOSE_FUNCTION(main_rectangle);
+    EXPOSE_FUNCTION(main_sprite);
 
     EXPOSE_FUNCTION(main_string);
     EXPOSE_FUNCTION(string_width);
@@ -930,6 +962,10 @@ void script_init() {
     static const luaL_Reg model_instance_methods[] = {
         {"set_hidden", s_model_instance_set_hidden},
         {"set_animation", s_model_instance_set_animation},
+
+        {"override_texture", s_model_instance_override_texture},
+        {"override_texture_surface", s_model_instance_override_texture_surface},
+
         {NULL, NULL},
     };
     luaL_setfuncs(context, model_instance_methods, 0);
