@@ -95,6 +95,8 @@ struct Surface {
     bool active;
     struct Surface* stack;
 
+    mat4 model_matrix, view_matrix, projection_matrix, mvp_matrix;
+
     bool enabled[2];
     GLuint fbo, texture[2];
     uint16_t size[2];

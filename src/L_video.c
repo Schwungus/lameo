@@ -209,9 +209,8 @@ void video_init(bool bypass_shader) {
     world_batch.filter = true;
 
     glEnable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
 
     // Build matrices
     glm_translate_x(forward_axis, 1);
@@ -600,12 +599,12 @@ void main_rectangle(
     GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat z, GLubyte r, GLubyte g, GLubyte b, GLubyte a
 ) {
     set_main_texture_direct(blank_texture);
-    main_vertex(x1, y2, z, r, g, b, a, 0, 0);
-    main_vertex(x1, y1, z, r, g, b, a, 0, 1);
-    main_vertex(x2, y1, z, r, g, b, a, 1, 1);
-    main_vertex(x2, y1, z, r, g, b, a, 1, 1);
-    main_vertex(x2, y2, z, r, g, b, a, 1, 0);
-    main_vertex(x1, y2, z, r, g, b, a, 0, 0);
+    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
+    main_vertex(x1, y1, z, r, g, b, a, 0, 0);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
+    main_vertex(x2, y1, z, r, g, b, a, 1, 0);
+    main_vertex(x2, y2, z, r, g, b, a, 1, 1);
+    main_vertex(x1, y2, z, r, g, b, a, 0, 1);
 }
 
 void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
@@ -617,12 +616,12 @@ void main_surface(struct Surface* surface, GLfloat x, GLfloat y, GLfloat z) {
     GLfloat y1 = y;
     GLfloat x2 = x + (GLfloat)surface->size[0];
     GLfloat y2 = y + (GLfloat)surface->size[1];
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
-    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
 }
 
 void main_surface_rectangle(struct Surface* surface, GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2, GLfloat z) {
@@ -630,12 +629,12 @@ void main_surface_rectangle(struct Surface* surface, GLfloat x1, GLfloat y1, GLf
         return;
     set_main_texture_direct(surface->texture[SURFACE_COLOR_TEXTURE]);
 
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
-    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 1);
-    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 0);
-    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
+    main_vertex(x1, y1, z, 255, 255, 255, 255, 0, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y1, z, 255, 255, 255, 255, 1, 0);
+    main_vertex(x2, y2, z, 255, 255, 255, 255, 1, 1);
+    main_vertex(x1, y2, z, 255, 255, 255, 255, 0, 1);
 }
 
 void main_sprite(struct Texture* texture, GLfloat x, GLfloat y, GLfloat z) {
@@ -917,7 +916,6 @@ struct Surface* render_camera(
     }
 
     set_surface(camera->surface);
-
     clear_depth(1);
     clear_stencil(0);
 
@@ -947,7 +945,7 @@ struct Surface* render_camera(
     if (camera->flags & CF_ORTHOGONAL)
         glm_ortho(0, width, height, 0, 1, 32000, projection_matrix);
     else
-        glm_perspective(glm_rad(camera->draw_fov[1]), (float)width / (float)height, 1, 32000, projection_matrix);
+        glm_perspective(-glm_rad(camera->draw_fov[1]), -(float)width / (float)height, 1, 32000, projection_matrix);
 
     // Render room
     set_render_stage(RT_WORLD);
@@ -979,6 +977,8 @@ struct Surface* render_camera(
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
+    glEnable(GL_CULL_FACE);
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -1009,13 +1009,15 @@ struct Surface* render_camera(
 
     glDisable(GL_STENCIL_TEST);
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
 
     set_render_stage(RT_MAIN);
     set_shader(NULL);
 
-    // Draw in surface screen space.
-    // I may identity the model matrix just in case
-    glm_ortho(0, width, height, 0, -1000, 1000, projection_matrix);
+    // Draw in surface screen space
+    glm_mat4_identity(model_matrix);
+    glm_mat4_identity(view_matrix);
+    glm_ortho(0, width, 0, height, -1000, 1000, projection_matrix);
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
@@ -1089,6 +1091,12 @@ struct Surface* create_surface(bool external, uint16_t width, uint16_t height, b
     surface->size[0] = width;
     surface->size[1] = height;
 
+    glm_mat4_identity(surface->model_matrix);
+    glm_mat4_identity(surface->view_matrix);
+    glm_ortho(0, width, 0, height, -1000, 1000, surface->projection_matrix);
+    glm_mat4_mul(surface->view_matrix, surface->model_matrix, surface->mvp_matrix);
+    glm_mat4_mul(surface->projection_matrix, surface->mvp_matrix, surface->mvp_matrix);
+
     return surface;
 }
 
@@ -1155,21 +1163,35 @@ void destroy_surface(struct Surface* surface) {
 void set_surface(struct Surface* surface) {
     if (current_surface != surface) {
         submit_batch();
-        if (current_surface != NULL)
+        if (current_surface != NULL) {
             current_surface->active = false;
-        glm_mat4_identity(view_matrix);
+            glm_mat4_copy(model_matrix, current_surface->model_matrix);
+            glm_mat4_copy(view_matrix, current_surface->view_matrix);
+            glm_mat4_copy(projection_matrix, current_surface->projection_matrix);
+            glm_mat4_copy(mvp_matrix, current_surface->mvp_matrix);
+        }
         if (surface != NULL) {
+            if (surface->active)
+                FATAL("Setting an active surface?");
             surface->active = true;
-            surface->stack = current_surface;
+            if (current_surface != NULL && current_surface->stack == surface)
+                current_surface->stack = NULL;
+            else
+                surface->stack = current_surface;
             validate_surface(surface);
             glViewport(0, 0, surface->size[0], surface->size[1]);
-            glm_ortho(0, surface->size[0], surface->size[1], 0, -1000, 1000, projection_matrix);
+            glm_mat4_copy(surface->model_matrix, model_matrix);
+            glm_mat4_copy(surface->view_matrix, view_matrix);
+            glm_mat4_copy(surface->projection_matrix, projection_matrix);
+            glm_mat4_copy(surface->mvp_matrix, mvp_matrix);
         } else {
             glViewport(0, 0, display.width, display.height);
+            glm_mat4_identity(model_matrix);
+            glm_mat4_identity(view_matrix);
             glm_ortho(0, DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, 0, -1000, 1000, projection_matrix);
+            glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
+            glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
         }
-        glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
-        glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
         glBindFramebuffer(GL_FRAMEBUFFER, surface == NULL ? 0 : surface->fbo);
         current_surface = surface;
     }
@@ -1182,11 +1204,17 @@ void pop_surface() {
 }
 
 void resize_surface(struct Surface* surface, uint16_t width, uint16_t height) {
+    if (surface->active)
+        FATAL("Resizing an active surface?");
     if (surface->size[0] == width && surface->size[1] == height)
         return;
     dispose_surface(surface);
     surface->size[0] = width;
     surface->size[1] = height;
+
+    glm_ortho(0, width, 0, height, -1000, 1000, surface->projection_matrix);
+    glm_mat4_mul(surface->view_matrix, surface->model_matrix, surface->mvp_matrix);
+    glm_mat4_mul(surface->projection_matrix, surface->mvp_matrix, surface->mvp_matrix);
 }
 
 void clear_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a) {
@@ -1244,7 +1272,7 @@ static void animate_model_instance(struct ModelInstance* inst, bool snap) {
     if (inst->animation == NULL)
         return;
     if (snap)
-        lame_copy(inst->draw_sample[0], inst->sample, inst->model->num_bones * sizeof(DualQuaternion));
+        lame_copy(inst->draw_sample[0], inst->sample, inst->model->num_nodes * sizeof(DualQuaternion));
 
     static DualQuaternion transframe[MAX_BONES] = {0};
     float frm = SDL_fabsf(inst->frame);
@@ -1323,12 +1351,10 @@ static void animate_model_instance(struct ModelInstance* inst, bool snap) {
 void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
     if (animation != NULL) {
         if (inst->sample == NULL) {
-            inst->translations = lame_alloc(animation->num_nodes * sizeof(versor));
+            inst->translations = lame_alloc_clean(animation->num_nodes * sizeof(versor));
             inst->rotations = lame_alloc(animation->num_nodes * sizeof(versor));
-            for (size_t i = 0; i < animation->num_nodes; i++) {
-                glm_vec4_zero(inst->translations[i]);
+            for (size_t i = 0; i < animation->num_nodes; i++)
                 glm_quat_identity(inst->rotations[i]);
-            }
 
             inst->transforms = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
             inst->sample = lame_alloc(animation->num_nodes * sizeof(DualQuaternion));
@@ -1338,7 +1364,6 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
                 dq_identity(inst->transforms[i]);
                 dq_identity(inst->sample[i]);
                 dq_identity(inst->draw_sample[0][i]);
-                dq_identity(inst->draw_sample[1][i]);
             }
         } else if (inst->animation != NULL && inst->animation->num_nodes < animation->num_nodes) {
             lame_realloc(&(inst->translations), animation->num_nodes * sizeof(versor));
@@ -1356,7 +1381,6 @@ void set_model_instance_animation(struct ModelInstance* inst, struct Animation* 
                 dq_identity(inst->transforms[i]);
                 dq_identity(inst->sample[i]);
                 dq_identity(inst->draw_sample[0][i]);
-                dq_identity(inst->draw_sample[1][i]);
             }
         }
     }
