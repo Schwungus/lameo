@@ -63,6 +63,7 @@ void destroy_room(struct Room* room) {
     CLOSE_POINTER(room->model, destroy_model_instance);
     CLOSE_POINTER(room->sounds, destroy_world_sound_pool);
 
+    unreference_pointer(&(room->userdata));
     lame_free(&room);
 }
 
@@ -73,10 +74,7 @@ void activate_room(struct Room* room) {
         if (!(it->flags & RAF_DISPOSED) && it->actor == NULL) {
             // Create actor without invoking create(). Some actors rely on
             // other actors existing during creation.
-            struct Actor* actor = create_actor_from_type(
-                room, it, it->type, false, it->pos[0], it->pos[1], it->pos[2], it->angle[0], it->angle[1], it->angle[2],
-                it->tag
-            );
+            struct Actor* actor = create_actor_from_type(room, it, it->type, false, it->pos, it->angle, it->tag);
             if (actor != NULL) {
                 if (it->flags & RAF_PERSISTENT)
                     actor->flags |= AF_PERSISTENT;

@@ -160,8 +160,7 @@ struct Actor* get_actors() {
 }
 
 struct Actor* create_actor(
-    struct Room* room, struct RoomActor* base, const char* name, bool invoke_create, float x, float y, float z,
-    float yaw, float pitch, float roll, uint16_t tag
+    struct Room* room, struct RoomActor* base, const char* name, bool invoke_create, vec3 pos, vec3 angle, uint16_t tag
 ) {
     struct ActorType* type = get_actor_type(name);
     if (type == NULL) {
@@ -169,12 +168,12 @@ struct Actor* create_actor(
         return NULL;
     }
 
-    return create_actor_from_type(room, base, type, invoke_create, x, y, z, yaw, pitch, roll, tag);
+    return create_actor_from_type(room, base, type, invoke_create, pos, angle, tag);
 }
 
 struct Actor* create_actor_from_type(
-    struct Room* room, struct RoomActor* base, struct ActorType* type, bool invoke_create, float x, float y, float z,
-    float yaw, float pitch, float roll, uint16_t tag
+    struct Room* room, struct RoomActor* base, struct ActorType* type, bool invoke_create, vec3 pos, vec3 angle,
+    uint16_t tag
 ) {
     if (base != NULL && ((base->flags & RAF_DISPOSED) || base->actor != NULL))
         return NULL;
@@ -197,12 +196,8 @@ struct Actor* create_actor_from_type(
     actor->room = room;
     actor->base = base;
 
-    actor->pos[0] = x;
-    actor->pos[1] = y;
-    actor->pos[2] = z;
-    actor->angle[0] = yaw;
-    actor->angle[1] = pitch;
-    actor->angle[2] = roll;
+    glm_vec3_copy(pos, actor->pos);
+    glm_vec3_copy(angle, actor->angle);
     glm_vec3_copy(actor->pos, actor->draw_pos[0]);
     glm_vec3_copy(actor->angle, actor->draw_angle[0]);
 
@@ -258,6 +253,34 @@ struct ActorCamera* create_actor_camera(struct Actor* actor) {
         execute_ref_in_child(actor->type->create_camera, actor->userdata, camera->userdata, actor->type->name);
 
     return actor->camera;
+}
+
+struct ActorLight* create_actor_light(struct Actor* actor) {
+    if (actor->light != NULL)
+        return actor->light;
+
+    struct ActorLight* light = NULL;
+
+    struct Room* room = actor->room;
+    size_t i = 0;
+    for (; i < MAX_ROOM_LIGHTS; i++)
+        if (room->light_occupied[i] == NULL) {
+            light = lame_alloc_clean(sizeof(struct ActorLight));
+            room->light_occupied[i] = light;
+            break;
+        }
+    if (light == NULL)
+        return NULL;
+
+    light->actor = actor;
+    light->userdata = create_pointer_ref("light", light);
+    light->slot = i;
+
+    struct RoomLight* rlight = light->light = &(room->lights[i]);
+    rlight->type = RL_INVALID;
+    glm_vec4_one(rlight->color);
+
+    return actor->light = light;
 }
 
 struct ModelInstance* create_actor_model(struct Actor* actor, struct Model* model) {
@@ -354,6 +377,7 @@ void destroy_actor(struct Actor* actor, bool natural, bool dispose) {
     }
 
     destroy_actor_camera(actor);
+    destroy_actor_light(actor);
     destroy_actor_model(actor);
     if (actor->emitter != NULL)
         destroy_emitter(actor->emitter);
@@ -392,6 +416,16 @@ void destroy_actor_camera(struct Actor* actor) {
     unreference(&(camera->surface_ref));
 
     lame_free(&(actor->camera));
+}
+
+void destroy_actor_light(struct Actor* actor) {
+    struct ActorLight* light = actor->light;
+    if (light == NULL)
+        return;
+    light->light->type = RL_INVALID;
+    actor->room->light_occupied[light->slot] = NULL;
+    unreference_pointer(&(light->userdata));
+    lame_free(&(actor->light));
 }
 
 void destroy_actor_model(struct Actor* actor) {

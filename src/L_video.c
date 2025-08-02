@@ -292,11 +292,14 @@ void video_update() {
                 player = player->previous_active;
             }
         }
-        if (camera != NULL)
-            main_surface_rectangle(
-                render_camera(camera, display.width, display.height, true, NULL, 0), 0, 0, DEFAULT_DISPLAY_WIDTH,
-                DEFAULT_DISPLAY_HEIGHT, 0
+        if (camera != NULL) {
+            struct Surface* surface = render_camera(camera, display.width, display.height, true, NULL, 0);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, surface->fbo);
+            glBlitFramebuffer(
+                0, 0, surface->size[0], surface->size[1], 0, display.height, display.width, 0, GL_COLOR_BUFFER_BIT,
+                GL_NEAREST
             );
+        }
 
         struct Player* player = get_active_players();
         while (player != NULL) {
@@ -420,52 +423,58 @@ void set_shader(struct Shader* shader) {
     }
 }
 
-void set_uint_uniform(const char* name, GLuint value) {
+void set_uint_uniform(const char* name, const GLuint value) {
     glUniform1ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_uvec2_uniform(const char* name, GLuint x, GLuint y) {
-    glUniform2ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+void set_uvec2_uniform(const char* name, const GLuint value[2]) {
+    glUniform2ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1]);
 }
 
-void set_uvec3_uniform(const char* name, GLuint x, GLuint y, GLuint z) {
-    glUniform3ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+void set_uvec3_uniform(const char* name, const GLuint value[3]) {
+    glUniform3ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[3]);
 }
 
-void set_uvec4_uniform(const char* name, GLuint x, GLuint y, GLuint z, GLuint w) {
-    glUniform4ui((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+void set_uvec4_uniform(const char* name, const GLuint value[4]) {
+    glUniform4ui(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[2], value[3]
+    );
 }
 
-void set_int_uniform(const char* name, GLint value) {
+void set_int_uniform(const char* name, const GLint value) {
     glUniform1i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_ivec2_uniform(const char* name, GLint x, GLint y) {
-    glUniform2i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+void set_ivec2_uniform(const char* name, const GLint value[2]) {
+    glUniform2i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1]);
 }
 
-void set_ivec3_uniform(const char* name, GLint x, GLint y, GLint z) {
-    glUniform3i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+void set_ivec3_uniform(const char* name, const GLint value[3]) {
+    glUniform3i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[2]);
 }
 
-void set_ivec4_uniform(const char* name, GLint x, GLint y, GLint z, GLint w) {
-    glUniform4i((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+void set_ivec4_uniform(const char* name, const GLint value[4]) {
+    glUniform4i(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[2], value[3]
+    );
 }
 
-void set_float_uniform(const char* name, GLfloat value) {
+void set_float_uniform(const char* name, const GLfloat value) {
     glUniform1f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value);
 }
 
-void set_vec2_uniform(const char* name, GLfloat x, GLfloat y) {
-    glUniform2f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y);
+void set_vec2_uniform(const char* name, const GLfloat value[2]) {
+    glUniform2f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1]);
 }
 
-void set_vec3_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z) {
-    glUniform3f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z);
+void set_vec3_uniform(const char* name, const GLfloat value[3]) {
+    glUniform3f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[2]);
 }
 
-void set_vec4_uniform(const char* name, GLfloat x, GLfloat y, GLfloat z, GLfloat w) {
-    glUniform4f((GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), x, y, z, w);
+void set_vec4_uniform(const char* name, const GLfloat value[4]) {
+    glUniform4f(
+        (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), value[0], value[1], value[2], value[3]
+    );
 }
 
 void set_mat2_uniform(const char* name, mat2* matrix) {
@@ -525,9 +534,7 @@ void submit_main_batch() {
     );
 
     // Apply stencil
-    set_vec4_uniform(
-        "u_stencil", main_batch.stencil[0], main_batch.stencil[1], main_batch.stencil[2], main_batch.stencil[3]
-    );
+    set_vec4_uniform("u_stencil", main_batch.stencil);
 
     // Apply texture
     glActiveTexture(GL_TEXTURE0);
@@ -804,9 +811,8 @@ void submit_world_batch() {
     );
 
     set_int_uniform("u_animated", 0);
-    set_vec4_uniform(
-        "u_stencil", world_batch.stencil[0], world_batch.stencil[1], world_batch.stencil[2], world_batch.stencil[3]
-    );
+    set_vec4_uniform("u_color", world_batch.color);
+    set_vec4_uniform("u_stencil", world_batch.stencil);
 
     // Apply texture
     glActiveTexture(GL_TEXTURE0);
@@ -818,8 +824,12 @@ void submit_world_batch() {
     set_int_uniform("u_has_blend_texture", 0);
     set_int_uniform("u_blend_texture", 1);
     set_float_uniform("u_alpha_test", world_batch.alpha_test);
-    set_vec2_uniform("u_scroll", 0, 0);
-    set_vec3_uniform("u_material_wind", 0, 0, 0);
+    set_vec2_uniform("u_scroll", (GLfloat[2]){0});
+    set_vec3_uniform("u_material_wind", (GLfloat[3]){0});
+    set_float_uniform("u_bright", world_batch.bright);
+    set_int_uniform("u_half_lambert", 0);
+    set_float_uniform("u_cel", 0);
+    set_vec4_uniform("u_specular", (GLfloat[4]){0, 1, 0, 1});
 
     // Apply blend mode
     glBlendFuncSeparate(
@@ -989,7 +999,14 @@ struct Surface* render_camera(
 
     set_shader(world_shader);
     set_float_uniform("u_time", u_time);
-    set_vec4_uniform("u_wind", room->wind[0], room->wind[1], room->wind[2], room->wind[3]);
+    set_vec4_uniform("u_ambient", room->ambient);
+    glUniform1fv(
+        (GLint)(SDL_GetNumberProperty(current_shader->uniforms, "u_lights[0]", -1)),
+        MAX_ROOM_LIGHTS * (sizeof(struct RoomLight) / sizeof(GLfloat)), (const GLfloat*)room->lights
+    );
+    set_vec2_uniform("u_fog_distance", room->fog_distance);
+    set_vec4_uniform("u_fog_color", room->fog_color);
+    set_vec4_uniform("u_wind", room->wind);
 
     if (room->model != NULL)
         submit_model_instance(room->model);
@@ -1240,6 +1257,7 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->userdata = create_pointer_ref("model_instance", inst);
     glm_vec3_one(inst->scale);
     glm_vec3_one(inst->draw_scale[0]);
+    glm_vec4_one(inst->color);
 
     inst->hidden = lame_alloc_clean(model->num_submodels * sizeof(bool));
     inst->override_materials = (struct Material**)lame_alloc_clean(model->num_materials * sizeof(struct Material*));
@@ -1271,8 +1289,6 @@ static void animate_model_instance(struct ModelInstance* inst, bool snap) {
     const struct Animation* animation = inst->animation;
     if (inst->animation == NULL)
         return;
-    if (snap)
-        lame_copy(inst->draw_sample[0], inst->sample, inst->model->num_nodes * sizeof(DualQuaternion));
 
     static DualQuaternion transframe[MAX_BONES] = {0};
     float frm = SDL_fabsf(inst->frame);
@@ -1346,6 +1362,9 @@ static void animate_model_instance(struct ModelInstance* inst, bool snap) {
                 node_stack[next++] = node->children[j];
         }
     }
+
+    if (snap)
+        lame_copy(inst->draw_sample[0], inst->sample, inst->model->num_nodes * sizeof(DualQuaternion));
 }
 
 void set_model_instance_animation(struct ModelInstance* inst, struct Animation* animation, float frame, bool loop) {
@@ -1417,7 +1436,8 @@ void submit_model_instance(struct ModelInstance* inst) {
 
     set_int_uniform("u_texture", 0);
     set_int_uniform("u_blend_texture", 1);
-    set_vec4_uniform("u_stencil", 1, 1, 1, 0);
+    set_vec4_uniform("u_color", inst->color);
+    set_vec4_uniform("u_stencil", (GLfloat[]){1, 1, 1, 0});
 
     if (inst->animation != NULL && inst->draw_sample[1] != NULL) {
         set_int_uniform("u_animated", 1);
@@ -1474,8 +1494,15 @@ void submit_model_instance(struct ModelInstance* inst) {
         }
 
         set_float_uniform("u_alpha_test", material->alpha_test);
-        set_vec2_uniform("u_scroll", material->scroll[0], material->scroll[1]);
-        set_vec3_uniform("u_material_wind", material->wind[0], material->wind[1], material->wind[2]);
+        set_vec2_uniform("u_scroll", material->scroll);
+        set_vec3_uniform("u_material_wind", material->wind);
+        set_float_uniform("u_bright", material->bright);
+        set_int_uniform("u_half_lambert", material->half_lambert);
+        set_float_uniform("u_cel", material->cel);
+        set_vec4_uniform(
+            "u_specular",
+            (GLfloat[]){material->specular[0], material->specular[1], material->rimlight[0], material->rimlight[1]}
+        );
 
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);

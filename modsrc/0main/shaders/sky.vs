@@ -10,11 +10,12 @@ out vec4 v_uv;
 uniform mat4 u_mvp_matrix;
 uniform float u_time;
 uniform vec2 u_scroll;
+uniform vec4 u_color;
 
 void main() {
     gl_Position = u_mvp_matrix * vec4(i_position, 1.0);
 
-    v_color = i_color;
+    v_color = i_color * u_color;
     v_uv = i_uv;
     v_uv.xy += u_time * u_scroll;
 }

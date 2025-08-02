@@ -23,7 +23,39 @@ void tick_update() {
     ticks += (float)(current_time - last_time) * ((float)TICKRATE / 1000.0f);
 
     if (ticks >= 1) {
-        if (get_load_state() == LOAD_NONE)
+        if (get_load_state() == LOAD_NONE) {
+            // Pre-interpolation
+            struct Actor* actor = get_actors();
+            while (actor != NULL) {
+                glm_vec3_copy(actor->pos, actor->draw_pos[0]);
+                glm_vec3_copy(actor->angle, actor->draw_angle[0]);
+
+                struct ActorCamera* camera = actor->camera;
+                if (camera != NULL) {
+                    glm_vec3_copy(camera->pos, camera->draw_pos[0]);
+                    glm_vec3_copy(camera->angle, camera->draw_angle[0]);
+                    camera->draw_fov[0] = camera->fov;
+                    camera->draw_range[0] = camera->range;
+                }
+
+                struct ActorLight* light = actor->light;
+                if (light != NULL)
+                    lame_copy(light->draw_args[0], light->draw_args[1], RL_ARGS * sizeof(GLfloat));
+
+                struct ModelInstance* model = actor->model;
+                if (model != NULL) {
+                    glm_vec3_copy(model->pos, model->draw_pos[0]);
+                    glm_vec3_copy(model->angle, model->draw_angle[0]);
+                    glm_vec3_copy(model->scale, model->draw_scale[0]);
+                    if (model->animation != NULL)
+                        lame_copy(
+                            model->draw_sample[0], model->sample, model->model->num_nodes * sizeof(DualQuaternion)
+                        );
+                }
+
+                actor = actor->previous;
+            }
+
             while (ticks >= 1) {
                 bool tick_world = true;
 
@@ -81,34 +113,6 @@ void tick_update() {
                         go_to_level("main", 25, 0);
                         tick_world = false;
                     }
-                }
-
-                // Pre-interpolation
-                struct Actor* actor = get_actors();
-                while (actor != NULL) {
-                    glm_vec3_copy(actor->pos, actor->draw_pos[0]);
-                    glm_vec3_copy(actor->angle, actor->draw_angle[0]);
-
-                    struct ActorCamera* camera = actor->camera;
-                    if (camera != NULL) {
-                        glm_vec3_copy(camera->pos, camera->draw_pos[0]);
-                        glm_vec3_copy(camera->angle, camera->draw_angle[0]);
-                        camera->draw_fov[0] = camera->fov;
-                        camera->draw_range[0] = camera->range;
-                    }
-
-                    struct ModelInstance* model = actor->model;
-                    if (model != NULL) {
-                        glm_vec3_copy(model->pos, model->draw_pos[0]);
-                        glm_vec3_copy(model->angle, model->draw_angle[0]);
-                        glm_vec3_copy(model->scale, model->draw_scale[0]);
-                        if (model->animation != NULL)
-                            lame_copy(
-                                model->draw_sample[0], model->sample, model->model->num_nodes * sizeof(DualQuaternion)
-                            );
-                    }
-
-                    actor = actor->previous;
                 }
 
                 // World
@@ -180,8 +184,9 @@ void tick_update() {
                 }
                 ticks -= 1;
             }
-        else
+        } else {
             ticks -= SDL_floorf(ticks);
+        }
     }
 
     // Post-interpolation
@@ -197,6 +202,13 @@ void tick_update() {
                 glm_vec3_copy(camera->angle, camera->draw_angle[1]);
                 camera->draw_fov[1] = camera->fov;
                 camera->draw_range[1] = camera->range;
+            }
+
+            struct ActorLight* light = actor->light;
+            if (light != NULL) {
+                struct RoomLight* rlight = light->light;
+                glm_vec3_copy(actor->pos, rlight->pos);
+                lame_copy(rlight->args, light->draw_args[1], RL_ARGS * sizeof(GLfloat));
             }
 
             struct ModelInstance* model = actor->model;
@@ -225,6 +237,14 @@ void tick_update() {
                 camera->draw_angle[1][2] = glm_lerp(camera->draw_angle[0][2], camera->angle[2], ticks);
                 camera->draw_fov[1] = glm_lerp(camera->draw_fov[0], camera->fov, ticks);
                 camera->draw_range[1] = glm_lerp(camera->draw_range[0], camera->range, ticks);
+            }
+
+            struct ActorLight* light = actor->light;
+            if (light != NULL) {
+                struct RoomLight* rlight = light->light;
+                glm_vec3_copy(actor->draw_pos[1], rlight->pos);
+                for (size_t i = 0; i < RL_ARGS; i++)
+                    light->light->args[i] = glm_lerp(light->draw_args[0][i], light->draw_args[1][i], ticks);
             }
 
             struct ModelInstance* model = actor->model;

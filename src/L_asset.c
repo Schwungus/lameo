@@ -266,60 +266,60 @@ void load_material(const char* name) {
                 }
 
                 value = yyjson_obj_get(root, "texture_speed");
-                if (yyjson_is_real(value))
-                    material->texture_speed[0] = (float)yyjson_get_real(value);
+                if (yyjson_is_num(value))
+                    material->texture_speed[0] = (float)yyjson_get_num(value);
                 value = yyjson_obj_get(root, "blend_texture_speed");
-                if (yyjson_is_real(value))
-                    material->texture_speed[1] = (float)yyjson_get_real(value);
+                if (yyjson_is_num(value))
+                    material->texture_speed[1] = (float)yyjson_get_num(value);
                 value = yyjson_obj_get(root, "filter");
-                if (yyjson_is_bool(value))
-                    material->filter = yyjson_get_bool(value);
+                if (yyjson_is_num(value))
+                    material->filter = (bool)yyjson_get_num(value);
 
                 value = yyjson_obj_get(root, "color");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 4) {
-                    material->color[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->color[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
-                    material->color[2] = (float)yyjson_get_real(yyjson_arr_get(value, 2));
-                    material->color[3] = (float)yyjson_get_real(yyjson_arr_get(value, 3));
+                    material->color[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->color[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
+                    material->color[2] = (float)yyjson_get_num(yyjson_arr_get(value, 2));
+                    material->color[3] = (float)yyjson_get_num(yyjson_arr_get(value, 3));
                 }
 
                 value = yyjson_obj_get(root, "alpha_test");
-                if (yyjson_is_real(value))
-                    material->alpha_test = (float)yyjson_get_real(value);
+                if (yyjson_is_num(value))
+                    material->alpha_test = (float)yyjson_get_num(value);
                 value = yyjson_obj_get(root, "bright");
-                if (yyjson_is_real(value))
-                    material->bright = (float)yyjson_get_real(value);
+                if (yyjson_is_num(value))
+                    material->bright = (float)yyjson_get_num(value);
 
                 value = yyjson_obj_get(root, "scroll");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
-                    material->scroll[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->scroll[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->scroll[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->scroll[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
                 }
 
                 value = yyjson_obj_get(root, "specular");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
-                    material->specular[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->specular[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->specular[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->specular[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
                 }
 
                 value = yyjson_obj_get(root, "rimlight");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
-                    material->rimlight[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->rimlight[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
+                    material->rimlight[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->rimlight[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
                 }
 
                 value = yyjson_obj_get(root, "half_lambert");
-                if (yyjson_is_bool(value))
-                    material->half_lambert = yyjson_get_bool(value);
+                if (yyjson_is_num(value))
+                    material->half_lambert = (bool)yyjson_get_num(value);
                 value = yyjson_obj_get(root, "cel");
-                if (yyjson_is_real(value))
-                    material->cel = (float)yyjson_get_real(value);
+                if (yyjson_is_num(value))
+                    material->cel = (float)yyjson_get_num(value);
 
                 value = yyjson_obj_get(root, "wind");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 3) {
-                    material->wind[0] = (float)yyjson_get_real(yyjson_arr_get(value, 0));
-                    material->wind[1] = (float)yyjson_get_real(yyjson_arr_get(value, 1));
-                    material->wind[2] = (float)yyjson_get_real(yyjson_arr_get(value, 2));
+                    material->wind[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->wind[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
+                    material->wind[2] = (float)yyjson_get_num(yyjson_arr_get(value, 2));
                 }
             } else {
                 WTF("Expected material \"%s\" root as object, got %s", name, yyjson_get_type_desc(root));

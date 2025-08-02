@@ -248,10 +248,7 @@ struct Actor* respawn_player(struct Player* player) {
     const char* class = get_pflag_string(player, "class", NULL);
     if (class == NULL)
         return NULL;
-    struct Actor* actor = create_actor(
-        room, NULL, class, false, spawn->pos[0], spawn->pos[1], spawn->pos[2], spawn->angle[0], spawn->angle[1],
-        spawn->angle[2], spawn->tag
-    );
+    struct Actor* actor = create_actor(room, NULL, class, false, spawn->pos, spawn->angle, spawn->tag);
     if (actor == NULL)
         return NULL;
     actor->player = player;

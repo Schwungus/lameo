@@ -74,8 +74,12 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     "Room %u tried to reoccupy ID %u in level \"%s\" (make sure it's free and within uint32 limits)", i,
                     room->id, name
                 );
+            room->userdata = create_pointer_ref("room", room);
 
             room->bump.size[0] = room->bump.size[1] = 1;
+            glm_vec4_one(room->ambient);
+            room->fog_distance[0] = room->fog_distance[1] = 32000.0f;
+            room->fog_color[3] = 1;
             room->wind[0] = 1;
             room->sounds = create_world_sound_pool();
 
@@ -87,12 +91,34 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     room->model = create_model_instance(model);
             }
 
+            roomval = yyjson_obj_get(roomdef, "ambient");
+            if (yyjson_is_arr(roomval) && yyjson_arr_size(roomval) >= 4) {
+                room->ambient[0] = (float)yyjson_get_num(yyjson_arr_get(roomval, 0));
+                room->ambient[1] = (float)yyjson_get_num(yyjson_arr_get(roomval, 1));
+                room->ambient[2] = (float)yyjson_get_num(yyjson_arr_get(roomval, 2));
+                room->ambient[3] = (float)yyjson_get_num(yyjson_arr_get(roomval, 3));
+            }
+
+            roomval = yyjson_obj_get(roomdef, "fog_distance");
+            if (yyjson_is_arr(roomval) && yyjson_arr_size(roomval) >= 2) {
+                room->fog_distance[0] = (float)yyjson_get_num(yyjson_arr_get(roomval, 0));
+                room->fog_distance[1] = (float)yyjson_get_num(yyjson_arr_get(roomval, 1));
+            }
+
+            roomval = yyjson_obj_get(roomdef, "fog_color");
+            if (yyjson_is_arr(roomval) && yyjson_arr_size(roomval) >= 4) {
+                room->fog_color[0] = (float)yyjson_get_num(yyjson_arr_get(roomval, 0));
+                room->fog_color[1] = (float)yyjson_get_num(yyjson_arr_get(roomval, 1));
+                room->fog_color[2] = (float)yyjson_get_num(yyjson_arr_get(roomval, 2));
+                room->fog_color[3] = (float)yyjson_get_num(yyjson_arr_get(roomval, 3));
+            }
+
             roomval = yyjson_obj_get(roomdef, "wind");
             if (yyjson_is_arr(roomval) && yyjson_arr_size(roomval) >= 4) {
-                room->wind[0] = (float)yyjson_get_real(yyjson_arr_get(roomval, 0));
-                room->wind[1] = (float)yyjson_get_real(yyjson_arr_get(roomval, 1));
-                room->wind[2] = (float)yyjson_get_real(yyjson_arr_get(roomval, 2));
-                room->wind[3] = (float)yyjson_get_real(yyjson_arr_get(roomval, 3));
+                room->wind[0] = (float)yyjson_get_num(yyjson_arr_get(roomval, 0));
+                room->wind[1] = (float)yyjson_get_num(yyjson_arr_get(roomval, 1));
+                room->wind[2] = (float)yyjson_get_num(yyjson_arr_get(roomval, 2));
+                room->wind[3] = (float)yyjson_get_num(yyjson_arr_get(roomval, 3));
                 glm_vec3_normalize(room->wind);
             }
 
@@ -125,12 +151,12 @@ void load_level(const char* name, uint32_t room, uint16_t tag) {
                     room_actor->previous = room->room_actors;
                     room->room_actors = room_actor;
 
-                    room_actor->pos[0] = (float)yyjson_get_real(yyjson_obj_get(actdef, "x"));
-                    room_actor->pos[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "y"));
-                    room_actor->pos[2] = (float)yyjson_get_real(yyjson_obj_get(actdef, "z"));
-                    room_actor->angle[0] = (float)yyjson_get_real(yyjson_obj_get(actdef, "yaw"));
-                    room_actor->angle[1] = (float)yyjson_get_real(yyjson_obj_get(actdef, "pitch"));
-                    room_actor->angle[2] = (float)yyjson_get_real(yyjson_obj_get(actdef, "roll"));
+                    room_actor->pos[0] = (float)yyjson_get_num(yyjson_obj_get(actdef, "x"));
+                    room_actor->pos[1] = (float)yyjson_get_num(yyjson_obj_get(actdef, "y"));
+                    room_actor->pos[2] = (float)yyjson_get_num(yyjson_obj_get(actdef, "z"));
+                    room_actor->angle[0] = (float)yyjson_get_num(yyjson_obj_get(actdef, "yaw"));
+                    room_actor->angle[1] = (float)yyjson_get_num(yyjson_obj_get(actdef, "pitch"));
+                    room_actor->angle[2] = (float)yyjson_get_num(yyjson_obj_get(actdef, "roll"));
                     room_actor->tag = (uint16_t)yyjson_get_uint(yyjson_obj_get(actdef, "tag"));
                     room_actor->special = json_to_table_ref(yyjson_obj_get(actdef, "special"));
 

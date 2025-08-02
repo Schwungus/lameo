@@ -9,8 +9,13 @@ layout(location = 3) in vec4 i_uv;
 layout(location = 4) in vec4 i_bone_index;
 layout(location = 5) in vec4 i_bone_weight;
 
+out vec3 v_position;
+out vec3 v_world_position;
+out vec3 v_view_position;
+out vec3 v_normal;
 out vec4 v_color;
 out vec4 v_uv;
+out float v_rimlight;
 
 uniform mat4 u_model_matrix;
 uniform mat4 u_view_matrix;
@@ -140,6 +145,7 @@ vec3 dq_transform(vec4 real, vec4 dual, vec3 v) {
 
 void main() {
     vec3 position = i_position;
+    vec3 normal = i_normal;
     if (u_animated) {
         ivec4 i = ivec4(i_bone_index) * 2;
 		ivec4 j = i + 1;
@@ -174,21 +180,28 @@ void main() {
 		blend_dual *= len;
 
 		position = dq_transform(blend_real, blend_dual, position);
+        normal = quat_rotate(blend_real, normal);
     }
 
+    vec4 world_position = u_model_matrix * vec4(position, 1.0);
     if (u_material_wind.x > 0.0) {
 		float wind_time = u_time * u_material_wind.y;
 		float wind_weight = (1.0 - (u_material_wind.z * clamp(i_uv.y, 0.0, 1.0))) * u_wind.w * u_material_wind.x;
 
         vec3 v = i_position;
-		position.x += u_wind.x * snoise(vec4( v.x, -v.y, -v.z, wind_time)) * wind_weight * min(length(u_model_matrix[0]), 1.0);
-		position.y += u_wind.y * snoise(vec4(-v.x,  v.y, -v.z, wind_time)) * wind_weight * min(length(u_model_matrix[1]), 1.0);
-		position.z += u_wind.z * snoise(vec4(-v.x, -v.y,  v.z, wind_time)) * wind_weight * min(length(u_model_matrix[2]), 1.0);
+		world_position.x += u_wind.x * snoise(vec4( v.x, -v.y, -v.z, wind_time)) * wind_weight * min(length(u_model_matrix[0]), 1.0);
+		world_position.y += u_wind.y * snoise(vec4(-v.x,  v.y, -v.z, wind_time)) * wind_weight * min(length(u_model_matrix[1]), 1.0);
+		world_position.z += u_wind.z * snoise(vec4(-v.x, -v.y,  v.z, wind_time)) * wind_weight * min(length(u_model_matrix[2]), 1.0);
 	}
 
-    gl_Position = u_mvp_matrix * vec4(position, 1.0);
-
+    gl_Position = u_projection_matrix * u_view_matrix * world_position;
+    v_position = gl_Position.xyz;
+    v_world_position = world_position.xyz;
+    v_view_position = v_world_position + (u_view_matrix[3] * u_view_matrix).xyz;
+    v_normal = normalize(mat3(u_model_matrix) * normal);
     v_color = i_color;
     v_uv = i_uv;
     v_uv.xy += u_time * u_scroll;
+
+	v_rimlight = dot(normalize(mat3(u_view_matrix) * v_normal), normalize(-vec3(u_view_matrix * world_position)));
 }

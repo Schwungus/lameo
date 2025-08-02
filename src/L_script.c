@@ -73,7 +73,6 @@ SCRIPT_FUNCTION(set_main_color) {
     const GLfloat b = (GLfloat)luaL_checknumber(L, 3);
 
     set_main_color(r, g, b);
-
     return 0;
 }
 
@@ -117,7 +116,6 @@ SCRIPT_FUNCTION(main_string) {
     const GLfloat z = (GLfloat)luaL_checknumber(L, 6);
 
     main_string(str, font, size, x, y, z);
-
     return 0;
 }
 
@@ -127,7 +125,6 @@ SCRIPT_FUNCTION(string_width) {
     const GLfloat size = (GLfloat)luaL_checknumber(L, 3);
 
     lua_pushnumber(L, string_width(str, font, size));
-
     return 1;
 }
 
@@ -136,7 +133,6 @@ SCRIPT_FUNCTION(string_height) {
     const GLfloat size = (GLfloat)luaL_checknumber(L, 2);
 
     lua_pushnumber(L, string_height(str, size));
-
     return 1;
 }
 
@@ -180,7 +176,6 @@ SCRIPT_FUNCTION(main_surface) {
     const GLfloat z = (GLfloat)luaL_checknumber(L, 4);
 
     main_surface(surface, x, y, z);
-
     return 0;
 }
 
@@ -191,7 +186,6 @@ SCRIPT_FUNCTION(clear_color) {
     const GLfloat a = (GLfloat)luaL_optnumber(L, 4, 1);
 
     clear_color(r, g, b, a);
-
     return 0;
 }
 
@@ -210,6 +204,15 @@ SCRIPT_FUNCTION(clear_stencil) {
 // Model Instance
 SCRIPT_CHECKER(model_instance, struct ModelInstance*);
 SCRIPT_TESTER(model_instance, struct ModelInstance*);
+
+SCRIPT_FUNCTION(model_instance_set_color) {
+    struct ModelInstance* inst = s_check_model_instance(L, 1);
+    inst->color[0] = (float)luaL_checknumber(L, 2);
+    inst->color[1] = (float)luaL_optnumber(L, 3, inst->color[1]);
+    inst->color[2] = (float)luaL_optnumber(L, 4, inst->color[2]);
+    inst->color[3] = (float)luaL_optnumber(L, 5, inst->color[3]);
+    return 0;
+}
 
 SCRIPT_FUNCTION(model_instance_set_hidden) {
     struct ModelInstance* inst = s_check_model_instance(L, 1);
@@ -268,6 +271,10 @@ SCRIPT_FUNCTION(play_ui_sound) {
     return 1;
 }
 
+// Room
+SCRIPT_CHECKER(room, struct Room*);
+SCRIPT_TESTER(room, struct Room*);
+
 // Actor
 SCRIPT_CHECKER(actor, struct Actor*);
 SCRIPT_TESTER(actor, struct Actor*);
@@ -317,6 +324,12 @@ SCRIPT_FUNCTION(actor_is_ancestor) {
     return 1;
 }
 
+SCRIPT_FUNCTION(actor_get_room) {
+    struct Actor* actor = s_check_actor(L, 1);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, actor->room->userdata);
+    return 1;
+}
+
 SCRIPT_FUNCTION(actor_get_player) {
     struct Actor* actor = s_check_actor(L, 1);
     if (actor->player == NULL)
@@ -344,6 +357,27 @@ SCRIPT_FUNCTION(actor_create_camera) {
 SCRIPT_FUNCTION(actor_destroy_camera) {
     struct Actor* actor = s_check_actor(L, 1);
     destroy_actor_camera(actor);
+    return 0;
+}
+
+SCRIPT_FUNCTION(actor_get_light) {
+    struct Actor* actor = s_check_actor(L, 1);
+    if (actor->light == NULL)
+        lua_pushnil(L);
+    else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, actor->light->userdata);
+    return 1;
+}
+
+SCRIPT_FUNCTION(actor_create_light) {
+    struct Actor* actor = s_check_actor(L, 1);
+    create_actor_light(actor);
+    return s_actor_get_light(L);
+}
+
+SCRIPT_FUNCTION(actor_destroy_light) {
+    struct Actor* actor = s_check_actor(L, 1);
+    destroy_actor_light(actor);
     return 0;
 }
 
@@ -402,7 +436,6 @@ SCRIPT_FUNCTION(actor_set_pos) {
     const float z = (float)luaL_optnumber(L, 4, actor->pos[2]);
 
     set_actor_pos(actor, x, y, z);
-
     return 0;
 }
 
@@ -555,6 +588,78 @@ SCRIPT_FUNCTION(set_active_camera) {
     return 0;
 }
 
+SCRIPT_CHECKER(light, struct ActorLight*);
+SCRIPT_TESTER(light, struct ActorLight*);
+
+SCRIPT_FUNCTION(light_set_color) {
+    struct ActorLight* light = s_check_light(L, 1);
+    const GLfloat r = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat g = (GLfloat)luaL_optnumber(L, 3, light->light->color[1]);
+    const GLfloat b = (GLfloat)luaL_optnumber(L, 4, light->light->color[2]);
+    const GLfloat a = (GLfloat)luaL_optnumber(L, 5, light->light->color[3]);
+
+    light->light->color[0] = r;
+    light->light->color[1] = g;
+    light->light->color[2] = b;
+    light->light->color[3] = a;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_hide) {
+    struct ActorLight* light = s_check_light(L, 1);
+    light->light->type = RL_INVALID;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_snap) {
+    struct ActorLight* light = s_check_light(L, 1);
+    lame_copy(light->draw_args[0], light->draw_args[1], RL_ARGS * sizeof(GLfloat));
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_set_sun) {
+    struct ActorLight* light = s_check_light(L, 1);
+    const GLfloat nx = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat ny = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat nz = (GLfloat)luaL_checknumber(L, 4);
+
+    light->light->type = RL_SUN;
+    light->draw_args[1][RL_SUN_NX] = nx;
+    light->draw_args[1][RL_SUN_NY] = ny;
+    light->draw_args[1][RL_SUN_NZ] = nz;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_set_point) {
+    struct ActorLight* light = s_check_light(L, 1);
+    const GLfloat near = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat far = (GLfloat)luaL_checknumber(L, 3);
+
+    light->light->type = RL_POINT;
+    light->draw_args[1][RL_POINT_NEAR] = near;
+    light->draw_args[1][RL_POINT_FAR] = far;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_set_spot) {
+    struct ActorLight* light = s_check_light(L, 1);
+    const GLfloat nx = (GLfloat)luaL_checknumber(L, 2);
+    const GLfloat ny = (GLfloat)luaL_checknumber(L, 3);
+    const GLfloat nz = (GLfloat)luaL_checknumber(L, 4);
+    const GLfloat range = (GLfloat)luaL_checknumber(L, 5);
+    const GLfloat in = (GLfloat)luaL_checknumber(L, 6);
+    const GLfloat out = (GLfloat)luaL_checknumber(L, 7);
+
+    light->light->type = RL_SPOT;
+    light->draw_args[1][RL_SPOT_NX] = nx;
+    light->draw_args[1][RL_SPOT_NY] = ny;
+    light->draw_args[1][RL_SPOT_NZ] = nz;
+    light->draw_args[1][RL_SPOT_RANGE] = range;
+    light->draw_args[1][RL_SPOT_IN] = in;
+    light->draw_args[1][RL_SPOT_OUT] = out;
+    return 0;
+}
+
 // UI
 SCRIPT_CHECKER(ui, struct UI*);
 SCRIPT_TESTER(ui, struct UI*);
@@ -608,7 +713,6 @@ SCRIPT_FUNCTION(create_ui) {
 
     struct UI* ui = create_ui(parent, name);
     lua_pushinteger(L, ui == NULL ? 0 : ui->hid);
-
     return 1;
 }
 
@@ -656,7 +760,6 @@ SCRIPT_FUNCTION(get_player) {
         lua_pushnil(L);
     else
         lua_rawgeti(L, LUA_REGISTRYINDEX, player->userdata);
-
     return 1;
 }
 
@@ -723,6 +826,7 @@ SCRIPT_FUNCTION(get_pflag_bool) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const bool failsafe = luaL_optinteger(L, 3, false);
+
     lua_pushboolean(L, get_pflag_bool(player, name, failsafe));
     return 1;
 }
@@ -731,6 +835,7 @@ SCRIPT_FUNCTION(get_pflag_int) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const int failsafe = (int)luaL_optinteger(L, 3, 0);
+
     lua_pushinteger(L, get_pflag_int(player, name, failsafe));
     return 1;
 }
@@ -739,6 +844,7 @@ SCRIPT_FUNCTION(get_pflag_float) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const float failsafe = (float)luaL_optnumber(L, 3, 0);
+
     lua_pushnumber(L, get_pflag_float(player, name, failsafe));
     return 1;
 }
@@ -747,6 +853,7 @@ SCRIPT_FUNCTION(get_pflag_string) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const char* failsafe = luaL_optstring(L, 3, NULL);
+
     lua_pushstring(L, get_pflag_string(player, name, failsafe));
     return 1;
 }
@@ -768,6 +875,7 @@ SCRIPT_FUNCTION(set_pflag_bool) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const bool value = luaL_checkinteger(L, 3);
+
     set_pflag_bool(player, name, value);
     return 0;
 }
@@ -776,6 +884,7 @@ SCRIPT_FUNCTION(set_pflag_int) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const int value = (int)luaL_checkinteger(L, 3);
+
     set_pflag_int(player, name, value);
     return 0;
 }
@@ -784,6 +893,7 @@ SCRIPT_FUNCTION(set_pflag_float) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const float value = (float)luaL_checknumber(L, 3);
+
     set_pflag_float(player, name, value);
     return 0;
 }
@@ -792,6 +902,7 @@ SCRIPT_FUNCTION(set_pflag_string) {
     struct Player* player = s_check_player(L, 1);
     const char* name = luaL_checkstring(L, 2);
     const char* value = luaL_checkstring(L, 3);
+
     set_pflag_string(player, name, value);
     return 0;
 }
@@ -811,7 +922,6 @@ SCRIPT_FUNCTION(lengthdir) {
 
     lua_pushnumber(L, SDL_cosf(rad) * len);
     lua_pushnumber(L, SDL_sinf(rad) * len);
-
     return 2;
 }
 
@@ -827,7 +937,6 @@ SCRIPT_FUNCTION(lengthdir_3d) {
     lua_pushnumber(L, (SDL_cosf(yrad) * len) * hor);
     lua_pushnumber(L, (SDL_sinf(yrad) * len) * hor);
     lua_pushnumber(L, -SDL_sinf(prad) * len);
-
     return 3;
 }
 
@@ -960,6 +1069,8 @@ void script_init() {
 
     luaL_newmetatable(context, "model_instance");
     static const luaL_Reg model_instance_methods[] = {
+        {"set_color", s_model_instance_set_color},
+
         {"set_hidden", s_model_instance_set_hidden},
         {"set_animation", s_model_instance_set_animation},
 
@@ -976,16 +1087,25 @@ void script_init() {
     // Audio
     EXPOSE_FUNCTION(play_ui_sound);
 
+    // Room
+    luaL_newmetatable(context, "room");
+    lua_pop(context, 1);
+
     // Actor
     luaL_newmetatable(context, "actor");
     static const luaL_Reg actor_methods[] = {
         {"is_ancestor", s_actor_is_ancestor},
 
+        {"get_room", s_actor_get_room},
         {"get_player", s_actor_get_player},
 
         {"get_camera", s_actor_get_camera},
         {"create_camera", s_actor_create_camera},
         {"destroy_camera", s_actor_destroy_camera},
+
+        {"get_light", s_actor_get_light},
+        {"create_light", s_actor_create_light},
+        {"destroy_light", s_actor_destroy_light},
 
         {"get_model", s_actor_get_model},
         {"create_model", s_actor_create_model},
@@ -1041,6 +1161,22 @@ void script_init() {
 
     EXPOSE_FUNCTION(get_active_camera);
     EXPOSE_FUNCTION(set_active_camera);
+
+    luaL_newmetatable(context, "light");
+    static const luaL_Reg light_methods[] = {
+        {"set_color", s_light_set_color},
+        {"hide", s_light_hide},
+        {"snap", s_light_snap},
+        {"set_sun", s_light_set_sun},
+        {"set_point", s_light_set_point},
+        {"set_spot", s_light_set_spot},
+
+        {NULL, NULL},
+    };
+    luaL_setfuncs(context, light_methods, 0);
+    lua_pushvalue(context, -1);
+    lua_setfield(context, -2, "__index");
+    lua_pop(context, 1);
 
     // UI
     luaL_newmetatable(context, "ui");
@@ -1164,11 +1300,43 @@ int function_ref(int idx, const char* name) {
     return LUA_NOREF;
 }
 
-int json_to_table_ref(yyjson_val* obj) {
-    if (!yyjson_is_obj(obj) || yyjson_obj_size(obj) <= 0)
-        return LUA_NOREF;
+static void json_object_to_table(yyjson_val*);
+static void json_array_to_table(yyjson_val* arr) {
     lua_newtable(context);
+    size_t i, n;
+    yyjson_val* value;
+    yyjson_arr_foreach(arr, i, n, value) {
+        switch (yyjson_get_type(value)) {
+            default:
+                WTF("Unsupported JSON type \"%s\"", yyjson_get_type_desc(value));
+            case YYJSON_TYPE_NULL:
+                lua_pushnil(context);
+                break;
+            case YYJSON_TYPE_BOOL:
+                lua_pushboolean(context, yyjson_get_bool(value));
+                break;
+            case YYJSON_TYPE_NUM:
+                if (yyjson_is_int(value))
+                    lua_pushinteger(context, yyjson_get_int(value));
+                else
+                    lua_pushnumber(context, yyjson_get_num(value));
+                break;
+            case YYJSON_TYPE_STR:
+                lua_pushstring(context, yyjson_get_str(value));
+                break;
+            case YYJSON_TYPE_ARR:
+                json_array_to_table(value);
+                break;
+            case YYJSON_TYPE_OBJ:
+                json_object_to_table(value);
+                break;
+        }
+        lua_seti(context, -2, (lua_Integer)(i + 1));
+    }
+}
 
+static void json_object_to_table(yyjson_val* obj) {
+    lua_newtable(context);
     size_t i, n;
     yyjson_val *key, *value;
     yyjson_obj_foreach(obj, i, n, key, value) {
@@ -1190,10 +1358,21 @@ int json_to_table_ref(yyjson_val* obj) {
             case YYJSON_TYPE_STR:
                 lua_pushstring(context, yyjson_get_str(value));
                 break;
+            case YYJSON_TYPE_ARR:
+                json_array_to_table(value);
+                break;
+            case YYJSON_TYPE_OBJ:
+                json_object_to_table(value);
+                break;
         }
         lua_setfield(context, -2, yyjson_get_str(key));
     }
+}
 
+int json_to_table_ref(yyjson_val* obj) {
+    if (!yyjson_is_obj(obj) || yyjson_obj_size(obj) <= 0)
+        return LUA_NOREF;
+    json_object_to_table(obj);
     return create_ref();
 }
 

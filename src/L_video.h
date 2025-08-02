@@ -108,6 +108,7 @@ struct ModelInstance {
 
     vec3 pos, angle, scale;
     vec3 draw_pos[2], draw_angle[2], draw_scale[2];
+    vec4 color;
 
     bool* hidden;
     struct Material** override_materials;
@@ -139,20 +140,20 @@ uint64_t get_draw_time();
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);
 
-void set_uint_uniform(const char*, GLuint);
-void set_uvec2_uniform(const char*, GLuint, GLuint);
-void set_uvec3_uniform(const char*, GLuint, GLuint, GLuint);
-void set_uvec4_uniform(const char*, GLuint, GLuint, GLuint, GLuint);
+void set_uint_uniform(const char*, const GLuint);
+void set_uvec2_uniform(const char*, const GLuint[2]);
+void set_uvec3_uniform(const char*, const GLuint[3]);
+void set_uvec4_uniform(const char*, const GLuint[4]);
 
-void set_int_uniform(const char*, GLint);
-void set_ivec2_uniform(const char*, GLint, GLint);
-void set_ivec3_uniform(const char*, GLint, GLint, GLint);
-void set_ivec4_uniform(const char*, GLint, GLint, GLint, GLint);
+void set_int_uniform(const char*, const GLint);
+void set_ivec2_uniform(const char*, const GLint[2]);
+void set_ivec3_uniform(const char*, const GLint[3]);
+void set_ivec4_uniform(const char*, const GLint[4]);
 
-void set_float_uniform(const char*, GLfloat);
-void set_vec2_uniform(const char*, GLfloat, GLfloat);
-void set_vec3_uniform(const char*, GLfloat, GLfloat, GLfloat);
-void set_vec4_uniform(const char*, GLfloat, GLfloat, GLfloat, GLfloat);
+void set_float_uniform(const char*, const GLfloat);
+void set_vec2_uniform(const char*, const GLfloat[2]);
+void set_vec3_uniform(const char*, const GLfloat[3]);
+void set_vec4_uniform(const char*, const GLfloat[4]);
 
 void set_mat2_uniform(const char*, mat2*);
 void set_mat3_uniform(const char*, mat3*);

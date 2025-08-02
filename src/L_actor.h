@@ -112,10 +112,20 @@ struct CameraPOI {
     float lerp;     // Turn factor
 };
 
+struct ActorLight {
+    struct Actor* actor;
+    int userdata;
+
+    size_t slot;
+    struct RoomLight* light;
+    GLfloat draw_args[2][RL_ARGS];
+};
+
 struct Actor {
     ActorID hid;
     struct ActorType* type;
     struct ActorCamera* camera;
+    struct ActorLight* light;
     struct ModelInstance* model;
     int userdata;
 
@@ -154,12 +164,10 @@ bool load_actor(const char*);
 struct ActorType* get_actor_type(const char*);
 struct Actor* get_actors();
 
-struct Actor*
-create_actor(struct Room*, struct RoomActor*, const char*, bool, float, float, float, float, float, float, uint16_t);
-struct Actor* create_actor_from_type(
-    struct Room*, struct RoomActor*, struct ActorType*, bool, float, float, float, float, float, float, uint16_t
-);
+struct Actor* create_actor(struct Room*, struct RoomActor*, const char*, bool, vec3, vec3, uint16_t);
+struct Actor* create_actor_from_type(struct Room*, struct RoomActor*, struct ActorType*, bool, vec3, vec3, uint16_t);
 struct ActorCamera* create_actor_camera(struct Actor*);
+struct ActorLight* create_actor_light(struct Actor*);
 struct ModelInstance* create_actor_model(struct Actor*, struct Model*);
 void actor_to_sky(struct Actor*);
 void tick_actor(struct Actor*);
@@ -167,6 +175,7 @@ void draw_actor(struct Actor*);
 void destroy_actor_later(struct Actor*, bool);
 void destroy_actor(struct Actor*, bool, bool);
 void destroy_actor_camera(struct Actor*);
+void destroy_actor_light(struct Actor*);
 void destroy_actor_model(struct Actor*);
 
 struct Actor* hid_to_actor(ActorID);
