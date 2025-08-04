@@ -18,7 +18,7 @@ static lua_Debug debug = {0};
 // Script functions
 // Types
 SCRIPT_FUNCTION(tostring) {
-    lua_pushstring(L, luaL_tolstring(L, -1, NULL));
+    luaL_tolstring(L, -1, NULL);
     return 1;
 }
 
@@ -39,12 +39,16 @@ SCRIPT_FUNCTION(define_actor) {
 SCRIPT_FUNCTION(print) {
     lua_getstack(L, 1, &debug);
     lua_getinfo(L, "nSl", &debug);
-    log_script(src_basename(debug.source), debug.name, debug.currentline, "%s", luaL_tolstring(L, -1, NULL));
+    const char* msg = luaL_tolstring(L, -1, NULL);
+    lua_pop(L, 1);
+    log_script(src_basename(debug.source), debug.name, debug.currentline, "%s", msg);
     return 0;
 }
 
 SCRIPT_FUNCTION(error) {
-    return luaL_error(L, luaL_tolstring(L, -1, NULL));
+    const char* msg = luaL_tolstring(L, -1, NULL);
+    lua_pop(L, 1);
+    return luaL_error(L, msg);
 }
 
 // Localization
@@ -220,7 +224,7 @@ SCRIPT_FUNCTION(model_instance_set_hidden) {
     const bool hidden = luaL_checkinteger(L, 3);
 
     if (index < 0 || index >= inst->model->num_submodels)
-        luaL_argerror(L, 3, "invalid submodel index");
+        luaL_argerror(L, 2, "invalid submodel index");
     inst->hidden[index] = hidden;
 
     return 0;
@@ -254,8 +258,12 @@ SCRIPT_FUNCTION(model_instance_override_texture_surface) {
         luaL_argerror(L, 2, "invalid material index");
     struct Surface* surface = s_test_surface(L, 3);
 
-    validate_surface(surface);
-    inst->override_textures[material_index] = (surface == NULL) ? 0 : surface->texture[SURFACE_COLOR_TEXTURE];
+    if (surface != NULL) {
+        validate_surface(surface);
+        inst->override_textures[material_index] = surface->texture[SURFACE_COLOR_TEXTURE];
+    } else {
+        inst->override_textures[material_index] = 0;
+    }
     return 0;
 }
 
@@ -307,7 +315,7 @@ SCRIPT_FUNCTION(actor_newindex) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, actor->table);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, key);
-    lua_pop(L, -1);
+    lua_pop(L, 1);
 
     return 0;
 }
@@ -553,7 +561,7 @@ SCRIPT_FUNCTION(camera_newindex) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, camera->table);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, key);
-    lua_pop(L, -1);
+    lua_pop(L, 1);
 
     return 0;
 }
@@ -690,7 +698,7 @@ SCRIPT_FUNCTION(ui_newindex) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, ui->table);
     lua_pushvalue(L, -2);
     lua_setfield(L, -2, key);
-    lua_pop(L, -1);
+    lua_pop(L, 1);
 
     return 0;
 }
@@ -941,21 +949,21 @@ SCRIPT_FUNCTION(lengthdir_3d) {
 }
 
 // Meat and bones
-void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
-    if (nsize <= 0) {
-        FREE_POINTER(ptr);
+static void* script_alloc(void* ud, void* ptr, size_t osize, size_t nsize) {
+    if (nsize == 0) {
+        SDL_free(ptr);
         return NULL;
     }
-
-    if (ptr == NULL)
-        return lame_alloc(nsize);
-
-    lame_realloc(&ptr, nsize);
-    return ptr;
+    void* nptr = SDL_realloc(ptr, nsize);
+    if (nptr == NULL)
+        FATAL("script_alloc fail");
+    return nptr;
 }
 
 void script_init() {
     context = lua_newstate(script_alloc, NULL);
+    if (context == NULL)
+        FATAL("lua_newstate fail");
 
     // Expose a lot of things
     EXPOSE_PACKAGE(LUA_LOADLIBNAME, luaopen_package);
@@ -1238,9 +1246,33 @@ void script_init() {
 }
 
 void script_teardown() {
-    // May segfault, but it doesn't matter as the game is already over halfway
-    // closed at this point.
-    CLOSE_HANDLE(context, lua_close);
+#ifndef NDEBUG
+    int top = lua_gettop(context);
+    if (top >= 1) {
+        WARN("Stack had %d excess items:", top);
+        for (int i = 1; i <= top; i++)
+            switch (lua_type(context, i)) {
+                case LUA_TNUMBER:
+                    WARN("%d number %g", i, lua_tonumber(context, i));
+                    break;
+                case LUA_TSTRING:
+                    WARN("%d string %s", i, lua_tostring(context, i));
+                    break;
+                case LUA_TBOOLEAN:
+                    WARN("%d bool %s", i, lua_toboolean(context, i) ? "true" : "false");
+                    break;
+                case LUA_TNIL:
+                    WARN("%d nil");
+                    break;
+                default:
+                    WARN("%d ? %p", lua_topointer(context, i));
+                    break;
+            }
+    }
+#endif
+
+    lua_settop(context, 0);
+    lua_close(context);
 
     INFO("Closed");
 }
@@ -1383,8 +1415,12 @@ void copy_table(int sref, int dref) {
     int dest = lua_gettop(context);
 
     lua_pushnil(context);
-    while (lua_next(context, src) != 0)
-        lua_setfield(context, dest, lua_tostring(context, -2));
+    while (lua_next(context, src) != 0) {
+        lua_pushvalue(context, -2);
+        lua_pushvalue(context, -2);
+        lua_settable(context, dest);
+        lua_pop(context, 1);
+    }
 
     lua_pop(context, 2);
 }
@@ -1396,7 +1432,9 @@ void unreference(int* ref) {
 
 void unreference_pointer(int* ref) {
     lua_rawgeti(context, LUA_REGISTRYINDEX, *ref);
-    *((void**)(lua_touserdata(context, -1))) = NULL;
+    if (lua_isuserdata(context, -1))
+        *((void**)(lua_touserdata(context, -1))) = NULL;
+    lua_pop(context, 1);
     unreference(ref);
 }
 
