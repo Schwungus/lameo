@@ -1499,10 +1499,7 @@ void submit_model_instance(struct ModelInstance* inst) {
         set_float_uniform("u_bright", material->bright);
         set_int_uniform("u_half_lambert", material->half_lambert);
         set_float_uniform("u_cel", material->cel);
-        set_vec4_uniform(
-            "u_specular",
-            (GLfloat[]){material->specular[0], material->specular[1], material->rimlight[0], material->rimlight[1]}
-        );
+        set_vec4_uniform("u_specular", material->specular);
 
         glBindVertexArray(submodel->vao);
         glBindBuffer(GL_ARRAY_BUFFER, submodel->vbo);

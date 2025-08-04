@@ -242,7 +242,7 @@ void load_material(const char* name) {
     glm_vec4_one(material->color);
     material->alpha_test = 0.5f;
     material->specular[1] = 1;
-    material->rimlight[1] = 1;
+    material->specular[3] = 1;
 
     if (file != NULL) {
         yyjson_doc* json = load_json(file);
@@ -304,8 +304,8 @@ void load_material(const char* name) {
 
                 value = yyjson_obj_get(root, "rimlight");
                 if (yyjson_is_arr(value) && yyjson_arr_size(value) >= 2) {
-                    material->rimlight[0] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
-                    material->rimlight[1] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
+                    material->specular[2] = (float)yyjson_get_num(yyjson_arr_get(value, 0));
+                    material->specular[3] = (float)yyjson_get_num(yyjson_arr_get(value, 1));
                 }
 
                 value = yyjson_obj_get(root, "half_lambert");

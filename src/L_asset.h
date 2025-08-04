@@ -102,25 +102,25 @@ BEGIN_ASSET(Texture)
     struct Texture* parent;
 
     GLuint texture;
-    uint16_t size[2], offset[2];
-    GLfloat uvs[4];
+    uint16_t size[2];
+    vec2 offset;
+    vec4 uvs;
 END_ASSET(textures, texture, Texture)
 
 BEGIN_ASSET(Material)
     struct Texture** textures[2]; // (0) Base and (1) blend textures [u_texture, u_blend_texture]
-    size_t num_textures[2]; // (0) Base and (1) blend texture count
-    float texture_speed[2]; // Cycle factor between (0) base and (1) blend textures per millisecond
+    size_t num_textures[2];       // (0) Base and (1) blend texture count
+    float texture_speed[2];       // Cycle factor between (0) base and (1) blend textures per millisecond
 
-    bool filter;            // Apply texture filtering
-    GLfloat color[4];       // Multiply texture by this color [u_material_color]
-    GLfloat alpha_test;     // Test texture alpha with this threshold [u_alpha_test]
-    GLfloat bright;         // Ineffectiveness of light on material [u_bright]
-    GLfloat scroll[2];      // Full texture scrolls per millisecond [u_scroll]
-    GLfloat specular[2];    // (0) Specular factor and (1) exponent [u_specular]
-    GLfloat rimlight[2];    // (0) Rimlight factor and (1) exponent [u_rimlight]
-    GLboolean half_lambert; // Enable half-lambert shading on this material [u_half_lambert]
-    GLfloat cel;            // Cel-shading factor [u_cel]
-    GLfloat wind[3];        // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin [u_wind]
+    bool filter;       // Apply texture filtering
+    vec4 color;        // Multiply texture by this color [u_material_color]
+    float alpha_test;  // Test texture alpha with this threshold [u_alpha_test]
+    float bright;      // Ineffectiveness of light on material [u_bright]
+    vec2 scroll;       // Full texture scrolls per millisecond [u_scroll]
+    vec4 specular;     // (0) Specular factor and (1) exponent, (2) rimlight factor and (3) exponent [u_specular]
+    bool half_lambert; // Enable half-lambert shading on this material [u_half_lambert]
+    float cel;         // Cel-shading factor [u_cel]
+    vec3 wind;         // (0) Wind effect factor, (1) speed and (2) resistance factor towards vertical UV origin [u_wind]
 END_ASSET(materials, material, Material)
 
 struct Submodel {
