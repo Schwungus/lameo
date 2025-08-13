@@ -155,9 +155,9 @@ void set_vec2_uniform(const char*, const GLfloat[2]);
 void set_vec3_uniform(const char*, const GLfloat[3]);
 void set_vec4_uniform(const char*, const GLfloat[4]);
 
-void set_mat2_uniform(const char*, mat2*);
-void set_mat3_uniform(const char*, mat3*);
-void set_mat4_uniform(const char*, mat4*);
+void set_mat2_uniform(const char*, mat2);
+void set_mat3_uniform(const char*, mat3);
+void set_mat4_uniform(const char*, mat4);
 
 // Render stages
 void set_render_stage(enum RenderTypes);

@@ -443,7 +443,7 @@ SCRIPT_FUNCTION(actor_set_pos) {
     const float y = (float)luaL_optnumber(L, 3, actor->pos[1]);
     const float z = (float)luaL_optnumber(L, 4, actor->pos[2]);
 
-    set_actor_pos(actor, x, y, z);
+    set_actor_pos(actor, (vec3){x, y, z});
     return 0;
 }
 
@@ -613,9 +613,21 @@ SCRIPT_FUNCTION(light_set_color) {
     return 0;
 }
 
-SCRIPT_FUNCTION(light_hide) {
+SCRIPT_FUNCTION(light_disable) {
     struct ActorLight* light = s_check_light(L, 1);
-    light->light->type = RL_INVALID;
+    light->light->type = RL_OFF;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_no_lightmap) {
+    struct ActorLight* light = s_check_light(L, 1);
+    light->light->type = RL_NO_LIGHTMAP;
+    return 0;
+}
+
+SCRIPT_FUNCTION(light_enable) {
+    struct ActorLight* light = s_check_light(L, 1);
+    light->light->type = RL_ON;
     return 0;
 }
 
@@ -1173,7 +1185,9 @@ void script_init() {
     luaL_newmetatable(context, "light");
     static const luaL_Reg light_methods[] = {
         {"set_color", s_light_set_color},
-        {"hide", s_light_hide},
+        {"disable", s_light_disable},
+        {"no_lightmap", s_light_no_lightmap},
+        {"enable", s_light_enable},
         {"snap", s_light_snap},
         {"set_sun", s_light_set_sun},
         {"set_point", s_light_set_point},

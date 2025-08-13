@@ -1,6 +1,8 @@
 local Light_create = function (this)
     local light = this:create_light()
     if light ~= nil then
+        light:no_lightmap()
+
         local color = this.color
         if color ~= nil then
             light:set_color(color[1], color[2], color[3], color[4])

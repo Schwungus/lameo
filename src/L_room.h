@@ -11,10 +11,13 @@
 
 #define MAX_ROOM_LIGHTS 8
 
-#define RL_INVALID 0
-#define RL_SUN 1
-#define RL_POINT 2
-#define RL_SPOT 3
+#define RL_OFF 0
+#define RL_NO_LIGHTMAP 1
+#define RL_ON 2
+
+#define RL_SUN 0
+#define RL_POINT 1
+#define RL_SPOT 2
 
 #define RL_SUN_NX 0
 #define RL_SUN_NY 1
@@ -47,6 +50,7 @@ struct BumpMap {
 };
 
 struct RoomLight {
+    GLfloat active;
     GLfloat type;
     GLfloat pos[3];
     GLfloat color[4];

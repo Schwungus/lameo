@@ -641,6 +641,23 @@ void load_model(const char* name) {
 
     lame_free(&buffer);
 
+    // Extras
+    SDL_snprintf(asset_file_helper, sizeof(asset_file_helper), "models/%s.json", name);
+    file = get_mod_file(asset_file_helper, NULL);
+    if (file != NULL) {
+        yyjson_doc* json = load_json(file);
+        if (json != NULL) {
+            yyjson_val* root = yyjson_doc_get_root(json);
+            if (yyjson_is_obj(root)) {
+                yyjson_val* value = yyjson_obj_get(root, "lightmap");
+                if (yyjson_is_str(value))
+                    model->lightmap = fetch_texture(yyjson_get_str(value));
+            }
+
+            yyjson_doc_free(json);
+        }
+    }
+
     model->userdata = create_pointer_ref("model", model);
     ASSET_SANITY_PUSH(model, models);
     DEBUG("Loaded model \"%s\" (%u)", name, model);

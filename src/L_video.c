@@ -477,19 +477,19 @@ void set_vec4_uniform(const char* name, const GLfloat value[4]) {
     );
 }
 
-void set_mat2_uniform(const char* name, mat2* matrix) {
+void set_mat2_uniform(const char* name, mat2 matrix) {
     glUniformMatrix2fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );
 }
 
-void set_mat3_uniform(const char* name, mat3* matrix) {
+void set_mat3_uniform(const char* name, mat3 matrix) {
     glUniformMatrix3fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );
 }
 
-void set_mat4_uniform(const char* name, mat4* matrix) {
+void set_mat4_uniform(const char* name, mat4 matrix) {
     glUniformMatrix4fv(
         (GLint)SDL_GetNumberProperty(current_shader->uniforms, name, -1), 1, GL_FALSE, (const GLfloat*)matrix
     );
@@ -522,10 +522,10 @@ void submit_main_batch() {
         return;
 
     // Apply matrices
-    set_mat4_uniform("u_model_matrix", &model_matrix);
-    set_mat4_uniform("u_view_matrix", &view_matrix);
-    set_mat4_uniform("u_projection_matrix", &projection_matrix);
-    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+    set_mat4_uniform("u_model_matrix", model_matrix);
+    set_mat4_uniform("u_view_matrix", view_matrix);
+    set_mat4_uniform("u_projection_matrix", projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", mvp_matrix);
 
     glBindVertexArray(main_batch.vao);
     glBindBuffer(GL_ARRAY_BUFFER, main_batch.vbo);
@@ -799,10 +799,10 @@ void submit_world_batch() {
         return;
 
     // Apply matrices
-    set_mat4_uniform("u_model_matrix", &model_matrix);
-    set_mat4_uniform("u_view_matrix", &view_matrix);
-    set_mat4_uniform("u_projection_matrix", &projection_matrix);
-    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+    set_mat4_uniform("u_model_matrix", model_matrix);
+    set_mat4_uniform("u_view_matrix", view_matrix);
+    set_mat4_uniform("u_projection_matrix", projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", mvp_matrix);
 
     glBindVertexArray(world_batch.vao);
     glBindBuffer(GL_ARRAY_BUFFER, world_batch.vbo);
@@ -969,7 +969,7 @@ struct Surface* render_camera(
         glm_lookat(GLM_VEC3_ZERO, forward_vector, up_vector, sky_view);
         glm_mat4_mul(projection_matrix, sky_view, mvp_matrix);
         set_shader(sky_shader);
-        set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+        set_mat4_uniform("u_mvp_matrix", mvp_matrix);
         set_float_uniform("u_time", u_time);
 
         if (sky->model != NULL)
@@ -984,6 +984,7 @@ struct Surface* render_camera(
         clear_color(0.5f, 0.5f, 0.5f, 1);
     }
 
+    glm_mat4_identity(model_matrix);
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
@@ -1009,15 +1010,22 @@ struct Surface* render_camera(
     set_vec4_uniform("u_wind", room->wind);
 
     if (room->model != NULL)
-        submit_model_instance(room->model);
+        draw_model_instance(room->model);
 
     struct Actor* actor = room->actors;
     while (actor != NULL) {
         if (actor->flags & AF_VISIBLE && (camera != actor->camera || (camera->flags & CF_THIRD_PERSON))) {
-            if (actor->model != NULL)
-                draw_model_instance(actor->model);
-            if (actor->type->draw != LUA_NOREF)
-                execute_ref_in_child(actor->type->draw, actor->userdata, camera->userdata, actor->type->name);
+            static vec3 center;
+            glm_vec3_copy(actor->draw_pos[1], center);
+            center[2] -= actor->collision_size[1] * 0.5f;
+
+            const float distance = glm_vec3_distance(camera->draw_pos[1], center);
+            if (distance > actor->cull_draw[0] && distance < actor->cull_draw[1]) {
+                if (actor->model != NULL)
+                    draw_model_instance(actor->model);
+                if (actor->type->draw != LUA_NOREF)
+                    execute_ref_in_child(actor->type->draw, actor->userdata, camera->userdata, actor->type->name);
+            }
         }
         actor = actor->previous_neighbor;
     }
@@ -1257,6 +1265,7 @@ struct ModelInstance* create_model_instance(struct Model* model) {
     inst->userdata = create_pointer_ref("model_instance", inst);
     glm_vec3_one(inst->scale);
     glm_vec3_one(inst->draw_scale[0]);
+    glm_vec3_one(inst->draw_scale[1]);
     glm_vec4_one(inst->color);
 
     inst->hidden = lame_alloc_clean(model->num_submodels * sizeof(bool));
@@ -1435,9 +1444,19 @@ void submit_model_instance(struct ModelInstance* inst) {
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
 
     set_int_uniform("u_texture", 0);
-    set_int_uniform("u_blend_texture", 1);
     set_vec4_uniform("u_color", inst->color);
     set_vec4_uniform("u_stencil", (GLfloat[]){1, 1, 1, 0});
+
+    if (inst->model->lightmap != NULL) {
+        set_int_uniform("u_has_lightmap", 1);
+        set_int_uniform("u_lightmap", 2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, inst->model->lightmap->texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        set_int_uniform("u_has_lightmap", 0);
+    }
 
     if (inst->animation != NULL && inst->draw_sample[1] != NULL) {
         set_int_uniform("u_animated", 1);
@@ -1481,6 +1500,8 @@ void submit_model_instance(struct ModelInstance* inst) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
         if (material->textures[1] != NULL) {
+            set_int_uniform("u_has_blend_texture", 1);
+            set_int_uniform("u_blend_texture", 1);
             const struct Texture* blend_texture = material->textures[1][(size_t)SDL_fmodf(
                 (float)draw_time * material->texture_speed[1], (float)material->num_textures[1]
             )];
@@ -1488,7 +1509,6 @@ void submit_model_instance(struct ModelInstance* inst) {
             glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-            set_int_uniform("u_has_blend_texture", 1);
         } else {
             set_int_uniform("u_has_blend_texture", 0);
         }
@@ -1512,7 +1532,6 @@ void submit_model_instance(struct ModelInstance* inst) {
 
 void draw_model_instance(struct ModelInstance* inst) {
     glm_mat4_identity(model_matrix);
-
     glm_scale(model_matrix, inst->draw_scale[1]);
     glm_spin(model_matrix, glm_rad(inst->draw_angle[1][0]), GLM_ZUP);
     glm_spin(model_matrix, glm_rad(inst->draw_angle[1][1]), GLM_YUP);
@@ -1522,10 +1541,10 @@ void draw_model_instance(struct ModelInstance* inst) {
     glm_mat4_mul(view_matrix, model_matrix, mvp_matrix);
     glm_mat4_mul(projection_matrix, mvp_matrix, mvp_matrix);
 
-    set_mat4_uniform("u_model_matrix", &model_matrix);
-    set_mat4_uniform("u_view_matrix", &view_matrix);
-    set_mat4_uniform("u_projection_matrix", &projection_matrix);
-    set_mat4_uniform("u_mvp_matrix", &mvp_matrix);
+    set_mat4_uniform("u_model_matrix", model_matrix);
+    set_mat4_uniform("u_view_matrix", view_matrix);
+    set_mat4_uniform("u_projection_matrix", projection_matrix);
+    set_mat4_uniform("u_mvp_matrix", mvp_matrix);
 
     submit_model_instance(inst);
 

@@ -155,6 +155,8 @@ BEGIN_ASSET(Model)
 
     struct Material** materials;
     size_t num_materials;
+
+    struct Texture* lightmap;
 END_ASSET(models, model, Model)
 
 void destroy_node(struct Node*);

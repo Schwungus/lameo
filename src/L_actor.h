@@ -137,6 +137,9 @@ struct Actor {
 
     struct Player* player;
 
+    float cull_tick;
+    vec2 cull_draw;
+
     vec3 pos;   // Read-only
     vec3 angle; // (0) Yaw, (1) pitch and (2) roll
     vec3 draw_pos[2], draw_angle[2];
@@ -181,4 +184,4 @@ void destroy_actor_model(struct Actor*);
 struct Actor* hid_to_actor(ActorID);
 bool actor_is_ancestor(struct Actor*, const char*);
 
-void set_actor_pos(struct Actor*, float, float, float);
+void set_actor_pos(struct Actor*, vec3);

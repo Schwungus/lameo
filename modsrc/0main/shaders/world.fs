@@ -2,35 +2,39 @@
 
 #define MAX_ROOM_LIGHTS 8
 
-#define RL_INVALID 0
-#define RL_SUN 1
-#define RL_POINT 2
-#define RL_SPOT 3
+#define RL_OFF 0
+#define RL_NO_LIGHTMAP 1
+#define RL_ON 2
 
-#define RL_TYPE 0
-#define RL_X 1
-#define RL_Y 2
-#define RL_Z 3
-#define RL_R 4
-#define RL_G 5
-#define RL_B 6
-#define RL_A 7
+#define RL_SUN 0
+#define RL_POINT 1
+#define RL_SPOT 2
 
-#define RL_SUN_NX 8
-#define RL_SUN_NY 9
-#define RL_SUN_NZ 10
+#define RL_ACTIVE 0
+#define RL_TYPE 1
+#define RL_X 2
+#define RL_Y 3
+#define RL_Z 4
+#define RL_R 5
+#define RL_G 6
+#define RL_B 7
+#define RL_A 8
 
-#define RL_POINT_NEAR 8
-#define RL_POINT_FAR 9
+#define RL_SUN_NX 9
+#define RL_SUN_NY 10
+#define RL_SUN_NZ 11
 
-#define RL_SPOT_NX 8
-#define RL_SPOT_NY 9
-#define RL_SPOT_NZ 10
-#define RL_SPOT_RANGE 11
-#define RL_SPOT_IN 12
-#define RL_SPOT_OUT 13
+#define RL_POINT_NEAR 9
+#define RL_POINT_FAR 10
 
-#define RL_SIZE 14
+#define RL_SPOT_NX 9
+#define RL_SPOT_NY 10
+#define RL_SPOT_NZ 11
+#define RL_SPOT_RANGE 12
+#define RL_SPOT_IN 13
+#define RL_SPOT_OUT 14
+
+#define RL_SIZE 15
 #define RL_ARRAY_SIZE (MAX_ROOM_LIGHTS * RL_SIZE)
 
 out vec4 o_color;
@@ -59,6 +63,9 @@ uniform float u_bright;
 uniform bool u_half_lambert;
 uniform float u_cel;
 uniform vec4 u_specular;
+
+uniform bool u_has_lightmap;
+uniform sampler2D u_lightmap;
 
 float matdot(float dotp) {
 	dotp = u_half_lambert ? pow((dotp * 0.5) + 0.5, 2.0) : max(dotp, 0.0);
@@ -90,9 +97,13 @@ void main() {
     }
 
     vec3 reflection = normalize(reflect(v_view_position, v_normal));
-    vec4 lighting = u_ambient;
+    vec4 lighting = u_has_lightmap ? (texture(u_lightmap, v_uv.zw) * 2.0) : u_ambient;
     float specular = 0.0;
     for (int i = 0; i < RL_ARRAY_SIZE; i += RL_SIZE) {
+        int light_active = int(u_lights[i + RL_ACTIVE]);
+        if (light_active <= RL_OFF || (light_active == RL_NO_LIGHTMAP && u_has_lightmap))
+            continue;
+
         int light_type = int(u_lights[i + RL_TYPE]);
         if (light_type == RL_SUN) {
             vec4 light_color = vec4(u_lights[i + RL_R], u_lights[i + RL_G], u_lights[i + RL_B], u_lights[i + RL_A]);

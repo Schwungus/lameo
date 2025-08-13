@@ -196,6 +196,9 @@ struct Actor* create_actor_from_type(
     actor->room = room;
     actor->base = base;
 
+    actor->cull_tick = 32000;
+    actor->cull_draw[1] = 32000;
+
     glm_vec3_copy(pos, actor->pos);
     glm_vec3_copy(angle, actor->angle);
     glm_vec3_copy(actor->pos, actor->draw_pos[0]);
@@ -277,7 +280,7 @@ struct ActorLight* create_actor_light(struct Actor* actor) {
     light->slot = i;
 
     struct RoomLight* rlight = light->light = &(room->lights[i]);
-    rlight->type = RL_INVALID;
+    rlight->active = RL_ON;
     glm_vec4_one(rlight->color);
 
     return actor->light = light;
@@ -422,7 +425,7 @@ void destroy_actor_light(struct Actor* actor) {
     struct ActorLight* light = actor->light;
     if (light == NULL)
         return;
-    light->light->type = RL_INVALID;
+    light->light->active = RL_OFF;
     actor->room->light_occupied[light->slot] = NULL;
     unreference_pointer(&(light->userdata));
     lame_free(&(actor->light));
@@ -447,10 +450,18 @@ bool actor_is_ancestor(struct Actor* actor, const char* name) {
     return false;
 }
 
-void set_actor_pos(struct Actor* actor, float x, float y, float z) {
+void set_actor_pos(struct Actor* actor, vec3 pos) {
+    glm_vec3_copy(pos, actor->pos);
+
     if (actor->flags & AF_BUMPABLE) {
-        // Unlink
         struct BumpMap* bump = &(actor->room->bump);
+        size_t bump_x = (size_t)((pos[0] - bump->pos[0]) / (float)BUMP_CHUNK_SIZE);
+        size_t bump_y = (size_t)((pos[1] - bump->pos[1]) / (float)BUMP_CHUNK_SIZE);
+        size_t bump_index =
+            SDL_clamp(bump_x, 0, bump->size[0] - 1) + (bump->size[0] * SDL_clamp(bump_y, 0, bump->size[1] - 1));
+        if (actor->bump_index == bump_index)
+            return;
+
         struct Actor** chunks = bump->chunks;
         if (chunks[actor->bump_index] == actor)
             chunks[actor->bump_index] = actor->previous_bump;
@@ -459,25 +470,11 @@ void set_actor_pos(struct Actor* actor, float x, float y, float z) {
         if (actor->next_bump != NULL)
             actor->next_bump->previous_bump = actor->previous_bump;
 
-        actor->pos[0] = x;
-        actor->pos[1] = y;
-        actor->pos[2] = z;
-
-        // Link
-        size_t bump_x = (size_t)((x - bump->pos[0]) / (float)BUMP_CHUNK_SIZE);
-        size_t bump_y = (size_t)((y - bump->pos[1]) / (float)BUMP_CHUNK_SIZE);
-        actor->bump_index =
-            SDL_clamp(bump_x, 0, bump->size[0] - 1) + (bump->size[0] * SDL_clamp(bump_y, 0, bump->size[1] - 1));
+        actor->bump_index = bump_index;
         if (chunks[actor->bump_index] != NULL)
             chunks[actor->bump_index]->next_bump = actor;
         actor->previous_bump = chunks[actor->bump_index];
         actor->next_bump = NULL;
         chunks[actor->bump_index] = actor;
-
-        return;
     }
-
-    actor->pos[0] = x;
-    actor->pos[1] = y;
-    actor->pos[2] = z;
 }
