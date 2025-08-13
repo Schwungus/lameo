@@ -1,9 +1,6 @@
 # lameo
 
-Uhh, I don't know. I want it to at least run on both Windows and Linux, though.
-
-This is a solo project. You can look at it, otherwise suggest things through
-issues and/or pull requests, even if you're a Schwungus dev.
+Experimental 3D engine styled after [PNEngine](https://github.com/Schwungus/PNEngine).
 
 ## External Dependencies
 
