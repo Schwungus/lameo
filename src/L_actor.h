@@ -51,7 +51,7 @@ enum CameraFlags {
 
     CF_ORTHOGONAL = 1 << 0,    // Use orthogonal view instead of perspective
     CF_THIRD_PERSON = 1 << 1,  // Camera follows targets in third-person mode.
-    CF_RAYCAST = 1 << 2,       // Stick to collision meshes while following targets.
+    CF_RAYCAST = 1 << 2,       // Stick to collision meshes when zooming out in third-person mode.
     CF_COPY_POSITION = 1 << 3, // Copy source position.
     CF_COPY_ANGLE = 1 << 4,    // Copy source angle.
 
@@ -75,9 +75,6 @@ struct ActorCamera {
     struct ActorCamera *parent, *child;
     int userdata;
 
-    struct CameraTarget* targets;
-    struct CameraPOI* pois;
-
     vec3 pos, angle;
     float fov, range;
 
@@ -90,26 +87,6 @@ struct ActorCamera {
     mat4 view_matrix, projection_matrix;
     struct Surface* surface;
     int surface_ref;
-};
-
-struct CameraTarget {
-    struct ActorCamera* camera;
-    struct CameraTarget *previous, *next; // Position in list (previous-order)
-    int userdata;
-
-    vec3 pos;       // Exact position (relative if a target exists)
-    ActorID target; // Actor to follow
-    float range;    // Distance in third-person mode
-};
-
-struct CameraPOI {
-    struct ActorCamera* camera;
-    struct CameraPOI *previous, *next; // Position in list (previous-order)
-    int userdata;
-
-    vec3 pos;       // Exact position (relative if a target exists)
-    ActorID target; // Actor to track
-    float lerp;     // Turn factor
 };
 
 struct ActorLight {

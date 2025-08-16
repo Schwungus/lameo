@@ -932,8 +932,6 @@ struct Surface* render_camera(
     // Build matrices
     static mat4 lookie;
     glm_mat4_identity(lookie);
-    if (camera->flags & CF_THIRD_PERSON)
-        glm_translate_x(lookie, -camera->draw_range[1]);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][0]), GLM_ZUP);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][1]), GLM_YUP);
     glm_spin(lookie, glm_rad(camera->draw_angle[1][2]), GLM_XUP);
@@ -946,7 +944,12 @@ struct Surface* render_camera(
     glm_vec3_copy(up_matrix[3], up_vector);
 
     static vec3 look_from, look_to;
-    glm_vec3_copy(camera->draw_pos[1], look_from);
+    if (camera->flags & CF_THIRD_PERSON) {
+        glm_vec3_fill(look_from, -(camera->draw_range[1]));
+        glm_vec3_mul(forward_vector, look_from, look_from);
+        glm_vec3_add(camera->draw_pos[1], look_from, look_from);
+    } else
+        glm_vec3_copy(look_from, camera->draw_pos[1]);
     if (listener >= 0)
         update_listener(listener, look_from, GLM_VEC3_ZERO, forward_vector, up_vector);
     glm_vec3_add(forward_vector, look_from, look_to);

@@ -24,17 +24,10 @@ define_actor("Main", nil, {
             model:override_texture_surface(2, this.eyes)
             model:set_animation(fetch_animation("player/walk"), this.dummy, 1)
         end
-
-        this:play_sound(get_sound("kaupunki"), 1, 128)
     end,
 
     cleanup = function (this)
         this.eyes:dispose()
-    end,
-
-    on_destroy = function (this)
-        play_ui_sound(fetch_sound("logo/schwungus"), 0, 0, 1, 1)
-        print(get_static_string("description", "(null)"))
     end,
 
     tick = function (this)

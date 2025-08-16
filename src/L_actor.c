@@ -404,16 +404,6 @@ void destroy_actor_camera(struct Actor* actor) {
     if (camera->child != NULL)
         camera->child->parent = camera->parent;
 
-    struct CameraTarget* target = camera->targets;
-    while (target != NULL) {
-        // TODO
-    }
-
-    struct CameraPOI* poi = camera->pois;
-    while (poi != NULL) {
-        // TODO
-    }
-
     if (camera->surface != NULL)
         dispose_surface(camera->surface);
     unreference(&(camera->surface_ref));
