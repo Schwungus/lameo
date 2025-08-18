@@ -129,14 +129,19 @@ void tick_update() {
                                                                   input_value(VERB_LEFT, player->slot)) *
                                                           walk);
 
-                        player->input.aim[0] =
-                            (int16_t)((float)(input_value(VERB_AIM_RIGHT, player->slot) -
-                                              input_value(VERB_AIM_LEFT, player->slot)) *
-                                      get_float_cvar("in_aim_x") * (float)(get_bool_cvar("in_invert_x") ? -1 : 1));
-                        player->input.aim[1] =
-                            (int16_t)((float)(input_value(VERB_AIM_DOWN, player->slot) -
-                                              input_value(VERB_AIM_UP, player->slot)) *
-                                      get_float_cvar("in_aim_y") * (float)(get_bool_cvar("in_invert_y") ? -1 : 1));
+                        float dx = (int16_t)((float)(input_value(VERB_AIM_RIGHT, player->slot) -
+                                                     input_value(VERB_AIM_LEFT, player->slot)) *
+                                             get_float_cvar("in_aim_x"));
+                        float dy = (int16_t)((float)(input_value(VERB_AIM_DOWN, player->slot) -
+                                                     input_value(VERB_AIM_UP, player->slot)) *
+                                             get_float_cvar("in_aim_y"));
+                        if (player->slot == 0) {
+                            const vec2* mouse_delta = get_mouse_delta();
+                            dx += (*mouse_delta)[0] * get_float_cvar("in_mouse_x");
+                            dy += (*mouse_delta)[1] * get_float_cvar("in_mouse_y");
+                        }
+                        player->input.aim[0] = (int16_t)(dx * (float)(get_bool_cvar("in_invert_x") ? -1 : 1));
+                        player->input.aim[1] = (int16_t)(dy * (float)(get_bool_cvar("in_invert_y") ? -1 : 1));
 
                         player->input.buttons = PB_NONE;
                         if (input_value(VERB_JUMP, player->slot))

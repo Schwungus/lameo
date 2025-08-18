@@ -78,6 +78,9 @@ void loop() {
                 case SDL_EVENT_MOUSE_REMOVED:
                     handle_mouse(&event.mdevice);
                     break;
+                case SDL_EVENT_MOUSE_MOTION:
+                    handle_mouse_motion(&event.motion);
+                    break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 case SDL_EVENT_MOUSE_BUTTON_UP:
                     handle_mouse_button(&event.button);
@@ -160,6 +163,7 @@ void loop() {
         }
 
         steam_update();
+        input_update();
         tick_update();
         video_update();
         audio_update();

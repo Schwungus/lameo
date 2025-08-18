@@ -136,6 +136,8 @@ uint16_t get_framerate();
 void set_framerate(uint16_t);
 
 uint64_t get_draw_time();
+bool window_has_focus();
+void lock_mouse_to_window(bool);
 
 // Shaders 'n' uniforms
 void set_shader(struct Shader*);

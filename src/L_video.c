@@ -413,6 +413,14 @@ uint64_t get_draw_time() {
     return draw_time;
 }
 
+bool window_has_focus() {
+    return SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS;
+}
+
+void lock_mouse_to_window(bool yes) {
+    SDL_SetWindowRelativeMouseMode(window, yes);
+}
+
 // Shaders 'n' Uniforms
 void set_shader(struct Shader* shader) {
     struct Shader* target = (shader == NULL) ? default_shaders[render_stage] : shader;
@@ -948,8 +956,9 @@ struct Surface* render_camera(
         glm_vec3_fill(look_from, -(camera->draw_range[1]));
         glm_vec3_mul(forward_vector, look_from, look_from);
         glm_vec3_add(camera->draw_pos[1], look_from, look_from);
-    } else
-        glm_vec3_copy(look_from, camera->draw_pos[1]);
+    } else {
+        glm_vec3_copy(camera->draw_pos[1], look_from);
+    }
     if (listener >= 0)
         update_listener(listener, look_from, GLM_VEC3_ZERO, forward_vector, up_vector);
     glm_vec3_add(forward_vector, look_from, look_to);

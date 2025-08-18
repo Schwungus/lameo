@@ -2,6 +2,7 @@
 #include "L_file.h"
 #include "L_log.h"
 #include "L_memory.h"
+#include "L_ui.h"
 
 static struct Verb verbs[VERB_SIZE] = {0};
 static SDL_PropertiesID verb_map = 0;
@@ -10,6 +11,8 @@ static struct VerbList key_map[KEY_COUNT] = {0};
 static struct VerbList mouse_button_map[MOUSE_BUTTON_COUNT] = {0};
 static struct VerbList gamepad_button_map[GAMEPAD_BUTTON_COUNT] = {0};
 static struct VerbList gamepad_axis_map[GAMEPAD_AXIS_COUNT] = {0};
+
+static vec2 mouse_delta = GLM_VEC2_ZERO;
 
 void input_init() {
     if (SDL_AddGamepadMappingsFromFile(get_base_path("gamecontrollerdb.txt")) == -1)
@@ -102,6 +105,10 @@ void input_init() {
     );
 
     INFO("Opened");
+}
+
+void input_update() {
+    lock_mouse_to_window(get_ui_top() == NULL);
 }
 
 void input_teardown() {
@@ -360,6 +367,11 @@ void handle_key(SDL_KeyboardEvent* event) {
 
 void handle_mouse(SDL_MouseDeviceEvent* event) {}
 
+void handle_mouse_motion(SDL_MouseMotionEvent* event) {
+    mouse_delta[0] += event->xrel;
+    mouse_delta[1] += event->yrel;
+}
+
 void handle_mouse_button(SDL_MouseButtonEvent* event) {
     enum MouseButtons mouse_button;
     switch (event->button) {
@@ -517,6 +529,10 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent* event) {
     }
 }
 
+const vec2* get_mouse_delta() {
+    return &mouse_delta;
+}
+
 int16_t input_value(enum Verbs verb, size_t slot) {
     return verbs[verb].value;
 }
@@ -545,4 +561,5 @@ void input_clear_momentary() {
         if (!verbs[i].held)
             verbs[i].value = 0;
     }
+    glm_vec2_zero(mouse_delta);
 }

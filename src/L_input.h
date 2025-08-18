@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_events.h>
 
+#include "L_math.h" // IWYU pragma: keep
 #include "L_player.h"
 
 #define MAX_INPUT_PLAYERS MAX_PLAYERS
@@ -92,6 +93,7 @@ struct VerbList {
 };
 
 void input_init();
+void input_update();
 void input_teardown();
 
 void define_verb(enum Verbs, const char*, int8_t, SDL_Scancode, enum MouseButtons, SDL_GamepadButton, SDL_GamepadAxis);
@@ -107,6 +109,7 @@ void handle_keyboard(SDL_KeyboardDeviceEvent*);
 void handle_key(SDL_KeyboardEvent*);
 
 void handle_mouse(SDL_MouseDeviceEvent*);
+void handle_mouse_motion(SDL_MouseMotionEvent*);
 void handle_mouse_button(SDL_MouseButtonEvent*);
 void handle_mouse_wheel(SDL_MouseWheelEvent*);
 // void handle_mouse_motion(SDL_MouseMotionEvent*);
@@ -117,6 +120,7 @@ void handle_gamepad_axis(SDL_GamepadAxisEvent*);
 // void handle_gamepad_sensor(SDL_GamepadSensorEvent*);
 // void handle_gamepad_touchpad(SDL_GamepadTouchpadEvent*);
 
+const vec2* get_mouse_delta();
 int16_t input_value(enum Verbs, size_t);
 bool input_pressed(enum Verbs, size_t);
 bool input_released(enum Verbs, size_t);
