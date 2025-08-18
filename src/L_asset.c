@@ -158,6 +158,7 @@ void load_texture(const char* name) {
     glBindTexture(GL_TEXTURE_2D, texture->texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     GLint format;
     switch (surface->format) {

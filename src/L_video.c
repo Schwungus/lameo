@@ -825,9 +825,13 @@ void submit_world_batch() {
     // Apply texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, world_batch.texture);
-    const GLint filter = world_batch.filter ? GL_LINEAR : GL_NEAREST;
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+    if (world_batch.filter) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
     set_int_uniform("u_texture", 0);
     set_int_uniform("u_has_blend_texture", 0);
     set_int_uniform("u_blend_texture", 1);
@@ -1148,6 +1152,9 @@ void validate_surface(struct Surface* surface) {
         glBindFramebuffer(GL_FRAMEBUFFER, surface->fbo);
         glBindTexture(GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE]);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->size[0], surface->size[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glFramebufferTexture2D(
             GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, surface->texture[SURFACE_COLOR_TEXTURE], 0
         );
@@ -1165,6 +1172,9 @@ void validate_surface(struct Surface* surface) {
             GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, surface->size[0], surface->size[1], 0, GL_DEPTH_STENCIL,
             GL_UNSIGNED_INT_24_8, NULL
         );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glFramebufferTexture2D(
             GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, surface->texture[SURFACE_DEPTH_TEXTURE], 0
         );
@@ -1507,9 +1517,10 @@ void submit_model_instance(struct ModelInstance* inst) {
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex);
-        const GLint filter = material->filter ? GL_LINEAR : GL_NEAREST;
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+        const GLint downscale = material->filter ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR;
+        const GLint upscale = material->filter ? GL_LINEAR : GL_NEAREST;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, downscale);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, upscale);
 
         if (material->textures[1] != NULL) {
             set_int_uniform("u_has_blend_texture", 1);
@@ -1519,8 +1530,8 @@ void submit_model_instance(struct ModelInstance* inst) {
             )];
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, blend_texture == NULL ? blank_texture : blend_texture->texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, downscale);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, upscale);
         } else {
             set_int_uniform("u_has_blend_texture", 0);
         }
